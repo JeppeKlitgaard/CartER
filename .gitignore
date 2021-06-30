@@ -8,3 +8,6 @@ venv/
 # Python compiled
 *.py[cod]
 __pycache__/
+
+# Jupyter
+.ipynb_checkpoints/
