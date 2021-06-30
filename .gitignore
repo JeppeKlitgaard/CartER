@@ -1,0 +1,10 @@
+# Editor
+.vscode/
+
+# Python Virtualenv
+.venv/
+venv/
+
+# Python compiled
+*.py[cod]
+__pycache__/
