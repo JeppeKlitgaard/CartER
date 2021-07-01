@@ -1,3 +1,4 @@
+# Poetry
 [tool.poetry]
 name = "cartpoleml"
 version = "0.1.0"
@@ -6,7 +7,7 @@ authors = ["Jeppe Klitgaard <jk782@cam.ac.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-gym = "^0.18.3"
+gym = {extras = ["atari"], version = "^0.18.3"}
 torch = "^1.9.0"
 torchvision = "^0.10.0"
 torchaudio = "^0.9.0"
@@ -17,7 +18,56 @@ numpy = "^1.21.0"
 
 [tool.poetry.dev-dependencies]
 jupytext = "^1.11.3"
+black = "^21.6b0"
+isort = "^5.9.1"
+mypy = "^0.910"
 
+flake8 = "^3.9.2"
+# Mypy
+[tool.mypy]
+python_version = "3.9"
+strict = true
+show_error_codes = true
+
+
+[[tool.mypy.overrides]]
+module = [
+    "gym.*"
+]
+ignore_missing_imports = true
+
+# Black
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+# Isort
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+line_length = 100
+
+known_ml = [
+    "gym",
+    "torch",
+]
+
+known_datascience = [
+    "numpy",
+    "pandas",
+]
+
+sections = [
+    "FUTURE",
+    "STDLIB",
+    "DATASCIENCE",
+    "ML",
+    "THIRDPARTY",
+    "FIRSTPARTY",
+    "LOCALFOLDER",
+]
+
+# Build
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
