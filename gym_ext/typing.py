@@ -1,6 +1,8 @@
 """
 Contains typing related code.
 """
-from typing import Callable
+import numpy.typing as npt
 
-State = tuple[float, float, float, float]
+from gym_ext.constants import FLOAT_TYPE
+
+State = npt.NDArray[FLOAT_TYPE]

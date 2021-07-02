@@ -9,9 +9,8 @@ This will complement an experimental setup, and ideally the same RL Agent can
 be used for both.
 """
 
-from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import numpy as np
 from numpy.random.mtrand import RandomState
@@ -20,15 +19,11 @@ from gym import Env, logger, spaces
 from gym.envs.classic_control import rendering
 from gym.utils import seeding
 
-from scipy.integrate import quad
-from scipy.integrate._ivp.ivp import solve_ivp
+from scipy.integrate import solve_ivp
 
+from gym_ext.constants import FLOAT_TYPE
 from gym_ext.equations import derivatives_wrapper
 from gym_ext.typing import State
-
-from typing import cast
-
-Action = tuple[float, float]  # xddot, thetaddot
 
 
 class ActionEnumerator(int, Enum):
@@ -37,12 +32,11 @@ class ActionEnumerator(int, Enum):
 
 
 class IntegratorOptions(str, Enum):
-    EULER = "euler"
     RK45 = "RK45"
+    LSODA = "LSODA"
 
 
-_FLOAT_TYPE = np.float64
-_FLOAT_MAX = np.finfo(_FLOAT_TYPE).max
+_FLOAT_MAX = np.finfo(FLOAT_TYPE).max
 
 _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
 
@@ -86,7 +80,7 @@ class CartPoleEnv(Env):  # type: ignore[misc]
         starting_spread: float = 0.05,
         force_mag: float = 10.0,  # N
         tau: float = 0.02,  # s, seconds between state updates
-        integrator: IntegratorOptions = IntegratorOptions.EULER,  # integration method
+        integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
         integration_resolution: int = 100,  # number of steps to subdivide tau into
     ):
         self.grav_acc = grav_acc
@@ -110,6 +104,11 @@ class CartPoleEnv(Env):  # type: ignore[misc]
         self.integrator = integrator
         self.integration_resolution = integration_resolution
 
+        self.spec = {
+            "reward_threshold": 1000,
+            "max_episode_steps": 10,
+        }
+
         # Calculate size of spaces.
         # Factors of 2 are to ensure that even failing observations are still within
         # the observation space.
@@ -120,7 +119,7 @@ class CartPoleEnv(Env):  # type: ignore[misc]
                 self.failure_angle[0] * 2,  # Angle
                 -_FLOAT_MAX,  # Angular velocity
             ],
-            dtype=_FLOAT_TYPE,
+            dtype=FLOAT_TYPE,
         )
         high = np.array(
             [
@@ -129,12 +128,12 @@ class CartPoleEnv(Env):  # type: ignore[misc]
                 self.failure_angle[1] * 2,  # Angle
                 _FLOAT_MAX,  # Angular velocity
             ],
-            dtype=_FLOAT_TYPE,
+            dtype=FLOAT_TYPE,
         )
 
         # Can only apply two actions, back or forth
         self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(low, high, dtype=_FLOAT_TYPE)
+        self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
 
         self.np_random: RandomState
         self.seed()
@@ -178,9 +177,9 @@ class CartPoleEnv(Env):  # type: ignore[misc]
             ),
         )
 
-        new_state = [x[-1] for x in sol.y]
+        new_state = cast(State, np.fromiter((x[-1] for x in sol.y), FLOAT_TYPE))
 
-        return cast(State, new_state)
+        return new_state
 
     def _check_state(self, state: State) -> bool:
         x = state[0]
@@ -210,10 +209,6 @@ class CartPoleEnv(Env):  # type: ignore[misc]
 
         These can then be numerically integrated to update the environment
         based on the action.
-
-        $$
-        α =
-        $$
         """
         if not self.action_space.contains(action):
             raise ValueError(f"Action {action} not in action space. Invalid.")
@@ -246,11 +241,13 @@ class CartPoleEnv(Env):  # type: ignore[misc]
 
         return self.state, reward, done, {}
 
-    def reset(self) -> None:
-        self.state = cast(State, self.np_random.uniform(
+    def reset(self) -> State:
+        self.state = self.np_random.uniform(
             low=-self.starting_spread, high=self.starting_spread, size=(4,)
-        ))
+        )
         self.steps_beyond_done = 0
+
+        return self.state
 
     def render(self, mode: str = "human") -> Any:
         screen_width = 600

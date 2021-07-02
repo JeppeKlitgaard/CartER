@@ -70,7 +70,7 @@ def derivatives(
     """
 
     # Setup variables from y
-    x = y[0]  # x
+    x = y[0]  # x  # noqa
     b = y[1]  # dx/dt
     q = y[2]  # θ
     a = y[3]  # dθ/dt
@@ -80,21 +80,21 @@ def derivatives(
     # fmt: off
     adot = (
         (
-            g * sin(q) +
-            cos(q) * (
+            g * sin(q)
+            + cos(q) * (  # noqa
                 (
                     -F - m_l * a**2 * (sin(q) + alpha * cos(q))
                 )
-                / M
-                + g * alpha
+                / M  # noqa
+                + g * alpha  # noqa
             )
-            - mu_p * a / m_l
+            - mu_p * a / m_l  # noqa
         )
-        /
+        /  # noqa
         (
             l * (
-                4/3
-                - (m_p * cos(q) / M) * (
+                4 / 3
+                - (m_p * cos(q) / M) * (  # noqa
                     cos(q) - alpha
                 )
             )
