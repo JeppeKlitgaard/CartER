@@ -9,30 +9,39 @@ This will complement an experimental setup, and ideally the same RL Agent can
 be used for both.
 """
 
-from enum import Enum, IntEnum
+from collections.abc import Sequence
+from enum import Enum
 from typing import Any, Optional
 
 import numpy as np
 from numpy.random.mtrand import RandomState
 
-from gym import Env, spaces, logger
-from gym.utils import seeding
+from gym import Env, logger, spaces
 from gym.envs.classic_control import rendering
+from gym.utils import seeding
 
-State = tuple[float, float, float, float]
+from scipy.integrate import quad
+from scipy.integrate._ivp.ivp import solve_ivp
+
+from gym_ext.equations import derivatives_wrapper
+from gym_ext.typing import State
+
+from typing import cast
+
 Action = tuple[float, float]  # xddot, thetaddot
 
 
-class ActionEnumerator(IntEnum):
+class ActionEnumerator(int, Enum):
     FORWARDS = 0
     BACKWARDS = 1
 
 
-class IntegratorOptions(Enum):
+class IntegratorOptions(str, Enum):
     EULER = "euler"
+    RK45 = "RK45"
 
 
-_FLOAT_TYPE = np.float32
+_FLOAT_TYPE = np.float64
 _FLOAT_MAX = np.finfo(_FLOAT_TYPE).max
 
 _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
@@ -61,24 +70,32 @@ class CartPoleEnv(Env):  # type: ignore[misc]
         3       Pole Angular Velocity     -Inf                    Inf
     """
 
-
     def __init__(
         self,
         grav_acc: float = 9.8,  # m/s^2
         mass_cart: float = 1.0,  # kg
         mass_pole: float = 0.1,  # kg
+        friction_cart: float = 0.01,  # coefficient
+        friction_pole: float = 0.001,  # coefficient
         length: float = 1,  # m
-        failure_angle: tuple[float, float] = [-_DEFAULT_FAILURE_ANGLE, _DEFAULT_FAILURE_ANGLE],  # rad
+        failure_angle: tuple[float, float] = (
+            -_DEFAULT_FAILURE_ANGLE,
+            _DEFAULT_FAILURE_ANGLE,
+        ),  # rad
         failure_position: tuple[float, float] = (-2.4, 2.4),  # m
         starting_spread: float = 0.05,
         force_mag: float = 10.0,  # N
         tau: float = 0.02,  # s, seconds between state updates
         integrator: IntegratorOptions = IntegratorOptions.EULER,  # integration method
+        integration_resolution: int = 100,  # number of steps to subdivide tau into
     ):
         self.grav_acc = grav_acc
 
         self.mass_cart = mass_cart
         self.mass_pole = mass_pole
+
+        self.friction_cart = friction_cart
+        self.friction_pole = friction_pole
 
         self.length = length
 
@@ -91,6 +108,7 @@ class CartPoleEnv(Env):  # type: ignore[misc]
         self.tau = tau
 
         self.integrator = integrator
+        self.integration_resolution = integration_resolution
 
         # Calculate size of spaces.
         # Factors of 2 are to ensure that even failing observations are still within
@@ -102,7 +120,7 @@ class CartPoleEnv(Env):  # type: ignore[misc]
                 self.failure_angle[0] * 2,  # Angle
                 -_FLOAT_MAX,  # Angular velocity
             ],
-            dtype=_FLOAT_TYPE
+            dtype=_FLOAT_TYPE,
         )
         high = np.array(
             [
@@ -111,18 +129,18 @@ class CartPoleEnv(Env):  # type: ignore[misc]
                 self.failure_angle[1] * 2,  # Angle
                 _FLOAT_MAX,  # Angular velocity
             ],
-            dtype=_FLOAT_TYPE
+            dtype=_FLOAT_TYPE,
         )
 
         # Can only apply two actions, back or forth
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(low, high, dtype=_FLOAT_TYPE)
 
-        self.np_random: Optional[RandomState] = None
+        self.np_random: RandomState
         self.seed()
 
-        self.viewer = None
-        self.state = None
+        self.viewer: Optional[rendering.Viewer] = None
+        self.state: Optional[State] = None
 
         self.steps_beyond_done = 0
 
@@ -138,34 +156,31 @@ class CartPoleEnv(Env):  # type: ignore[misc]
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _frictionless_accelerations(
-        self, x: float, xdot: float, theta: float, thetadot: float, force: float
-    ) -> tuple[float, float]:
-        """
-        $$
-        α = (F - m_p l \dot{θ}^2 sin(θ)) / (m_{tot})
-        $$
-        """
-        costheta = np.cos(theta)
-        sintheta = np.sin(theta)
+    def _integrate(
+        self, method: IntegratorOptions, t_span: tuple[float, float], t_step: float, force: float
+    ) -> State:
+        t = np.arange(t_span[0], t_span[1], t_step)
+        sol = solve_ivp(
+            fun=derivatives_wrapper,
+            t_span=t_span,
+            y0=self.state,
+            method=method,
+            t_eval=t,
+            args=(
+                force,
+                self.grav_acc,
+                self.friction_cart,
+                self.friction_pole,
+                self.length,
+                self.mass_pole,
+                self.mass_length,
+                self.mass,
+            ),
+        )
 
-        alpha = (force + self.mass_length * thetadot ** 2 * sintheta) / self.mass
+        new_state = [x[-1] for x in sol.y]
 
-        thetaddot = self.grav_acc * sintheta - costheta * alpha
-        xddot = alpha - (self.mass_length * thetaddot * costheta) / self.mass
-
-        return (xddot, thetaddot)
-
-    def _integrate(self, method: IntegratorOptions, state, xddot, thetaddot):
-        x, xdot, theta, thetadot = state
-
-        if method == IntegratorOptions.EULER:
-            x = x + self.tau * xdot
-            xdot = xdot + self.tau * xddot
-            theta = theta + self.tau * thetadot
-            thetadot = thetadot + self.tau * thetaddot
-
-        return (x, xdot, theta, thetadot)
+        return cast(State, new_state)
 
     def _check_state(self, state: State) -> bool:
         x = state[0]
@@ -180,7 +195,7 @@ class CartPoleEnv(Env):  # type: ignore[misc]
 
         return any(conditions)
 
-    def step(self, action: int):
+    def step(self, action: int) -> tuple[State, float, bool, dict[str, Any]]:
         """
         Performs a single step in the environment using the given action.
 
@@ -203,14 +218,13 @@ class CartPoleEnv(Env):  # type: ignore[misc]
         if not self.action_space.contains(action):
             raise ValueError(f"Action {action} not in action space. Invalid.")
 
-        x, xdot, theta, thetadot = self.state
-
         # Resolve direction of force
         force = self.force_mag if action == 1 else -self.force_mag
 
-        xddot, thetaddot = self._frictionless_accelerations(x, xdot, theta, thetadot, force)
-
-        self.state = self._integrate(self.integrator, (x, xdot, theta, thetadot), xddot, thetaddot)
+        # Update state
+        self.state = self._integrate(
+            IntegratorOptions.RK45, (0, self.tau), self.tau / self.integration_resolution, force
+        )
 
         done = self._check_state(self.state)
 
@@ -230,21 +244,19 @@ class CartPoleEnv(Env):  # type: ignore[misc]
             self.steps_beyond_done += 1
             reward = 0.0
 
-        return np.array(self.state), reward, done, {}
+        return self.state, reward, done, {}
 
-    def reset(self):
-        self.state = self.np_random.uniform(
+    def reset(self) -> None:
+        self.state = cast(State, self.np_random.uniform(
             low=-self.starting_spread, high=self.starting_spread, size=(4,)
-        )
+        ))
         self.steps_beyond_done = 0
 
-        return np.array(self.state)
-
-    def render(self, mode="human"):
+    def render(self, mode: str = "human") -> Any:
         screen_width = 600
         screen_height = 400
 
-        world_width = abs(self.failure_position[0] - self.failure_position[1]) * 1.10
+        world_width = abs(self.failure_position[0] - self.failure_position[1]) * 0.95
         scale = screen_width / world_width
         carty = 100  # TOP OF CART
         polewidth = 10.0
@@ -293,7 +305,7 @@ class CartPoleEnv(Env):  # type: ignore[misc]
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
-    def close(self):
+    def close(self) -> None:
         if self.viewer:
             self.viewer.close()
             self.viewer = None
