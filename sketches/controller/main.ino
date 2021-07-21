@@ -1,6 +1,12 @@
+#include <Arduino.h>
+
 #include <SPI.h>
+#include <Wire.h>
+
 #include <Bounce2.h>
 #include <AccelStepper.h>
+
+#include <AS5600.h> // https://github.com/olkal/Seeed_Arduino_AS5600 <-- Fork
 #include <TMC26XStepper.h>
 // Note this is my fork of TMC260XStepper.h, not CainZ's version
 // See: https://github.com/JeppeKlitgaard/TMC26XStepper
@@ -11,6 +17,9 @@
  * Voltage rating: 2.8 V
  *
 */
+
+// Definitions
+#define S Serial
 
 // General
 const int BAUD_RATE = 115200;
@@ -50,14 +59,44 @@ const int LEFT2 = 1;
 const int RIGHT1 = 1;
 const int RIGHT2 = -1;
 
+// Rotary Encoder - AS5600 v1.0
+AMS_5600 rot_encoders;
+// AMS_5600 rot_encoder2;
+
+
+int angle1 = 0;
+int angle2 = 0;
+int langle1 = 0;
+int langle2 = 0;
+
+// I2C Multiplexer
+const uint8_t TCA9548A_ADDR = 0x70;
+
+
+// Selects one of the I2C ports on the multiplexer
+void I2C_select(uint8_t i) {
+    if (i > 7) {
+        return;
+    }
+
+    Wire.beginTransmission(TCA9548A_ADDR);
+    Wire.write(1 << i);
+    Wire.endTransmission();
+}
+
 void setup()
 {
-    Serial.begin(BAUD_RATE);
-    Serial.println("===================");
-    Serial.println("CartPole Controller");
-    Serial.println("===================");
+    // I2C
+    Wire.begin();
 
-    Serial.println("Configuring buttons");
+    // Serial
+    S.begin(BAUD_RATE);
+    S.println("===================");
+    S.println("CartPole Controller");
+    S.println("===================");
+
+    // Buttons
+    S.println("Configuring buttons");
     b_left.attach(B_LEFT_PIN, INPUT_PULLUP); // LEFT1
     b_left.interval(BOUNCE_INTERVAL);
     b_left.setPressedState(LOW);
@@ -70,7 +109,8 @@ void setup()
     b_status.interval(BOUNCE_INTERVAL);
     b_status.setPressedState(LOW);
 
-    Serial.println("Configuring stepper drivers");
+    // Steppers
+    S.println("Configuring stepper drivers");
 
     // steps/rot, cs, dir, step, current
     stepper1.start(STEPPER_STEPS_PER_ROTATION, STEPPER1_CS_PIN, STEPPER1_DIR_PIN, STEPPER1_STEP_PIN, STEPPER_CURRENT);
@@ -92,46 +132,73 @@ void setup()
     stepper2.getCurrentStallGuardReading(); // We need this to initialise, apparently
 
     // stepper1.setStallGuardThreshold(-64, 1);
-    Serial.println("Config finished.");
-    Serial.println("Starting loop.");
+
+    // Rotary Encoders
+    S.println("Configuring rotary encoders");
+
+    I2C_select(1);
+    S.println(rot_encoders.detectMagnet());
+
+    if (rot_encoders.detectMagnet() == 0)
+    {
+        while (1)
+        {
+            if (rot_encoders.detectMagnet() == 1)
+            {
+                S.print("Current Magnitude: ");
+                S.println(rot_encoders.getMagnitude());
+                break;
+            }
+            else
+            {
+                S.println("Can not detect magnet");
+            }
+            delay(1000);
+        }
+
+    }
+
+    // Finish up
+    S.println("Config finished.");
+    S.println("Starting loop.");
 }
 
-void loop()
-{
-    // Update bouncer
-    b_left.update();
-    b_right.update();
-    b_status.update();
-
-    if (b_left.isPressed())
+    void loop()
     {
-        if (!stepper1.isMoving())
+        // Update bouncer
+        b_left.update();
+        b_right.update();
+        b_status.update();
+
+        if (b_left.isPressed())
         {
-            stepper1.step(STEP_SIZE * LEFT1);
-            stepper2.step(STEP_SIZE * LEFT2);
+            if (!stepper1.isMoving())
+            {
+                stepper1.step(STEP_SIZE * LEFT1);
+                stepper2.step(STEP_SIZE * LEFT2);
 
-            Serial.println("Moving left...");
+                S.println("Moving left...");
+            }
         }
-    }
-    else if (b_right.isPressed())
-    {
-        if (!stepper1.isMoving())
+        else if (b_right.isPressed())
         {
-            stepper1.step(STEP_SIZE * RIGHT1);
-            stepper2.step(STEP_SIZE * RIGHT2);
+            if (!stepper1.isMoving())
+            {
+                stepper1.step(STEP_SIZE * RIGHT1);
+                stepper2.step(STEP_SIZE * RIGHT2);
 
-            Serial.println("Moving right...");
+                S.println("Moving right...");
+            }
         }
-    }
-    else if (b_status.isPressed())
-    {
-        Serial.print("Steps left: ");
-        Serial.println(stepper1.getStepsLeft());
+        else if (b_status.isPressed())
+        {
+            S.print("Steps left: ");
+            S.println(stepper1.getStepsLeft());
 
-        Serial.print("Stall Guard: ");
-        Serial.println(stepper1.getCurrentStallGuardReading());
-    }
+            S.print("Stall Guard: ");
+            S.println(stepper1.getCurrentStallGuardReading());
+        }
 
-    stepper1.move();
-    stepper2.move();
-}
+        stepper1.move();
+        stepper2.move();
+    }
