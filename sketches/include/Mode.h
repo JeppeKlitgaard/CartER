@@ -18,6 +18,6 @@ const String ModeStrings[] = {
 
 extern Mode mode;
 
-void toggle_mode;
+void toggle_mode();
 
 #endif
