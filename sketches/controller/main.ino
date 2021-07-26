@@ -13,13 +13,15 @@
 #include <Steppers.h>
 #include <I2CMultiplexer.h>
 #include <RotaryEncoder.h>
+#include <LimitFinding.h>
 
 void setup()
 {
-
     // Serial
     S.begin(BAUD_RATE);
 
+// If using Serial over USB
+// This is faster, but also more annoying for development
 #ifdef SERIALUSB
     while (!S)
         ;
@@ -28,6 +30,10 @@ void setup()
     S.println("===================");
     S.println("CartPole Controller");
     S.println("===================");
+
+#ifdef DEBUG
+    print_debug_information();
+#endif
 
     // I2C
     DPL("Setting up I2C.");
@@ -60,6 +66,8 @@ void setup()
     //     }
     // }
 
+    setup_limit_switches();
+
     // Finish up
     S.println("Config finished.");
     S.println("Starting loop.");
@@ -78,55 +86,19 @@ void loop()
         S.print("Current mode: ");
         S.println(ModeStrings[mode]);
 
-
+        toggle_mode();
 
         S.print("Switched to mode: ");
         S.println(ModeStrings[mode]);
     }
 
-    if (mode == JOYSTICK)
-    {
-
-        if (b_left.isPressed())
-        {
-            if (!stepper1.isMoving())
-            {
-                stepper1.step(STEP_SIZE * LEFT);
-                stepper2.step(STEP_SIZE * LEFT);
-
-                S.println("Moving left...");
-            }
-        }
-        else if (b_right.isPressed())
-        {
-            if (!stepper1.isMoving())
-            {
-                stepper1.step(STEP_SIZE * RIGHT);
-                stepper2.step(STEP_SIZE * RIGHT);
-
-                S.println("Moving right...");
-            }
-        }
-        else if (b_status.isPressed())
-        {
-            S.print("Steps left: ");
-            S.println(stepper1.getStepsLeft());
-
-            S.print("Stall Guard: ");
-            S.println(stepper1.getCurrentStallGuardReading());
-        }
-
-        stepper1.move();
-        stepper2.move();
-    }
-    else if (mode == JOYSTICK_ACCELSTEPPER)
+    else if (mode == JOYSTICK)
     {
         if (b_left.isPressed())
         {
             if (astepper1.distanceToGo() == 0)
             {
-                astepper1.move(STEP_SIZE * STEPS_PER_MM * LEFT);
-                astepper2.move(STEP_SIZE * STEPS_PER_MM * LEFT);
+                astepper1.moveDistance(STEPPER_STEP_DISTANCE * LEFT);
 
                 S.println("Moving left...");
             }
@@ -135,8 +107,7 @@ void loop()
         {
             if (astepper1.distanceToGo() == 0)
             {
-                astepper1.move(STEP_SIZE * STEPS_PER_MM * RIGHT);
-                astepper2.move(STEP_SIZE * STEPS_PER_MM * RIGHT);
+                astepper1.moveDistance(STEPPER_STEP_DISTANCE * RIGHT);
 
                 S.println("Moving right...");
             }
@@ -147,5 +118,16 @@ void loop()
     else if (mode == DEBUG_ROTARY_ENCODERS)
     {
         // S.println(String(raw_angle_to_deg(rot_encoders.getRawAngle()), DEC));
+    }
+
+    else if (mode == FIND_LIMITS)
+    {
+        loop_limit_finding();
+    }
+
+    else
+    {
+        DP("Mode unknown: ");
+        DPL(ModeStrings[mode]);
     }
 }

@@ -15,4 +15,6 @@ DebugUtils.h - Simple debugging utilities.
   #define DPL(...)
 #endif
 
+void print_debug_information();
+
 #endif
