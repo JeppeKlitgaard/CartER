@@ -15,6 +15,8 @@
 #include <RotaryEncoder.h>
 #include <LimitFinding.h>
 
+bool steppers_enabled = true;
+
 void setup()
 {
     // Serial
@@ -48,30 +50,13 @@ void setup()
     // Rotary Encoders
     setup_rotary_encoders();
 
-    // if (rot_encoders.detectMagnet() == 0)
-    // {
-    //     while (1)
-    //     {
-    //         if (rot_encoders.detectMagnet() == 1)
-    //         {
-    //             S.print("Current Magnitude: ");
-    //             S.println(rot_encoders.getMagnitude());
-    //             break;
-    //         }
-    //         else
-    //         {
-    //             S.println("Can not detect magnet");
-    //         }
-    //         delay(1000);
-    //     }
-    // }
-
     setup_limit_switches();
 
     // Finish up
     S.println("Config finished.");
     S.println("Starting loop.");
     S.println("--------------");
+    S.println();
 }
 
 void loop()
@@ -80,6 +65,19 @@ void loop()
     update_buttons();
 
     asteppers_run();
+
+    if (b_speed.pressed()) {
+        if (steppers_enabled) {
+            asteppers_disable();
+            DPL("Disabled steppers");
+            steppers_enabled = false;
+        } else {
+            asteppers_enable();
+            DPL("Enabled steppers");
+            steppers_enabled = true;
+
+        }
+    }
 
     if (b_mode.pressed())
     {
@@ -117,7 +115,7 @@ void loop()
     }
     else if (mode == DEBUG_ROTARY_ENCODERS)
     {
-        // S.println(String(raw_angle_to_deg(rot_encoders.getRawAngle()), DEC));
+        S.println(String(raw_angle_to_deg(rot_encoder1.getRawAngle()), DEC));
     }
 
     else if (mode == FIND_LIMITS)

@@ -21,9 +21,9 @@ CustomAccelStepper astepper2 = CustomAccelStepper(astepper2.DRIVER, STEPPER2_STE
 void setup_steppers()
 {
     DPL("Setting up steppers.");
+    setup_asteppers();
     setup_stepper_drivers();
     start_stepper_drivers();
-    setup_asteppers();
 }
 
 void setup_stepper_drivers()
@@ -54,25 +54,39 @@ void start_stepper_drivers()
 void setup_asteppers()
 {
     DPL("Starting stepper drivers.");
+    astepper1.setEnablePin(STEPPER1_EN_PIN);
     astepper1.setMicrosteps(STEPPER_MICROSTEPS);
     astepper1.setStepsPerRotation(STEPPER_STEPS_PER_ROTATION);
     astepper1.setDistancePerRotation(STEPPER_DISTANCE_PER_ROTATION);
     astepper1.setMaxSpeedDistance(Speed::MEDIUM);
     astepper1.setAccelerationDistance(MAX_ACCELERATION);
-    astepper1.setPinsInverted(true, false, false);
-    // astepper1.enableOutputs();
+    astepper1.setPinsInverted(true, false, true);
+    astepper1.enableOutputs();
 
+    astepper2.setEnablePin(STEPPER2_EN_PIN);
     astepper2.setMicrosteps(STEPPER_MICROSTEPS);
     astepper2.setStepsPerRotation(STEPPER_STEPS_PER_ROTATION);
     astepper2.setDistancePerRotation(STEPPER_DISTANCE_PER_ROTATION);
     astepper2.setMaxSpeedDistance(Speed::MEDIUM);
     astepper2.setAccelerationDistance(MAX_ACCELERATION);
-    astepper2.setPinsInverted(false, false, false);
-    // astepper2.enableOutputs();
+    astepper2.setPinsInverted(false, false, true);
+    astepper2.enableOutputs();
 }
 
 void asteppers_run()
 {
     astepper1.run();
     astepper2.run();
+}
+
+void asteppers_enable()
+{
+    astepper1.enableOutputs();
+    astepper2.enableOutputs();
+}
+
+void asteppers_disable()
+{
+    astepper1.disableOutputs();
+    astepper2.disableOutputs();
 }

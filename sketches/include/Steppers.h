@@ -21,10 +21,12 @@ const unsigned int STEPPER_RANDOM_OFFTIME = 0;
 const float STEPPER_STEP_DISTANCE = 200.0;
 const float STEPPER_BIG_DISTANCE = 5000.0; // Must be bigger than max length movable in mm
 
+const int STEPPER1_EN_PIN = 24;
 const int STEPPER1_CS_PIN = 9;
 const int STEPPER1_DIR_PIN = 7;
 const int STEPPER1_STEP_PIN = 8;
 
+const int STEPPER2_EN_PIN = 25;
 const int STEPPER2_CS_PIN = 6;
 const int STEPPER2_DIR_PIN = 4;
 const int STEPPER2_STEP_PIN = 5;
@@ -37,7 +39,7 @@ extern CustomAccelStepper astepper2;
 // for now we just use math.
 const float STEPPER_DISTANCE_PER_ROTATION = 3.141592 * STEPPER_DRIVE_GEAR_OD_MM;
 
-const float MAX_ACCELERATION = 10000.0;
+const float MAX_ACCELERATION = 5000.0;
 
 const float LEFT = -1.0;
 const float RIGHT = 1.0;
@@ -57,5 +59,7 @@ void setup_stepper_drivers();
 void start_stepper_drivers();
 void setup_asteppers();
 void asteppers_run();
+void asteppers_enable();
+void asteppers_disable();
 
 #endif

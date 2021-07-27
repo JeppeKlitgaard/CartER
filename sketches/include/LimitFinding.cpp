@@ -8,8 +8,6 @@
 Bounce2::Button limit_sw_left = Bounce2::Button();
 Bounce2::Button limit_sw_right = Bounce2::Button();
 
-float track_length_distance = -1.0;
-
 void setup_limit_switches()
 {
     DPL("Configuring limit switches.");
