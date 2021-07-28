@@ -12,6 +12,7 @@ CustomAccelStepper::CustomAccelStepper(
 /**
  * Converts a distance to an integer number of steps
  * @param distance
+ * @return
  */
 int CustomAccelStepper::_distanceToSteps(float distance)
 {
@@ -21,6 +22,7 @@ int CustomAccelStepper::_distanceToSteps(float distance)
 /**
  * Converts an angle to an integer number of steps
  * @param angle
+ * @return
  */
 int CustomAccelStepper::_angleToSteps(float angle)
 {
@@ -170,4 +172,48 @@ void CustomAccelStepper::setMaxSpeedDistance(float speed)
 void CustomAccelStepper::setAccelerationDistance(float acceleration)
 {
     setAcceleration(_distanceToSteps(acceleration));
+}
+
+/**
+ * Since base methods are not defined as virtual and attributes are private
+ * We need to set this in order to use the enable methods from CustomAccelStepper
+ * This also calls AccelStepper.setEnablePin()
+ * @param enablePin
+ */
+void CustomAccelStepper::setCustomEnablePin(uint8_t enablePin) {
+    _customEnablePin = enablePin;
+    setEnablePin(enablePin);
+}
+
+/**
+ * Convenience method for enabling/disabling outputs with a parameter.
+ * Wraps enableOutputs() and disableOutputs()
+ * @param enabled
+ */
+void CustomAccelStepper::setEnabled(bool enabled)
+{
+    if (enabled)
+    {
+        enableOutputs();
+    }
+    else
+    {
+        disableOutputs();
+    }
+}
+
+/**
+ * Returns the enabled status as a bool.
+ * @return
+ */
+bool CustomAccelStepper::getEnabled() {
+    return digitalRead(_customEnablePin);
+}
+
+/**
+ * Toggles enabled status
+ */
+void CustomAccelStepper::toggleEnabled()
+{
+    setEnabled(!getEnabled());
 }

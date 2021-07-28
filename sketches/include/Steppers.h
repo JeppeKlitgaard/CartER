@@ -61,5 +61,6 @@ void setup_asteppers();
 void asteppers_run();
 void asteppers_enable();
 void asteppers_disable();
+void asteppers_toggle_enabled();
 
 #endif

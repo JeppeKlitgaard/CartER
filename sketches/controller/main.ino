@@ -1,21 +1,17 @@
-// #define SERIALUSB
-
 #include <Arduino.h>
 
+#include <Init.h>
 #include <DebugUtils.h>
 
 #include <SPI.h>
 #include <Wire.h>
 
-#include <Init.h>
 #include <Mode.h>
 #include <Buttons.h>
 #include <Steppers.h>
 #include <I2CMultiplexer.h>
 #include <RotaryEncoder.h>
 #include <LimitFinding.h>
-
-bool steppers_enabled = true;
 
 void setup()
 {
@@ -50,6 +46,7 @@ void setup()
     // Rotary Encoders
     setup_rotary_encoders();
 
+    // Limit Switches
     setup_limit_switches();
 
     // Finish up
@@ -64,30 +61,22 @@ void loop()
     // Update bouncer
     update_buttons();
 
+    // Do any steps we need to do
     asteppers_run();
 
     if (b_speed.pressed()) {
-        if (steppers_enabled) {
-            asteppers_disable();
-            DPL("Disabled steppers");
-            steppers_enabled = false;
-        } else {
-            asteppers_enable();
-            DPL("Enabled steppers");
-            steppers_enabled = true;
-
-        }
+        asteppers_toggle_enabled();
     }
 
     if (b_mode.pressed())
     {
-        S.print("Current mode: ");
-        S.println(ModeStrings[mode]);
+        DP("Current mode: ");
+        DPL(ModeStrings[mode]);
 
         toggle_mode();
 
-        S.print("Switched to mode: ");
-        S.println(ModeStrings[mode]);
+        DP("Switched to mode: ");
+        DPL(ModeStrings[mode]);
     }
 
     else if (mode == JOYSTICK)
@@ -97,8 +86,7 @@ void loop()
             if (astepper1.distanceToGo() == 0)
             {
                 astepper1.moveDistance(STEPPER_STEP_DISTANCE * LEFT);
-
-                S.println("Moving left...");
+                DPL("Moving left...");
             }
         }
         else if (b_right.isPressed())
@@ -106,16 +94,16 @@ void loop()
             if (astepper1.distanceToGo() == 0)
             {
                 astepper1.moveDistance(STEPPER_STEP_DISTANCE * RIGHT);
-
-                S.println("Moving right...");
+                DPL("Moving right...");
             }
         }
 
+        // Call again to ensure we call this quickly enough
         asteppers_run();
     }
     else if (mode == DEBUG_ROTARY_ENCODERS)
     {
-        S.println(String(raw_angle_to_deg(rot_encoder1.getRawAngle()), DEC));
+        DPL(String(rot_encoder1.readAngleDeg(), DEC));
     }
 
     else if (mode == FIND_LIMITS)

@@ -4,7 +4,7 @@
 #include <LimitFinding.h>
 
 Mode mode = JOYSTICK;
-Configuration configuration = ONE_CARRIAGES;
+const Configuration configuration = ONE_CARRIAGES;
 
 LimitFindingMode limit_finding_mode = LimitFindingMode::INIT;
 float track_length_distance = 0.0;

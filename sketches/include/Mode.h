@@ -34,6 +34,6 @@ const String ConfigurationStrings[] ={
     "TWO_CARRIAGES",
 };
 
-extern Configuration configuration;
+extern const Configuration configuration;
 
 #endif

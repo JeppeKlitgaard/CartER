@@ -6,6 +6,8 @@
 class CustomAccelStepper : public AccelStepper
 {
 protected:
+    uint8_t _customEnablePin = 0xff;
+
     int _microsteps = 1;
     int _stepsPerRotation = 200;
     float _distancePerRotation = 1;
@@ -31,7 +33,6 @@ public:
     float getCurrentPositionDistance();
     void setCurrentPositionDistance(float absolute);
 
-
     void moveDistance(float relative);
     void moveToDistance(float absolute);
     void runDistance(float relative);
@@ -45,6 +46,11 @@ public:
 
     void setMaxSpeedDistance(float speed);
     void setAccelerationDistance(float acceleration);
+
+    void setCustomEnablePin(uint8_t enablePin);
+    void setEnabled(bool enabled);
+    bool getEnabled();
+    void toggleEnabled();
 };
 
 #endif

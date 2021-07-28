@@ -4,6 +4,8 @@
 #include <Arduino.h>
 
 #define DEBUG
+// #define SERIALUSB
+
 
 // Definitions
 // #ifdef SERIALUSB

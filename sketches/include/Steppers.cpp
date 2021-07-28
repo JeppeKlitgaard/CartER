@@ -2,6 +2,8 @@
 #include <CustomAccelStepper.h>
 
 #include <DebugUtils.h>
+#include <Init.h>
+#include <Mode.h>
 
 /*
  ! Stepper information:
@@ -10,7 +12,6 @@
  * Voltage rating: 2.8 V
  *
 */
-
 
 TMC26XStepper stepper1;
 TMC26XStepper stepper2;
@@ -51,6 +52,9 @@ void start_stepper_drivers()
     stepper2.getCurrentStallGuardReading(); // We need this to initialise, apparently
 }
 
+/**
+ * Should be called before the stepper driver is set up.
+ */
 void setup_asteppers()
 {
     DPL("Starting stepper drivers.");
@@ -61,7 +65,7 @@ void setup_asteppers()
     astepper1.setMaxSpeedDistance(Speed::MEDIUM);
     astepper1.setAccelerationDistance(MAX_ACCELERATION);
     astepper1.setPinsInverted(true, false, true);
-    astepper1.enableOutputs();
+    astepper1.setEnabled(true);
 
     astepper2.setEnablePin(STEPPER2_EN_PIN);
     astepper2.setMicrosteps(STEPPER_MICROSTEPS);
@@ -70,23 +74,44 @@ void setup_asteppers()
     astepper2.setMaxSpeedDistance(Speed::MEDIUM);
     astepper2.setAccelerationDistance(MAX_ACCELERATION);
     astepper2.setPinsInverted(false, false, true);
-    astepper2.enableOutputs();
+    astepper2.setEnabled(true);
 }
 
 void asteppers_run()
 {
     astepper1.run();
-    astepper2.run();
+    if (configuration == TWO_CARRIAGES)
+    {
+        astepper2.run();
+    }
 }
 
 void asteppers_enable()
 {
     astepper1.enableOutputs();
-    astepper2.enableOutputs();
+
+    if (configuration == TWO_CARRIAGES)
+    {
+        astepper2.enableOutputs();
+    }
 }
 
 void asteppers_disable()
 {
     astepper1.disableOutputs();
-    astepper2.disableOutputs();
+
+    if (configuration == TWO_CARRIAGES)
+    {
+        astepper2.disableOutputs();
+    }
+}
+
+void asteppers_toggle_enabled()
+{
+    astepper1.toggleEnabled();
+
+    if (configuration == TWO_CARRIAGES)
+    {
+        astepper2.toggleEnabled();
+    }
 }
