@@ -62,5 +62,7 @@ void asteppers_run();
 void asteppers_enable();
 void asteppers_disable();
 void asteppers_toggle_enabled();
+void asteppers_stop();
+void asteppers_run_to_position();
 
 #endif

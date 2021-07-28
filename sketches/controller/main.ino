@@ -93,7 +93,7 @@ void loop()
             DPL(String(rot_encoder1.readAngleDeg(), DEC));
             break;
 
-        case FIND_LIMITS:
+        case LIMIT_FINDING:
             loop_limit_finding();
             break;
 

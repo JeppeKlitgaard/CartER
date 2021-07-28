@@ -49,7 +49,8 @@ extern float track_length_distance;
 
 void toggle_limit_finding_mode();
 
-// Loop
 void loop_limit_finding();
+void enter_limit_finding();
+void exit_limit_finding();
 
 #endif

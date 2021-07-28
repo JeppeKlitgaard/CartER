@@ -1,6 +1,7 @@
 #include <Mode.h>
 
 #include <Joystick.h>
+#include <LimitFinding.h>
 
 void toggle_mode() {
     switch (mode)
@@ -12,11 +13,11 @@ void toggle_mode() {
         break;
     case DEBUG_ROTARY_ENCODERS:
         // exit_rot_encoders();
-        mode = FIND_LIMITS;
-        // enter_find_limits();
+        mode = LIMIT_FINDING;
+        enter_limit_finding();
         break;
-    case FIND_LIMITS:
-        // exit_find_limits();
+    case LIMIT_FINDING:
+        exit_limit_finding();
         mode = COMMAND_AND_CONTROL;
         // enter_command_and_control();
         break;

@@ -186,3 +186,13 @@ void loop_limit_finding()
     }
     asteppers_run();
 }
+
+void enter_limit_finding() {
+    asteppers_enable();
+}
+
+void exit_limit_finding() {
+    asteppers_stop();
+    asteppers_run_to_position();
+    asteppers_disable();
+}

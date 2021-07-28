@@ -8,14 +8,14 @@ enum Mode
 {
     JOYSTICK,
     DEBUG_ROTARY_ENCODERS,
-    FIND_LIMITS,
+    LIMIT_FINDING,
     COMMAND_AND_CONTROL,
 };
 
 const String ModeStrings[] = {
     "JOYSTICK",
     "DEBUG_ROTARY_ENCODERS",
-    "FIND_LIMITS",
+    "LIMIT_FINDING",
     "COMMAND_AND_CONTROL",
 };
 
