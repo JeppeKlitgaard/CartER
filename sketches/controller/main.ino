@@ -12,6 +12,8 @@
 #include <I2CMultiplexer.h>
 #include <RotaryEncoder.h>
 #include <LimitFinding.h>
+#include <CommandAndControl.h>
+#include <Joystick.h>
 
 void setup()
 {
@@ -64,10 +66,6 @@ void loop()
     // Do any steps we need to do
     asteppers_run();
 
-    if (b_speed.pressed()) {
-        asteppers_toggle_enabled();
-    }
-
     if (b_mode.pressed())
     {
         DP("Current mode: ");
@@ -79,41 +77,34 @@ void loop()
         DPL(ModeStrings[mode]);
     }
 
-    else if (mode == JOYSTICK)
+    else if (b_status.pressed())
     {
-        if (b_left.isPressed())
-        {
-            if (astepper1.distanceToGo() == 0)
-            {
-                astepper1.moveDistance(STEPPER_STEP_DISTANCE * LEFT);
-                DPL("Moving left...");
-            }
-        }
-        else if (b_right.isPressed())
-        {
-            if (astepper1.distanceToGo() == 0)
-            {
-                astepper1.moveDistance(STEPPER_STEP_DISTANCE * RIGHT);
-                DPL("Moving right...");
-            }
-        }
-
-        // Call again to ensure we call this quickly enough
-        asteppers_run();
+        print_debug_information();
     }
-    else if (mode == DEBUG_ROTARY_ENCODERS)
-    {
-        DPL(String(rot_encoder1.readAngleDeg(), DEC));
-    }
-
-    else if (mode == FIND_LIMITS)
-    {
-        loop_limit_finding();
-    }
-
     else
     {
-        DP("Mode unknown: ");
-        DPL(ModeStrings[mode]);
+        switch (mode)
+        {
+        case JOYSTICK:
+            loop_joystick();
+            break;
+
+        case DEBUG_ROTARY_ENCODERS:
+            DPL(String(rot_encoder1.readAngleDeg(), DEC));
+            break;
+
+        case FIND_LIMITS:
+            loop_limit_finding();
+            break;
+
+        case COMMAND_AND_CONTROL:
+            loop_command_and_control();
+            break;
+
+        default:
+            DP("Mode unknown: ");
+            DPL(ModeStrings[mode]);
+            break;
+        }
     }
 }

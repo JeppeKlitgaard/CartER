@@ -8,15 +8,15 @@ enum Mode
 {
     JOYSTICK,
     DEBUG_ROTARY_ENCODERS,
-    ONE_CARRIAGE_COMMAND_AND_CONTROL,
     FIND_LIMITS,
+    COMMAND_AND_CONTROL,
 };
 
 const String ModeStrings[] = {
     "JOYSTICK",
     "DEBUG_ROTARY_ENCODERS",
-    "ONE_CARRIAGE_COMMAND_AND_CONTROL",
     "FIND_LIMITS",
+    "COMMAND_AND_CONTROL",
 };
 
 extern Mode mode;

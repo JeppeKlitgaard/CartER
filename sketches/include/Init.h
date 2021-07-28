@@ -8,11 +8,11 @@
 
 
 // Definitions
-// #ifdef SERIALUSB
-// #define S SerialUSB
-// #else
+#ifdef SERIALUSB
+#define S SerialUSB
+#else
 #define S Serial
-// #endif
+#endif
 
 // General
 const unsigned int BAUD_RATE = 74880;
