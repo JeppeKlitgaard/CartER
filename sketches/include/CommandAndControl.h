@@ -6,8 +6,8 @@
 #include <map>
 
 const byte PACKET_END = ctob("\n");
-const unsigned int MAX_PACKET_SIZE = 25;
 
+const unsigned int MAX_PACKET_SIZE = 25;
 
 enum class Packet {
     PING,
