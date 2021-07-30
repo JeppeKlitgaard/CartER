@@ -1,9 +1,11 @@
 #include <PacketReactor.h>
 
+#include <memory>
+
 #include <Protocol.h>
 #include <Init.h>
 #include <PacketSender.h>
-#include <memory>
+#include <BufferUtils.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
@@ -20,9 +22,6 @@ std::unique_ptr<Packet> PacketReactor::read_packet()
 {
     int id = _s.read();
 
-    S.print("ID: ");
-    S.println(id);
-
     if (id == -1)
     {
         return std::make_unique<NullPacket>();
@@ -30,7 +29,7 @@ std::unique_ptr<Packet> PacketReactor::read_packet()
 
     std::unique_ptr<Packet> packet = std::make_unique<Packet>();
 
-    // This could definitely be templated
+    // // This could definitely be templated
     switch (id)
     {
     case NullPacket::id:
@@ -52,25 +51,33 @@ std::unique_ptr<Packet> PacketReactor::read_packet()
         packet = _read_and_construct_packet<PongPacket>();
         break;
     default:
-        // packet = std::make_unique<UnknownPacket>();
-        // packet->construct(id);
+        std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
+        packet->construct(id);
         break;
+    }
 
     return packet;
-    }
 }
 
 void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
 {
-    S.print("ID2: ");
-    S.println(packet->id);
+    byte id = packet->get_id();
 
-    if (packet->id == NullPacket::id) {
+    S.print("ID4: ");
+    S.println(id);
+
+
+    switch (id)
+    {
+    case NullPacket::id:
         S.println("NULL");
-    } else if (packet->id == PingPacket::id) {
+        break;
+    case PingPacket::id:
         S.println("PONG");
         PongPacket pong;
-        pong.construct(micros());
+        unsigned long ts = read_unsigned_long(S);
+        pong.construct(ts);
+        S.println(ts);
 
         packet_sender.send(pong);
     }
@@ -78,7 +85,10 @@ void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
 
 void PacketReactor::tick()
 {
-    std::unique_ptr<Packet> packet = read_packet();
-
+    auto packet = read_packet();
+    S.print("ID3: ");
+    S.println(packet->id);
+    S.print("GetID3: ");
+    S.println(packet->get_id());
     react_packet(std::move(packet));
 }

@@ -14,6 +14,8 @@ public:
     static const byte id = 0x00; // NUL
 
     NullPacket();
+
+    virtual byte get_id() const override;
 };
 
 // Unknown
@@ -25,7 +27,9 @@ public:
 
     UnknownPacket();
 
-    void construct(byte id);
+    virtual byte get_id() const override;
+
+    virtual void construct(byte id);
 };
 
 // Debug
@@ -33,6 +37,8 @@ class DebugPacket : public Packet
 {
 public:
     static const byte id = 0x7E; // ~
+
+    virtual byte get_id() const override;
 
     DebugPacket();
 };
@@ -42,6 +48,8 @@ class ErrorPacket : public Packet
 {
 public:
     static const byte id = 0x21; // !
+
+    virtual byte get_id() const override;
 
     ErrorPacket();
 };
@@ -57,10 +65,12 @@ public:
 
     PingPacket();
 
-    virtual RawPacket to_raw_packet();
-    virtual void consume(Stream &sbuf);
+    virtual byte get_id() const override;
 
-    void construct(unsigned long timestamp);
+    virtual RawPacket to_raw_packet() override;
+    virtual void consume(Stream &sbuf) override;
+
+    virtual void construct(unsigned long timestamp);
 };
 
 // Pong
@@ -70,6 +80,8 @@ public:
     static const byte id = 0x50; // P
 
     PongPacket();
+
+    virtual byte get_id() const override;
 };
 
 #endif

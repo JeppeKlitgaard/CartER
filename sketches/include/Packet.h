@@ -29,6 +29,7 @@ public:
     using base_vector::reserve;
     using base_vector::resize;
     using base_vector::size;
+    using base_vector::insert;
 
     unsigned long pop_unsigned_long();
 };
@@ -47,6 +48,8 @@ public:
     Packet& operator=(const Packet&) = delete;
 
     virtual RawPacket to_raw_packet();
+
+    virtual byte get_id() const;
 
     virtual void pre_consume();
     virtual void consume(Stream &sbuf);

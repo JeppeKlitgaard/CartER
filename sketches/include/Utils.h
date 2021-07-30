@@ -9,6 +9,8 @@
 
 byte ctob(const char *c);
 
+int free_memory();
+
 
 namespace std {
     template<class T> struct _Unique_if {

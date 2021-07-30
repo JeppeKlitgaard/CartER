@@ -3,12 +3,14 @@
 #include <Init.h>
 #include <PacketReactor.h>
 #include <Protocol.h>
-
+#include <Utils.h>
 #include <memory>
 
 
 void loop_command_and_control() {
     if (S.available() != 0) {
+        S.print("MEM: ");
+        S.println(free_memory());
         S.print("AVAILABLE: ");
         S.println(S.available());
 

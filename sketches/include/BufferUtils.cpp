@@ -15,3 +15,13 @@ unsigned long read_unsigned_long(Stream &buf)
 
     return l;
 }
+
+std::array<byte, 4> ulong_to_bytes(unsigned long l)
+{
+    return std::array<byte, 4>{
+        (byte)(l >> 24) & 0xFF,
+        (byte)(l >> 16) & 0xFF,
+        (byte)(l >> 8) & 0xFF,
+        (byte)(l)&0xFF,
+    };
+}

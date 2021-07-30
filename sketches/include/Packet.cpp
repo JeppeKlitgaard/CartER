@@ -20,7 +20,10 @@ Packet::Packet()
 {
 }
 
-// Packet::~Packet() {}
+
+byte Packet::get_id() const {
+    return id;
+}
 
 void Packet::pre_consume() {}
 void Packet::consume(Stream &sbuf) {}
