@@ -8,3 +8,5 @@ const Configuration configuration = ONE_CARRIAGES;
 
 LimitFindingMode limit_finding_mode = LimitFindingMode::INIT;
 float track_length_distance = 0.0;
+
+const PacketHandler packet_handler = PacketHandler(S);

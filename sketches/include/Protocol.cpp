@@ -1,82 +1,34 @@
 #include <Protocol.h>
 
-unsigned long RawPacket::pop_unsigned_long() {
-    static_assert(sizeof(unsigned long) == 4, "bad datatype size");
+#include <BufferUtils.h>
 
-    unsigned long l  = static_cast<unsigned long>((*this)[0]) |
-                       static_cast<unsigned long>((*this)[1]) << 8 |
-                       static_cast<unsigned long>((*this)[2]) << 16 |
-                       static_cast<unsigned long>((*this)[3]) << 24;
-
-    this->erase(this->begin(), this->begin() + 4);
-
-    return l;
-
-}
-
-Packet::Packet(const PacketHandler &packetHandler) : _packetHandler(packetHandler)
-{
-}
-
-void Packet::consume(RawPacket &buf)
-{
-    // Assert id
-    if (buf[0] != id)
-    {
-        // Error
-        return;
-    }
-
-    _consume(buf);
-}
-
-void Packet::_consume(RawPacket &buf)
-{
-    return;
-}
-
-void Packet::react() {
-    react();
-}
-
-void Packet::_react() {
-    return;
+// Unknown
+void UnknownPacket::construct(byte id) {
+    observed_id = id;
 }
 
 // PING
-void PingPacket::_consume(RawPacket &buf)
+PingPacket::PingPacket(const PacketHandler &packet_handler) : Packet(packet_handler) {}
+
+void PingPacket::consume(Stream &buf)
 {
-    timestamp = buf.pop_unsigned_long();
+    ping_timestamp = read_unsigned_long(buf);
 }
 
-void PingPacket::_react() {
-    PongPacket pong(_packetHandler);
-    _packetHandler.send(pong);
+void PingPacket::react() {
+    PongPacket pong(_packet_handler);
+    pong.construct(micros());
+
+    _packet_handler.send(pong);
 }
 
-// PONG
-PongPacket::PongPacket(const PacketHandler &packetHandler) : Packet(packetHandler) {}
-
-void PongPacket::construct() {
-    timestamp = micros();
+void PingPacket::construct(unsigned long timestamp) {
+    ping_timestamp = timestamp;
 }
 
-RawPacket PongPacket::toRawPacket()
+RawPacket PingPacket::to_raw_packet()
 {
-    RawPacket rawPacket(id, timestamp);
+    RawPacket raw_packet(id, ping_timestamp);
 
-    return rawPacket;
-}
-
-// PACKETHANDLER
-PacketHandler::PacketHandler(Stream &stream) : _s(stream)
-{
-}
-
-void PacketHandler::send(Packet &packet) const
-{
-    RawPacket rawPacket = packet.toRawPacket();
-
-    _s.write(rawPacket.data(), rawPacket.size());
-    _s.write(PACKET_END);
+    return raw_packet;
 }

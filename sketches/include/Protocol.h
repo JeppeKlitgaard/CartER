@@ -1,133 +1,76 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include <Arduino.h>
-#include <Utils.h>
-#include <array>
-#include <vector>
+#include <Networking.h>
 
 /**
  * Command packets (PC -> Arduino) don't necessarily have all methods implemented
  */
 
-// Packet buffer
-const unsigned int MAX_PACKET_SIZE = 25;
-
-constexpr byte PACKET_END = 0x0A; // \n
-
-// using RawPacket = std::vector<byte>;
-
-class RawPacket : private std::vector<byte> {
-private:
-    // in case I changed to boost or something later, I don't have to update everything below
-    typedef std::vector<byte> base_vector;
-
-public:
-    typedef typename base_vector::size_type       size_type;
-    typedef typename base_vector::iterator        iterator;
-    typedef typename base_vector::const_iterator  const_iterator;
-
-    using base_vector::vector; // constructor
-
-    using base_vector::operator[];
-
-    using base_vector::begin;
-    using base_vector::clear;
-    using base_vector::end;
-    using base_vector::erase;
-    using base_vector::push_back;
-    using base_vector::reserve;
-    using base_vector::resize;
-    using base_vector::size;
-    using base_vector::data;
-
-    unsigned long pop_unsigned_long();
-};
-
-class PacketHandler; // forward reference
-
-class Packet
+// Null
+class NullPacket : public Packet
 {
-protected:
-    const PacketHandler &_packetHandler;
-    virtual void _consume(RawPacket &buf);
-    virtual void _react();
-
 public:
     static const byte id = 0x00; // NUL
 
-    Packet(const PacketHandler &packetHandler);
-
-    void consume(RawPacket &buf);
-    void react();
-    virtual void construct();
-    virtual RawPacket toRawPacket();
+    NullPacket(const PacketHandler &packet_handler);
 };
 
-class PacketHandler
-{
-protected:
-    Stream &_s;
-
-public:
-    PacketHandler(Stream &stream);
-
-    const void receive();
-    void send(Packet &packet) const;
-};
-
+// Unknown
 class UnknownPacket : public Packet
 {
 public:
     static const byte id = 0x3F; // ?
+    byte observed_id = 0x0F;
+
+    UnknownPacket(const PacketHandler &packet_handler);
+
+    void construct(byte id);
 };
 
+// Debug
 class DebugPacket : public Packet
 {
 public:
     static const byte id = 0x7E; // ~
 
-    DebugPacket(const PacketHandler &packetHandler);
-
-    virtual void construct();
-    virtual RawPacket toRawPacket();
+    DebugPacket(const PacketHandler &packet_handler);
 };
 
+// Error
 class ErrorPacket : public Packet
 {
 public:
     static const byte id = 0x21; // !
 
-    ErrorPacket(const PacketHandler &packetHandler);
-
-    virtual RawPacket toRawPacket();
+    ErrorPacket(const PacketHandler &packet_handler);
 };
 
+// Ping
 class PingPacket : public Packet
 {
 
 public:
     static const byte id = 0x70; // p
 
-    unsigned long timestamp;
+    unsigned long ping_timestamp;
 
-    PingPacket(const PacketHandler &packetHandler);
+    PingPacket(const PacketHandler &packet_handler);
 
-    virtual void _consume(RawPacket &buf);
-    virtual void _react();
+    virtual RawPacket to_raw_packet();
+    virtual void consume(Stream &sbuf);
+    virtual void react();
+
+    void construct(unsigned long timestamp);
 };
 
-class PongPacket : public Packet
+// Pong
+class PongPacket : public PingPacket
 {
 public:
     static const byte id = 0x50; // P
 
-    unsigned long timestamp;
-
-    PongPacket(const PacketHandler &packetHandler);
-
-    virtual RawPacket toRawPacket();
-    virtual void construct();
+    PongPacket(const PacketHandler &packet_handler);
 };
 
 #endif
