@@ -3,7 +3,8 @@
 
 
 #include <Arduino.h>
-#include <Networking.h>
+#include <PacketReactor.h>
+#include <PacketSender.h>
 
 #define DEBUG
 // #define SERIALUSB

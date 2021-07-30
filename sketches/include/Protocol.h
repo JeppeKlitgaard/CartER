@@ -1,11 +1,11 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include <Networking.h>
+#include <Arduino.h>
 
-/**
- * Command packets (PC -> Arduino) don't necessarily have all methods implemented
- */
+#include <vector>
+
+#include <Packet.h>
 
 // Null
 class NullPacket : public Packet
@@ -13,7 +13,7 @@ class NullPacket : public Packet
 public:
     static const byte id = 0x00; // NUL
 
-    NullPacket(const PacketHandler &packet_handler);
+    NullPacket();
 };
 
 // Unknown
@@ -23,7 +23,7 @@ public:
     static const byte id = 0x3F; // ?
     byte observed_id = 0x0F;
 
-    UnknownPacket(const PacketHandler &packet_handler);
+    UnknownPacket();
 
     void construct(byte id);
 };
@@ -34,7 +34,7 @@ class DebugPacket : public Packet
 public:
     static const byte id = 0x7E; // ~
 
-    DebugPacket(const PacketHandler &packet_handler);
+    DebugPacket();
 };
 
 // Error
@@ -43,7 +43,7 @@ class ErrorPacket : public Packet
 public:
     static const byte id = 0x21; // !
 
-    ErrorPacket(const PacketHandler &packet_handler);
+    ErrorPacket();
 };
 
 // Ping
@@ -55,11 +55,10 @@ public:
 
     unsigned long ping_timestamp;
 
-    PingPacket(const PacketHandler &packet_handler);
+    PingPacket();
 
     virtual RawPacket to_raw_packet();
     virtual void consume(Stream &sbuf);
-    virtual void react();
 
     void construct(unsigned long timestamp);
 };
@@ -70,7 +69,7 @@ class PongPacket : public PingPacket
 public:
     static const byte id = 0x50; // P
 
-    PongPacket(const PacketHandler &packet_handler);
+    PongPacket();
 };
 
 #endif

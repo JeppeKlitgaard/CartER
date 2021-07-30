@@ -1,9 +1,20 @@
 #include <CommandAndControl.h>
 
 #include <Init.h>
+#include <PacketReactor.h>
+#include <Protocol.h>
+
+#include <memory>
 
 
-void loop_command_and_control() {}
+void loop_command_and_control() {
+    if (S.available() != 0) {
+        S.print("AVAILABLE: ");
+        S.println(S.available());
+
+        packet_reactor.tick();
+    }
+}
 // void loop_command_and_control() {
 //     // Read a line if available
 //     byte packet[MAX_PACKET_SIZE];

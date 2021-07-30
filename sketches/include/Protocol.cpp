@@ -1,28 +1,35 @@
 #include <Protocol.h>
 
 #include <BufferUtils.h>
+#include <Packet.h>
+
+// Null
+NullPacket::NullPacket() {}
 
 // Unknown
-void UnknownPacket::construct(byte id) {
+UnknownPacket::UnknownPacket() {}
+
+void UnknownPacket::construct(byte id)
+{
     observed_id = id;
 }
 
-// PING
-PingPacket::PingPacket(const PacketHandler &packet_handler) : Packet(packet_handler) {}
+// Debug
+DebugPacket::DebugPacket() {}
+
+// Error
+ErrorPacket::ErrorPacket() {}
+
+// Ping
+PingPacket::PingPacket() {}
 
 void PingPacket::consume(Stream &buf)
 {
     ping_timestamp = read_unsigned_long(buf);
 }
 
-void PingPacket::react() {
-    PongPacket pong(_packet_handler);
-    pong.construct(micros());
-
-    _packet_handler.send(pong);
-}
-
-void PingPacket::construct(unsigned long timestamp) {
+void PingPacket::construct(unsigned long timestamp)
+{
     ping_timestamp = timestamp;
 }
 
@@ -32,3 +39,6 @@ RawPacket PingPacket::to_raw_packet()
 
     return raw_packet;
 }
+
+// Pong
+PongPacket::PongPacket() {}

@@ -1,14 +1,9 @@
-#ifndef NETWORKING_H
-#define NETWORKING_H
+#ifndef PACKET_H
+#define PACKET_H
 
 #include <Arduino.h>
 
 #include <vector>
-
-// Packet buffer
-constexpr byte PACKET_END = 0x0A; // \n
-
-// using RawPacket = std::vector<byte>;
 
 class RawPacket : private std::vector<byte>
 {
@@ -38,56 +33,26 @@ public:
     unsigned long pop_unsigned_long();
 };
 
-class PacketHandler; // forward reference
-
+/**
+ * Command packets (PC -> Arduino) don't necessarily have all methods implemented
+ */
 class Packet
 {
-protected:
-    const PacketHandler &_packet_handler;
-
 public:
     static const byte id = 0x00; // NUL
 
-    Packet(const PacketHandler &packet_handler);
+    explicit Packet();
+    virtual ~Packet() = default;
+    Packet(const Packet&) = delete;
+    Packet& operator=(const Packet&) = delete;
 
     virtual RawPacket to_raw_packet();
 
-    void pre_consume();
-    void consume(Stream &sbuf);
-    void post_consume();
+    virtual void pre_consume();
+    virtual void consume(Stream &sbuf);
+    virtual void post_consume();
 
-    void react();
-
-    void construct();
+    virtual void construct();
 };
-
-class PacketHandler
-{
-protected:
-    Stream &_s;
-
-    template <class T>
-    Packet _read_and_construct_packet() const
-    {
-        T packet(*this);
-
-        packet.pre_consume();
-        packet.consume(_s);
-        packet.post_consume();
-
-        packet.react();
-
-        return packet;
-    }
-
-public:
-    PacketHandler(Stream &stream);
-
-    const void receive();
-    void send(Packet &packet) const;
-    Packet read_packet() const;
-};
-
-extern const PacketHandler packet_handler;
 
 #endif
