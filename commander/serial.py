@@ -1,12 +1,12 @@
-from serial import Serial
-from timeit import default_timer as timer
-from datetime import timedelta
 from typing import cast
+
+from serial import Serial
 
 from commander.protocol import PACKET_ID_MAP, Packet
 
 PORT: str = "COM3"
 BAUDRATE: int = 74880
+
 
 class Connection:
     _serial: Serial
@@ -51,4 +51,6 @@ class Connection:
         except KeyError:
             raise ConnectionError(f"Invalid packet ID: {id_}")
 
-        return packet.read()
+        packet.read()
+
+        return packet

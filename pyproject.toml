@@ -87,6 +87,10 @@ known_datascience = [
     "pandas",
 ]
 
+known_first_party = [
+    "commander",
+]
+
 sections = [
     "FUTURE",
     "STDLIB",

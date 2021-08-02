@@ -1,12 +1,12 @@
 from __future__ import annotations
-from datetime import time
 
 import struct
-from typing import Optional, Dict, Any, ForwardRef, Type, TypeVar
 from abc import ABC, abstractmethod
-from commander.serial import Connection
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
-T = TypeVar("T")
+if TYPE_CHECKING:
+    from commander.serial import Connection
+
 
 
 class PacketHandler:
@@ -16,23 +16,23 @@ class PacketHandler:
 
 class Packet(ABC):
     id_: bytes
-    connection: Connection
+    connection: "Connection"
     is_constructed: bool = False
 
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: "Connection") -> None:
         self.connection = connection
 
     @abstractmethod
     def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
         ...
 
-    @classmethod
     @abstractmethod
-    def read(cls: Type[Packet]) -> Packet: ...
+    def read(self) -> None:
+        ...
 
 
 class PingPacket(Packet):
-    id_: bytes = bytes(0x70)
+    id_: bytes = bytes([0x70])
 
     timestamp: Optional[int] = None
 
@@ -43,15 +43,22 @@ class PingPacket(Packet):
         self.is_constructed = True
 
     def read(self) -> None:
-        timestamp, = struct.unpack("L", self.connection._serial)
+        (timestamp,) = struct.unpack("L", self.connection._serial)
 
         self.construct(timestamp=timestamp)
 
 
-def __filter_packet_subclasses(cls: Type[T]) -> bool:
-    return Packet in getattr(cls, "__bases__", list())
+class PongPacket(PingPacket):
+    id_: bytes = bytes([0x50])
+
+
+def __is_packet_subclass(cls: Any) -> bool:
+    try:
+        return issubclass(cls, Packet) and cls is not Packet
+    except TypeError:
+        return False
 
 
 PACKET_ID_MAP: Dict[bytes, Type[Packet]] = {
-    cls.id_: cls for (clsname, cls) in globals().items() if __filter_packet_subclasses(cls)
+    cls.id_: cls for (clsname, cls) in globals().items() if __is_packet_subclass(cls)
 }
