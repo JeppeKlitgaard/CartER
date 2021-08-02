@@ -1,6 +1,11 @@
+"""
+Contains types and logic related to the experimental observations.
+"""
+
 from abc import ABC
-from struct import unpack
 from enum import IntEnum, unique
+from struct import unpack
+from typing import cast
 
 
 @unique
@@ -15,7 +20,7 @@ class Observation(ABC):
 
     @property
     def time(self) -> int:
-        return unpack("L", self.raw_time)[0]
+        return cast(int, unpack("L", self.raw_time)[0])
 
     @staticmethod
     def observation_type_from_raw(raw_observation_type: bytes) -> ObservationType:

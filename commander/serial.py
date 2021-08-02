@@ -1,3 +1,7 @@
+"""
+Contains the abstraction layer around the network communication.
+"""
+
 from typing import cast
 
 from serial import Serial

@@ -4,6 +4,9 @@ name = "cartpoleml"
 version = "0.1.0"
 description = "Machine Learning of Inverted Pendula"
 authors = ["Jeppe Klitgaard <jk782@cam.ac.uk>"]
+packages = [
+    { include = "commander" }
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
@@ -24,6 +27,7 @@ seaborn = "^0.11.1"
 ffmpeg-python = "^0.2.0"
 torchtyping = "^0.1.4"
 pyserial = "^3.5"
+click = "^8.0.1"
 
 [tool.poetry.dev-dependencies]
 jupytext = "^1.11.3"
@@ -34,6 +38,10 @@ mypy = "^0.910"
 flake8 = "^3.9.2"
 line-profiler = "^3.3.0"
 poethepoet = "^0.10.0"
+
+[tool.poetry.scripts]
+cartpoleml = "commander.cli:run"
+
 # Mypy
 [tool.mypy]
 python_version = "3.9"

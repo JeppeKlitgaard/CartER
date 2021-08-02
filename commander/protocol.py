@@ -1,3 +1,7 @@
+"""
+Contains the networking logic for communication with the Controller.
+"""
+
 from __future__ import annotations
 
 import struct
