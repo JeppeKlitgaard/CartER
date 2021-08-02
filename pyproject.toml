@@ -55,6 +55,7 @@ module = [
     "matplotlib.*",
     "torchvision.*",
     "seaborn.*",
+    "serial.*",
 ]
 ignore_missing_imports = true
 
