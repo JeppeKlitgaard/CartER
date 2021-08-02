@@ -8,12 +8,6 @@ if TYPE_CHECKING:
     from commander.serial import Connection
 
 
-
-class PacketHandler:
-    def __init__(self) -> None:
-        pass
-
-
 class Packet(ABC):
     id_: bytes
     connection: "Connection"
