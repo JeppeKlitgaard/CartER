@@ -24,7 +24,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
     """
 
     metadata = {
-        "render.modes": ["human"],
+        "render.modes": ["human", "rgb_array"],
         "name": "Cartpole_v0",
     }
 
@@ -167,7 +167,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         self.agent_selection = self._agent_selector.next()
         self.steps += 1
 
-    def render(self, mode: str = "human") -> Any:
+    def render(self, mode: str = "human") -> rendering.Viewer:
         screen_width = 600
         screen_height = 400
 

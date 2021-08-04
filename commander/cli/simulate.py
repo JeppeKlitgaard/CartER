@@ -5,6 +5,10 @@ from commander.ml.agent import SimulatedCartpoleAgent
 from commander.ml.environment import make_sb3_env, make_env
 import stable_baselines3
 
+from matplotlib import animation
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 import supersuit as ss
 
 from enum import Enum
@@ -32,6 +36,7 @@ class Configuration(str, Enum):
 @click.command()
 @click.option("--train/--no-train", default=True)
 @click.option("--render/--no-render", default=True)
+@click.option("--record/--no-record", default=True)
 @click.option("-t", "--total-timesteps", type=int, default=100000)
 @click.option(
     "-c",
@@ -45,7 +50,14 @@ class Configuration(str, Enum):
     type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
     default=Algorithm.PPO,
 )
-def simulate(train: bool, render: bool, total_timesteps: int, configuration: str, algorithm: str):
+def simulate(
+    train: bool,
+    render: bool,
+    record: bool,
+    total_timesteps: int,
+    configuration: str,
+    algorithm: str,
+):
     agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1)
     agent_2 = SimulatedCartpoleAgent(name="Cartpole_2", start_pos=1, length=0.75)
 
@@ -66,7 +78,11 @@ def simulate(train: bool, render: bool, total_timesteps: int, configuration: str
 
     if render:
         env = make_env(agents=agents)
-        model = algorithm_obj.load("baselines_a2c_test")
+        model = algorithm_obj.load(save_name)
+
+        if record:
+            fig = plt.figure()
+            images = []
 
         obs = env.reset()
         for agent in env.agent_iter():
@@ -75,10 +91,24 @@ def simulate(train: bool, render: bool, total_timesteps: int, configuration: str
             action, state = model.predict(obs, deterministic=True) if not done else (None, None)
 
             env.step(action)
-            env.render()
+            if record:
+                image = plt.imshow(env.render(mode="rgb_array"), animated=True)
+                plt.axis("off")
+                plt.title("CartpoleML Simulation")
+
+                images.append([image])
+
+            else:
+                env.render()
 
             if done:
-                time.sleep(3)
-
                 env.close()
                 obs = env.reset()
+
+                if record:
+                    print("Saving animation...")
+                    ani = animation.ArtistAnimation(fig, images, interval=20, blit=True, repeat_delay=1000)
+                    ani.save(f"{save_name}.avi", dpi=300)
+                    print(f"Animation saved as {save_name}.avi")
+
+                break

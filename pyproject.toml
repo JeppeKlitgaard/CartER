@@ -120,7 +120,7 @@ sections = [
 
 # Tasks
 [tool.poe.tasks]
-flake8 = "flake8 ."
+flake8 = "flake8 ./commander"
 mypy = "mypy ./commander"
 black_check = "black --check ."
 isort_check = "isort --check-only ."
