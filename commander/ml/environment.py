@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-
-from collections import Mapping
 from collections.abc import Mapping, Sequence
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 import gym
+import supersuit as ss
 from gym import spaces
 from gym.envs.classic_control import rendering
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
 from pettingzoo.utils.conversions import to_parallel
 
+from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+
 from commander.ml.agent import CartpoleAgent
 from commander.ml.constants import Action
 from commander.type_aliases import State
 
-import supersuit as ss
 
 class CartpoleEnv(AECEnv):  # type: ignore [misc]
     """
@@ -71,7 +71,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         for agent in self._agents:
             observations[agent.name] = agent.reset()
 
-        ### Environment-level resets
+        # ## Environment-level resets
         self.steps: int = 0
         self.viewer: Optional[rendering.Viewer] = None
 
@@ -146,23 +146,24 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         observation, reward, done, info = self.agent_name_mapping[agent].step(action)
 
-        ### Update environment-level data
+        # ## Update environment-level data
         self.rewards[agent] += reward
 
         # Put rewards into cumulative_rewards
         self._accumulate_rewards()
 
-        # Clears up rewards
-        # self._clear_rewards()
 
         # Last agent step in reward cycle
         if self._agent_selector.is_last():
+
             for agent_name in self.agents:
                 agent = self.agent_name_mapping[agent_name]
 
                 self.dones[agent_name] = agent._check_state(agent.observe())
 
                 # If any is done, set all as done
+        else:
+            self._clear_rewards()
 
         self.agent_selection = self._agent_selector.next()
         self.steps += 1
@@ -292,6 +293,7 @@ def make_parallel_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
 
     return env
 
+
 def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
     """
     Wrappers all the way down...
@@ -300,5 +302,6 @@ def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
 
     env = ss.pettingzoo_env_to_vec_env_v0(env)
     env = ss.concat_vec_envs_v0(env, 1, num_cpus=0, base_class="stable_baselines3")
+    env = VecMonitor(env)
 
     return env

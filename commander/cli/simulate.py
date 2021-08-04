@@ -1,17 +1,14 @@
+from enum import Enum
+
 import click
-import time
+import os
+import matplotlib.pyplot as plt
+import stable_baselines3
+from matplotlib import animation
+from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import SimulatedCartpoleAgent
-from commander.ml.environment import make_sb3_env, make_env
-import stable_baselines3
-
-from matplotlib import animation
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-import supersuit as ss
-
-from enum import Enum
+from commander.ml.environment import make_env, make_sb3_env
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -35,7 +32,9 @@ class Configuration(str, Enum):
 
 @click.command()
 @click.option("--train/--no-train", default=True)
+@click.option("--load/--no-load", default=True)
 @click.option("--render/--no-render", default=True)
+@click.option("--tensorboard/--no-tensorboard", default=True)
 @click.option("--record/--no-record", default=True)
 @click.option("-t", "--total-timesteps", type=int, default=100000)
 @click.option(
@@ -52,14 +51,16 @@ class Configuration(str, Enum):
 )
 def simulate(
     train: bool,
+    load: bool,
     render: bool,
+    tensorboard: bool,
     record: bool,
     total_timesteps: int,
     configuration: str,
     algorithm: str,
 ):
-    agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1)
-    agent_2 = SimulatedCartpoleAgent(name="Cartpole_2", start_pos=1, length=0.75)
+    agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1, integration_resolution=5)
+    agent_2 = SimulatedCartpoleAgent(name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=5)
 
     if configuration == Configuration.TWO_CARTS:
         agents = [agent_1, agent_2]
@@ -70,10 +71,26 @@ def simulate(
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
     env = make_sb3_env(agents=agents)
+    env = VecMonitor(env)
 
     if train:
-        model = algorithm_obj("MlpPolicy", env, verbose=1)
-        model.learn(total_timesteps=total_timesteps)
+        _kwargs = {
+            "policy": "MlpPolicy",
+            "env": env,
+            "verbose": 2,
+            "tensorboard_log": save_name + "_tensorboard" if tensorboard else None
+        }
+
+        if load and os.path.exists(save_name + ".zip"):
+            model = algorithm_obj.load(save_name, **_kwargs)
+        else:
+            model = algorithm_obj(**_kwargs)
+
+        try:
+            model.learn(total_timesteps=total_timesteps)
+        except KeyboardInterrupt:
+            print("Stopping learning and saving model")
+
         model.save(save_name)
 
     if render:
@@ -88,7 +105,9 @@ def simulate(
         for agent in env.agent_iter():
             obs, reward, done, info = env.last()
 
-            action, state = model.predict(obs, deterministic=True) if not done else (None, None)
+            print(f"{obs=}, {reward=}, {done=}, {info=}")
+
+            action, state = model.predict(obs) if not done else (None, None)
 
             env.step(action)
             if record:
@@ -107,7 +126,9 @@ def simulate(
 
                 if record:
                     print("Saving animation...")
-                    ani = animation.ArtistAnimation(fig, images, interval=20, blit=True, repeat_delay=1000)
+                    ani = animation.ArtistAnimation(
+                        fig, images, interval=20, blit=True, repeat_delay=1000
+                    )
                     ani.save(f"{save_name}.avi", dpi=300)
                     print(f"Animation saved as {save_name}.avi")
 

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Mapping
 from typing import Any, Optional, cast
 
@@ -15,8 +16,6 @@ from commander.type_aliases import State
 
 _FLOAT_MAX = np.finfo(FLOAT_TYPE).max
 _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
-
-import logging
 
 logger = logging.getLogger(__name__)
 

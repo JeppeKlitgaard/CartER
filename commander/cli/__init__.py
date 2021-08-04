@@ -1,6 +1,8 @@
 import click
 
 from commander.cli.simulate import simulate
+from commander.log import setup_logging
+
 
 @click.group()
 def cli() -> None:
@@ -17,6 +19,7 @@ cli.add_command(simulate)
 
 
 def run() -> None:
+    setup_logging()
     cli()
 
 
