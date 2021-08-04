@@ -17,17 +17,20 @@ torchaudio = "^0.9.0"
 jupyterlab = "^3.0.16"
 matplotlib = "^3.4.2"
 Pillow = "^8.2.0"
-numpy = "^1.21.0"
 scipy = "^1.7.0"
 jupyterlab-mathjax3 = "^4.2.2"
 numba = "^0.53.1"
 tensorboard = "^2.5.0"
-pandas = "1.3.0rc1"
 seaborn = "^0.11.1"
 ffmpeg-python = "^0.2.0"
 torchtyping = "^0.1.4"
 pyserial = "^3.5"
 click = "^8.0.1"
+PettingZoo = {extras = ["butterfly"], version = "^1.11.0"}
+numpy = "^1.21.1"
+stable-baselines3 = {extras = ["extra"], version = "^1.1.0"}
+SuperSuit = "2.6.6"
+pandas = "^1.3.1"
 
 [tool.poetry.dev-dependencies]
 jupytext = "^1.11.3"
@@ -64,6 +67,8 @@ module = [
     "torchvision.*",
     "seaborn.*",
     "serial.*",
+    "supersuit.*",
+    "pettingzoo.*",
 ]
 ignore_missing_imports = true
 
@@ -71,6 +76,7 @@ ignore_missing_imports = true
 module = [
     "torch.*",
     "nptyping.*",
+    "stable_baselines3.*"
 ]
 implicit_reexport = true
 
@@ -88,6 +94,9 @@ line_length = 100
 known_ml = [
     "gym",
     "torch",
+    "tensorflow",
+    "pettingzoo",
+    "supersuit",
 ]
 
 known_datascience = [
@@ -112,7 +121,7 @@ sections = [
 # Tasks
 [tool.poe.tasks]
 flake8 = "flake8 ."
-mypy = "mypy ."
+mypy = "mypy ./commander"
 black_check = "black --check ."
 isort_check = "isort --check-only ."
 

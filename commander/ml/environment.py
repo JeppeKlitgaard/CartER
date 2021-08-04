@@ -1,26 +1,22 @@
 from __future__ import annotations
 
-from collections import Mapping, deque
+
+from collections import Mapping
 from collections.abc import Mapping, Sequence
-from enum import Enum, IntEnum
-from typing import Any, Mapping, Optional, TypedDict, cast
+from typing import Any, Mapping, Optional
 
-import numpy as np
-from numpy.random.mtrand import RandomState
-
-from gym import Env, spaces
+import gym
+from gym import spaces
 from gym.envs.classic_control import rendering
-from gym.utils import seeding
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector, wrappers
-from pettingzoo.utils.conversions import parallel_wrapper_fn
-
-from scipy.integrate import solve_ivp
+from pettingzoo.utils.conversions import to_parallel
 
 from commander.ml.agent import CartpoleAgent
 from commander.ml.constants import Action
 from commander.type_aliases import State
 
+import supersuit as ss
 
 class CartpoleEnv(AECEnv):  # type: ignore [misc]
     """
@@ -288,4 +284,21 @@ def make_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
     return env
 
 
-make_parallel_env = parallel_wrapper_fn(make_env)
+def make_parallel_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
+    env = make_env(*args, **kwargs)
+
+    env = to_parallel(env)
+    env = ss.black_death_v1(env)
+
+    return env
+
+def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
+    """
+    Wrappers all the way down...
+    """
+    env = make_parallel_env(*args, **kwargs)
+
+    env = ss.pettingzoo_env_to_vec_env_v0(env)
+    env = ss.concat_vec_envs_v0(env, 1, num_cpus=0, base_class="stable_baselines3")
+
+    return env
