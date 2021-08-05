@@ -289,7 +289,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
     @property
     def mass_length(self) -> float:
-        return self.mass * self.length
+        return self.mass_pole * self.length
 
     def _check_state(self, state: State) -> bool:
         x = state[0]
