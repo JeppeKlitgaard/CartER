@@ -11,7 +11,8 @@ from gym.utils import seeding
 from scipy.integrate import solve_ivp
 
 from commander.integration import DerivativesWrapper, IntegratorOptions
-from commander.ml.constants import FLOAT_TYPE, Action
+from commander.ml.constants import Action
+from commander.constants import FLOAT_TYPE
 from commander.type_aliases import State
 
 _FLOAT_MAX = np.finfo(FLOAT_TYPE).max

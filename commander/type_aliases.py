@@ -2,8 +2,7 @@
 Contains related type aliases.
 """
 import numpy.typing as npt
-
-from gym_ext.constants import FLOAT_TYPE
+from commander.constants import FLOAT_TYPE
 
 State = npt.NDArray[FLOAT_TYPE]
 # Size (4,)

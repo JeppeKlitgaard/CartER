@@ -28,7 +28,7 @@ from numpy import sin
 
 from numba import jit
 
-from gym_ext.typing import State
+from commander.type_aliases import State
 
 logger = logging.getLogger(__name__)
 

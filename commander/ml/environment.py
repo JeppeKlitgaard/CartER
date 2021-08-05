@@ -144,6 +144,12 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         agent = self.agent_selection
 
+        # First agent in reward cycle, reset previous rewards
+        if self._agent_selector.is_first():
+            self._clear_rewards()
+
+
+
         observation, reward, done, info = self.agent_name_mapping[agent].step(action)
 
         # ## Update environment-level data
@@ -158,11 +164,9 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             for agent_name in self.agents:
                 agent = self.agent_name_mapping[agent_name]
 
-                self.dones[agent_name] = agent._check_state(agent.observe())
+                # If agent is done, set all as done
+                self.dones[agent_name] = agent._check_state(agent.observe()) or self.dones[agent_name]
 
-                # If any is done, set all as done
-        else:
-            self._clear_rewards()
 
         self.agent_selection = self._agent_selector.next()
         self.steps += 1
