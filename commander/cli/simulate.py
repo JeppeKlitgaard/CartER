@@ -108,8 +108,7 @@ def simulate(
         pass
 
     # Callbacks
-    eval_env, root_eval_env = make_sb3_env(agents=agents)
-    eval_env = VecMonitor(eval_env)
+    eval_env = make_sb3_env(agents=agents)
     eval_callback = EvalCallback(
         eval_env, best_model_save_path=best_model_path, eval_freq=total_timesteps / 25
     )
@@ -118,8 +117,7 @@ def simulate(
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
-    env, root_env = make_sb3_env(agents=agents)
-    env = VecMonitor(env)
+    env = make_sb3_env(agents=agents)
 
     if train:
         _kwargs = {
@@ -145,7 +143,7 @@ def simulate(
         model.save(model_path)
 
     if render:
-        env, root_env = make_env(agents=agents)
+        env = make_env(agents=agents)
 
         if render_with_best:
             render_model_path = best_model_path / "best_model.zip"
@@ -184,7 +182,7 @@ def simulate(
                 if record:
                     print("Saving animation...")
                     ani = animation.ArtistAnimation(
-                        fig, images, interval=root_env.timestep * 1000, blit=True, repeat_delay=1000
+                        fig, images, interval=env.unwrapped.timestep * 1000, blit=True, repeat_delay=1000
                     )
 
                     writer = FFMpegWriter(fps=30)
