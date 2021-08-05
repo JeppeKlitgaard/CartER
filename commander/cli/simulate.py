@@ -14,6 +14,8 @@ from commander.ml.agent import SimulatedCartpoleAgent
 from commander.ml.environment import make_env, make_sb3_env
 from commander.ml.tensorboard import SimulatedTimeCallback
 
+from matplotlib.animation import FFMpegWriter
+
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
 logger = logging.getLogger(__name__)
@@ -84,7 +86,7 @@ def simulate(
     model_path = selected_output_dir / "model.zip"
     best_model_path = selected_output_dir / "best_model"
     tensorboard_path = selected_output_dir / "tensorboard_logs"
-    animation_path = selected_output_dir / "animation.avi"
+    animation_path = selected_output_dir / "animation.mp4"
 
     # Setup agents
     agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1, integration_resolution=5)
@@ -106,7 +108,7 @@ def simulate(
         pass
 
     # Callbacks
-    eval_env = make_sb3_env(agents=agents)
+    eval_env, root_eval_env = make_sb3_env(agents=agents)
     eval_env = VecMonitor(eval_env)
     eval_callback = EvalCallback(
         eval_env, best_model_save_path=best_model_path, eval_freq=total_timesteps / 25
@@ -116,7 +118,7 @@ def simulate(
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
-    env = make_sb3_env(agents=agents)
+    env, root_env = make_sb3_env(agents=agents)
     env = VecMonitor(env)
 
     if train:
@@ -143,7 +145,7 @@ def simulate(
         model.save(model_path)
 
     if render:
-        env = make_env(agents=agents)
+        env, root_env = make_env(agents=agents)
 
         if render_with_best:
             render_model_path = best_model_path / "best_model.zip"
@@ -182,10 +184,12 @@ def simulate(
                 if record:
                     print("Saving animation...")
                     ani = animation.ArtistAnimation(
-                        fig, images, interval=20, blit=True, repeat_delay=1000
+                        fig, images, interval=root_env.timestep * 1000, blit=True, repeat_delay=1000
                     )
 
-                    ani.save(f"{animation_path}", dpi=300)
+                    writer = FFMpegWriter(fps=30)
+
+                    ani.save(f"{animation_path}", dpi=200, writer=writer)
                     print(f"Animation saved as {animation_path}")
 
                 break

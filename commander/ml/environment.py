@@ -302,30 +302,31 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
 
 def make_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
     env = SimulatedCartpoleEnv(*args, **kwargs)
+    root_env = env
 
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)
 
-    return env
+    return env, root_env
 
 
 def make_parallel_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
-    env = make_env(*args, **kwargs)
+    env, root_env = make_env(*args, **kwargs)
 
     env = to_parallel(env)
     env = ss.black_death_v1(env)
 
-    return env
+    return env, root_env
 
 
 def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
     """
     Wrappers all the way down...
     """
-    env = make_parallel_env(*args, **kwargs)
+    env, root_env = make_parallel_env(*args, **kwargs)
 
     env = ss.pettingzoo_env_to_vec_env_v0(env)
     env = ss.concat_vec_envs_v0(env, 1, num_cpus=0, base_class="stable_baselines3")
     env = VecMonitor(env)
 
-    return env
+    return env, root_env
