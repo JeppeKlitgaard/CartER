@@ -10,7 +10,7 @@ from gym.utils import seeding
 
 from scipy.integrate import solve_ivp
 
-from commander.integration import IntegratorOptions, derivatives_wrapper
+from commander.integration import DerivativesWrapper, IntegratorOptions
 from commander.ml.constants import FLOAT_TYPE, Action
 from commander.type_aliases import State
 
@@ -125,6 +125,7 @@ class CartpoleAgent:
 
         self.steps_beyond_done = 0
 
+        self.setup()
         self.reset()
 
     def seed(self, seed: Optional[int] = None) -> list[Any]:
@@ -133,6 +134,14 @@ class CartpoleAgent:
 
     def observe(self) -> State:
         return self.state
+
+    def setup(self) -> None:
+        """
+        Called once when first initialised.
+
+        Not called when agent is reset!
+        """
+        raise NotImplementedError("Override this.")
 
     def reset(self) -> State:
         raise NotImplementedError("Override this.")
@@ -154,6 +163,9 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         )
 
         return cast(State, new_state)
+
+    def setup(self) -> None:
+        self.derivatives_wrapper = DerivativesWrapper()
 
     def reset(self) -> State:
         self.state = np.array(
@@ -186,6 +198,8 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         )
 
         self.steps_beyond_done = 0
+
+        self.derivatives_wrapper.reset()
 
         return self.state
 
@@ -241,7 +255,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
     ) -> State:
         t = np.arange(t_span[0], t_span[1], t_step)
         sol = solve_ivp(
-            fun=derivatives_wrapper,
+            fun=self.derivatives_wrapper.equation,
             t_span=t_span,
             y0=self.state,
             method=method,

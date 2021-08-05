@@ -152,7 +152,6 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         # Put rewards into cumulative_rewards
         self._accumulate_rewards()
 
-
         # Last agent step in reward cycle
         if self._agent_selector.is_last():
 

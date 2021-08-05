@@ -1,7 +1,9 @@
+import logging
+import os
 from enum import Enum
+from pathlib import Path
 
 import click
-import os
 import matplotlib.pyplot as plt
 import stable_baselines3
 from matplotlib import animation
@@ -11,6 +13,8 @@ from commander.ml.agent import SimulatedCartpoleAgent
 from commander.ml.environment import make_env, make_sb3_env
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
+
+logger = logging.getLogger(__name__)
 
 
 class Algorithm(str, Enum):
@@ -49,6 +53,12 @@ class Configuration(str, Enum):
     type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
     default=Algorithm.PPO,
 )
+@click.option(
+    "-o",
+    "--output-dir",
+    type=click.Path(file_okay=False, path_type=Path, writable=True, readable=True),
+    default=Path("./output_data"),
+)
 def simulate(
     train: bool,
     load: bool,
@@ -58,16 +68,35 @@ def simulate(
     total_timesteps: int,
     configuration: str,
     algorithm: str,
+    output_dir: Path,
 ):
     agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1, integration_resolution=5)
-    agent_2 = SimulatedCartpoleAgent(name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=5)
+    agent_2 = SimulatedCartpoleAgent(
+        name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=5
+    )
 
+    # Changes to match in 3.10
     if configuration == Configuration.TWO_CARTS:
         agents = [agent_1, agent_2]
     elif configuration == Configuration.ONE_CART:
         agents = [agent_1]
 
+    # Algorithm-dependent hyperparameters
+    policy_params = {}
+    if algorithm == Algorithm.PPO:
+        policy_params["target_kl"] = 0.85
+        policy_params["learning_rate"] = lambda x: 0.003 * x
+        pass
+
+    # Setup paths
+    selected_output_dir = output_dir / "current"
     save_name = SAVE_NAME_BASE + algorithm
+    save_path = selected_output_dir / save_name
+
+    model_path = selected_output_dir / (save_name + ".zip")
+    tensorboard_path = selected_output_dir / (save_name + "_tensorboard")
+    animation_path = selected_output_dir / (save_name + ".avi")
+
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
     env = make_sb3_env(agents=agents)
@@ -78,24 +107,27 @@ def simulate(
             "policy": "MlpPolicy",
             "env": env,
             "verbose": 2,
-            "tensorboard_log": save_name + "_tensorboard" if tensorboard else None
+            "tensorboard_log": tensorboard_path if tensorboard else None,
         }
 
-        if load and os.path.exists(save_name + ".zip"):
-            model = algorithm_obj.load(save_name, **_kwargs)
+        kwargs = _kwargs | policy_params
+
+        if load and model_path.exists():
+            logger.info(f"Loading existing model: '{model_path}'")
+            model = algorithm_obj.load(model_path, **kwargs)
         else:
-            model = algorithm_obj(**_kwargs)
+            model = algorithm_obj(**kwargs)
 
         try:
             model.learn(total_timesteps=total_timesteps)
         except KeyboardInterrupt:
             print("Stopping learning and saving model")
 
-        model.save(save_name)
+        model.save(model_path)
 
     if render:
         env = make_env(agents=agents)
-        model = algorithm_obj.load(save_name)
+        model = algorithm_obj.load(model_path)
 
         if record:
             fig = plt.figure()
@@ -105,7 +137,7 @@ def simulate(
         for agent in env.agent_iter():
             obs, reward, done, info = env.last()
 
-            print(f"{obs=}, {reward=}, {done=}, {info=}")
+            # print(f"{obs=}, {reward=}, {done=}, {info=}")
 
             action, state = model.predict(obs) if not done else (None, None)
 
@@ -129,7 +161,8 @@ def simulate(
                     ani = animation.ArtistAnimation(
                         fig, images, interval=20, blit=True, repeat_delay=1000
                     )
-                    ani.save(f"{save_name}.avi", dpi=300)
-                    print(f"Animation saved as {save_name}.avi")
+
+                    ani.save(f"{animation_path}", dpi=300)
+                    print(f"Animation saved as {animation_path}")
 
                 break

@@ -1,8 +1,8 @@
 from commander.integration.constants import IntegratorOptions
-from commander.integration.equations import derivatives, derivatives_wrapper
+from commander.integration.equations import DerivativesWrapper, derivatives
 
 __all__ = (
     "IntegratorOptions",
     "derivatives",
-    "derivatives_wrapper",
+    "DerivativesWrapper",
 )

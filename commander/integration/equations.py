@@ -39,6 +39,8 @@ _NUMBA_OPTIONS = {
 
 Params = tuple[float, Any, float, Any]
 
+last_N_c: float
+
 
 @jit(**_NUMBA_OPTIONS)  # type: ignore
 def N_c(g: float, M: float, m_l: float, theta: float, thetadot: float, thetaddot: float) -> float:
@@ -119,41 +121,56 @@ def derivatives(
     return (derivs, new_N_c)
 
 
-last_N_c = 0
-
-
-def derivatives_wrapper(
-    t: float,
-    y: Params,
-    F: float,
-    g: float,
-    mu_c: float,
-    mu_p: float,
-    l: float,
-    m_p: float,
-    m_l: float,
-    M: float,
-) -> Params:
+class DerivativesWrapper:
     """
-    Wraps the derivatives function in order to allow for numba optimization
-    despite access to global state.
+    Wraps the derivatives function.
+
+    We need to have the derivatives function be static in order to JIT compile it,
+    but we also need context on whether the sign of the normal force on the
+    cart has changed.
+
+    This wrapper solves that by providing a context attribute, but leaving most
+    of the computation in the static function.
+
+    The derivatives function could also be implemented as a static method.
     """
-    global last_N_c
 
-    derivs, new_N_c = derivatives(t, y, last_N_c, F, g, mu_c, mu_p, l, m_p, m_l, M)
+    last_N_c: float
 
-    # Note: we should strictly check whether sign of N_c has changed and
-    # recalculate using new N_c if this is the case.
-    # For most sensible parameters N_c will never change sign, so we ignore
-    # this for now, since it adds a significant slowdown.
+    def __init__(self):
+        self.reset()
 
-    should_redo = sgn(last_N_c) != sgn(new_N_c)
-    # # We have changed sign of N_c, so we should recalculate adot based on the new sign
+    def reset(self) -> None:
+        self.last_N_c = 0.0
 
-    last_N_c = new_N_c
+    def equation(
+        self,
+        t: float,
+        y: Params,
+        F: float,
+        g: float,
+        mu_c: float,
+        mu_p: float,
+        l: float,
+        m_p: float,
+        m_l: float,
+        M: float,
+    ) -> Params:
 
-    if should_redo:
-        logger.debug("Should redo triggered")
-        return derivatives_wrapper(t, y, F, g, mu_c, mu_p, l, m_p, m_l, M)
+        derivs, new_N_c = derivatives(t, y, self.last_N_c, F, g, mu_c, mu_p, l, m_p, m_l, M)
 
-    return derivs  # type: ignore
+        # Note: we should strictly check whether sign of N_c has changed and
+        # recalculate using new N_c if this is the case.
+        # For most sensible parameters N_c will never change sign, so we ignore
+        # this for now, since it adds a significant slowdown.
+
+        should_redo = sgn(self.last_N_c) != sgn(new_N_c) and self.last_N_c != 0
+        # # We have changed sign of N_c, so we should recalculate adot based on the new sign
+
+        self.last_N_c = new_N_c
+
+        if should_redo:
+            logger.debug("Should redo triggered")
+            return self.equation(t, y, F, g, mu_c, mu_p, l, m_p, m_l, M)
+
+        return derivs  # type: ignore
