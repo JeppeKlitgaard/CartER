@@ -133,6 +133,12 @@ class CartpoleAgent:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def reward(self, state: State) -> float:
+        """
+        This function takes in a state and returns the appropriate reward.
+        """
+        raise NotImplementedError("Override this.")
+
     def observe(self) -> State:
         return self.state
 

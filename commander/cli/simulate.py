@@ -8,9 +8,11 @@ import matplotlib.pyplot as plt
 import stable_baselines3
 from matplotlib import animation
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+from stable_baselines3.common.callbacks import EvalCallback
 
 from commander.ml.agent import SimulatedCartpoleAgent
 from commander.ml.environment import make_env, make_sb3_env
+from commander.ml.tensorboard import SimulatedTimeCallback
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -38,6 +40,7 @@ class Configuration(str, Enum):
 @click.option("--train/--no-train", default=True)
 @click.option("--load/--no-load", default=True)
 @click.option("--render/--no-render", default=True)
+@click.option("--render-with-best/--no-render-with-best", default=True)
 @click.option("--tensorboard/--no-tensorboard", default=True)
 @click.option("--record/--no-record", default=True)
 @click.option("-t", "--total-timesteps", type=int, default=100000)
@@ -63,6 +66,7 @@ def simulate(
     train: bool,
     load: bool,
     render: bool,
+    render_with_best: bool,
     tensorboard: bool,
     record: bool,
     total_timesteps: int,
@@ -70,6 +74,19 @@ def simulate(
     algorithm: str,
     output_dir: Path,
 ):
+
+    # Setup paths
+    selected_output_dir = output_dir / algorithm
+    selected_output_dir = selected_output_dir.resolve()
+    save_name = SAVE_NAME_BASE + algorithm
+    save_path = selected_output_dir / save_name
+
+    model_path = selected_output_dir / "model.zip"
+    best_model_path = selected_output_dir / "best_model"
+    tensorboard_path = selected_output_dir / "tensorboard_logs"
+    animation_path = selected_output_dir / "animation.avi"
+
+    # Setup agents
     agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1, integration_resolution=5)
     agent_2 = SimulatedCartpoleAgent(
         name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=5
@@ -84,18 +101,18 @@ def simulate(
     # Algorithm-dependent hyperparameters
     policy_params = {}
     if algorithm == Algorithm.PPO:
-        policy_params["target_kl"] = 0.85
+        # policy_params["target_kl"] = 0.85
         policy_params["learning_rate"] = lambda x: 0.003 * x
         pass
 
-    # Setup paths
-    selected_output_dir = output_dir / "current"
-    save_name = SAVE_NAME_BASE + algorithm
-    save_path = selected_output_dir / save_name
-
-    model_path = selected_output_dir / (save_name + ".zip")
-    tensorboard_path = selected_output_dir / (save_name + "_tensorboard")
-    animation_path = selected_output_dir / (save_name + ".avi")
+    # Callbacks
+    eval_env = make_sb3_env(agents=agents)
+    eval_env = VecMonitor(eval_env)
+    eval_callback = EvalCallback(
+        eval_env, best_model_save_path=best_model_path, eval_freq=total_timesteps / 25
+    )
+    simulated_time_callback = SimulatedTimeCallback()
+    callbacks = [eval_callback, simulated_time_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
@@ -119,7 +136,7 @@ def simulate(
             model = algorithm_obj(**kwargs)
 
         try:
-            model.learn(total_timesteps=total_timesteps)
+            model.learn(total_timesteps=total_timesteps, callback=callbacks)
         except KeyboardInterrupt:
             print("Stopping learning and saving model")
 
@@ -127,7 +144,13 @@ def simulate(
 
     if render:
         env = make_env(agents=agents)
-        model = algorithm_obj.load(model_path)
+
+        if render_with_best:
+            render_model_path = best_model_path / "best_model.zip"
+        else:
+            render_model_path = model_path
+
+        model = algorithm_obj.load(render_model_path)
 
         if record:
             fig = plt.figure()

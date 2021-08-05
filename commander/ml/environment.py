@@ -31,11 +31,15 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
     def __init__(
         self,
         agents: Sequence[CartpoleAgent],
-        max_steps: int = 5000,
+        max_steps: int = 2500,
+        start_time: float = 0.0,  # s
+        timestep: float = 0.02,  # s
         world_size: tuple[float, float] = (-2.5, 2.5),
     ):
         self._agents = list(agents)
         self.max_steps = max_steps
+        self.start_time = start_time
+        self.timestep = timestep
         self.world_size = world_size
 
         self.action_spaces: Mapping[str, spaces.Space] = {
@@ -46,6 +50,8 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         }
 
         self.seed()
+
+        self.setup()
 
         # Note some key attributes are only set after calling reset!
         self.reset()
@@ -65,6 +71,14 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
 
         return seeds
 
+    def setup(self) -> None:
+        """
+        Called when environment first initialised.
+
+        Not called after each reset.
+        """
+        self.total_world_time: float = 0.0
+
     def reset(self) -> Mapping[str, State]:
         observations = {}
 
@@ -74,6 +88,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         # ## Environment-level resets
         self.steps: int = 0
         self.viewer: Optional[rendering.Viewer] = None
+        self.world_time: float = 0.0
 
         # This needs to be agent names/ids
         self.agents = [agent.name for agent in self._agents]
@@ -81,11 +96,14 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
 
         self.agent_name_mapping = dict(zip(self.possible_agents, self._agents))
 
-        self._agent_selector = agent_selector(self.agents)
+        # Initialise agents
+        for agent_name in self.agents:
+            agent = self.agent_name_mapping[agent_name]
+
+            agent.tau = self.timestep
 
         # Agent selector
-
-        self._agent_selector.reinit(self.agents)
+        self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.next()
 
         # Agent -> done status mapping
@@ -95,6 +113,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         self.infos: dict[str, Mapping[str, Any]] = {
             agent.name: agent.info for agent in self._agents
         }
+
 
         # Return observations from agent reset
         return observations
@@ -146,8 +165,9 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         # First agent in reward cycle, reset previous rewards
         if self._agent_selector.is_first():
-            self._clear_rewards()
+            self.steps += 1
 
+            self._clear_rewards()
 
 
         observation, reward, done, info = self.agent_name_mapping[agent].step(action)
@@ -160,16 +180,17 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         # Last agent step in reward cycle
         if self._agent_selector.is_last():
+            self.world_time += self.timestep
+            self.total_world_time += self.timestep
 
             for agent_name in self.agents:
                 agent = self.agent_name_mapping[agent_name]
 
                 # If agent is done, set all as done
-                self.dones[agent_name] = agent._check_state(agent.observe()) or self.dones[agent_name]
+                self.dones[agent_name] = agent._check_state(agent.observe()) or self.is_done()
 
 
         self.agent_selection = self._agent_selector.next()
-        self.steps += 1
 
     def render(self, mode: str = "human") -> rendering.Viewer:
         screen_width = 600
