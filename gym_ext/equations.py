@@ -19,6 +19,7 @@ See supporting document for pretty rendered math and explanations of
 symbols.
 """
 
+import logging
 from typing import Any
 
 from numpy import cos
@@ -28,6 +29,8 @@ from numpy import sin
 from numba import jit
 
 from gym_ext.typing import State
+
+logger = logging.getLogger(__name__)
 
 _NUMBA_OPTIONS = {
     "nopython": True,
@@ -150,6 +153,7 @@ def derivatives_wrapper(
     last_N_c = new_N_c
 
     if should_redo:
+        logger.debug("Should redo triggered")
         return derivatives_wrapper(t, y, F, g, mu_c, mu_p, l, m_p, m_l, M)
 
     return derivs  # type: ignore
