@@ -166,7 +166,7 @@ def simulate(
         env.reset()
 
         if render_with_best:
-            render_model_path = best_model_path / "best_model.zip"
+            render_model_path = best_model_path / "best_model"
         else:
             render_model_path = model_path
 
