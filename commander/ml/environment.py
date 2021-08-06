@@ -31,13 +31,11 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
     def __init__(
         self,
         agents: Sequence[CartpoleAgent],
-        max_steps: int = 2500,
         start_time: float = 0.0,  # s
         timestep: float = 0.02,  # s
         world_size: tuple[float, float] = (-2.5, 2.5),
     ):
         self._agents = list(agents)
-        self.max_steps = max_steps
         self.start_time = start_time
         self.timestep = timestep
         self.world_size = world_size
@@ -57,14 +55,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         self.reset()
 
     def is_done(self) -> bool:
-        # fmt: off
-        conditions = (
-            any(self.dones.values()),
-            self.steps >= self.max_steps,
-        )
-        # fmt: on
-
-        return any(conditions)
+        return any(self.dones.values())
 
     def seed(self, seed: Optional[int] = None) -> list[Any]:
         seeds = [agent.seed() for agent in self._agents]
@@ -114,9 +105,8 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
             agent.name: agent.info for agent in self._agents
         }
 
-
         # Return observations from agent reset
-        return observations
+        return observations.get(0, ((0, 0, 0, 0), (0, 0, 0, 0)))
 
     def observe(self, agent: str) -> State:
         return self.agent_name_mapping[agent].observe()
@@ -152,7 +142,10 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         based on the action.
         """
 
-        if self.dones[self.agent_selection]:
+        agent_name = self.agent_selection
+        agent = self.agent_name_mapping[agent_name]
+
+        if self.dones[agent_name] or self.is_done():
             # If any agent done, all should be done
             self.dones = {agent_name: True for agent_name in self.dones}
 
@@ -161,19 +154,22 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             self._was_done_step(action)
             return
 
-        agent = self.agent_selection
-
         # First agent in reward cycle, reset previous rewards
         if self._agent_selector.is_first():
+            for agent_name in self.agents:
+                agent = self.agent_name_mapping[agent_name]
+
+                # If agent is done, set all as done
+                checks = agent.check_state(agent.observe())
+                self.dones[agent_name] = any(checks.values()) or self.is_done()
             self.steps += 1
 
             self._clear_rewards()
 
-
-        observation, reward, done, info = self.agent_name_mapping[agent].step(action)
+        observation, reward, done, info = agent.step(action)
 
         # ## Update environment-level data
-        self.rewards[agent] += reward
+        self.rewards[agent_name] += reward
 
         # Put rewards into cumulative_rewards
         self._accumulate_rewards()
@@ -182,13 +178,6 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         if self._agent_selector.is_last():
             self.world_time += self.timestep
             self.total_world_time += self.timestep
-
-            for agent_name in self.agents:
-                agent = self.agent_name_mapping[agent_name]
-
-                # If agent is done, set all as done
-                self.dones[agent_name] = agent.check_state(agent.observe()) or self.is_done()
-
 
         self.agent_selection = self._agent_selector.next()
 
@@ -312,8 +301,9 @@ def make_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
 def make_parallel_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
     env = make_env(*args, **kwargs)
 
-
     env = to_parallel(env)
+    env = ss.black_death_v1(env)
+
     return env
 
 
