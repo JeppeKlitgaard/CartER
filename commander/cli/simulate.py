@@ -10,9 +10,11 @@ from matplotlib import animation
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 from stable_baselines3.common.callbacks import EvalCallback
 
-from commander.ml.agent import SimulatedCartpoleAgent
+from commander.ml.agent import AgentGoalMixinBase, AgentSwingupGoalMixin, SimulatedCartpoleAgent, make_agent, AgentTimeGoalMixin, CartpoleAgent
 from commander.ml.environment import make_env, make_sb3_env
 from commander.ml.tensorboard import SimulatedTimeCallback
+
+import numpy as np
 
 from matplotlib.animation import FFMpegWriter
 
@@ -89,16 +91,28 @@ def simulate(
     animation_path = selected_output_dir / "animation.mp4"
 
     # Setup agents
-    agent_1 = SimulatedCartpoleAgent(name="Cartpole_1", start_pos=-1, integration_resolution=5)
-    agent_2 = SimulatedCartpoleAgent(
-        name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=5
+    agent_1 = make_agent(AgentSwingupGoalMixin, SimulatedCartpoleAgent,
+        name="Cartpole_1", integration_resolution=2, start_angle=np.pi
     )
+    # agent_1 = make_agent(AgentTimeGoalMixin, SimulatedCartpoleAgent,
+    #     name="Cartpole_1", integration_resolution=2
+    # )
+    agent_2 = make_agent(AgentTimeGoalMixin, SimulatedCartpoleAgent,
+        name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=2
+    )
+
 
     # Changes to match in 3.10
     if configuration == Configuration.TWO_CARTS:
         agents = [agent_1, agent_2]
     elif configuration == Configuration.ONE_CART:
         agents = [agent_1]
+
+    env_params = {
+        "agents": agents,
+        "world_size": (-11, 11),
+        "max_steps": 2500,
+    }
 
     # Algorithm-dependent hyperparameters
     policy_params = {}
@@ -108,7 +122,7 @@ def simulate(
         pass
 
     # Callbacks
-    eval_env = make_sb3_env(agents=agents)
+    eval_env = make_sb3_env(**env_params)
     eval_callback = EvalCallback(
         eval_env, best_model_save_path=best_model_path, eval_freq=total_timesteps / 25
     )
@@ -117,7 +131,7 @@ def simulate(
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
-    env = make_sb3_env(agents=agents)
+    env = make_sb3_env(**env_params)
 
     if train:
         _kwargs = {
@@ -143,7 +157,8 @@ def simulate(
         model.save(model_path)
 
     if render:
-        env = make_env(agents=agents)
+        env = make_env(**env_params)
+        env.reset()
 
         if render_with_best:
             render_model_path = best_model_path / "best_model.zip"
@@ -182,7 +197,11 @@ def simulate(
                 if record:
                     print("Saving animation...")
                     ani = animation.ArtistAnimation(
-                        fig, images, interval=env.unwrapped.timestep * 1000, blit=True, repeat_delay=1000
+                        fig,
+                        images,
+                        interval=env.unwrapped.timestep * 1000,
+                        blit=True,
+                        repeat_delay=1000,
                     )
 
                     writer = FFMpegWriter(fps=30)

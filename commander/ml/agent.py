@@ -1,8 +1,10 @@
+from abc import ABC, abstractmethod
 import logging
 from collections.abc import Mapping
-from typing import Any, Optional, cast
+from typing import Any, Optional, TypedDict, cast, Union
 
 import numpy as np
+import math
 
 from gym import spaces
 from gym.envs.classic_control import rendering
@@ -23,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 StepInfo = tuple[State, float, bool, Mapping[str, Any]]
 
+DEFAULT_GOAL_PARAMS = object()  # Sentinel for default goal params
+
 
 class CartpoleAgent:
     """
@@ -38,25 +42,19 @@ class CartpoleAgent:
         friction_cart: float = 0.01,  # coefficient
         friction_pole: float = 0.001,  # coefficient
         length: float = 1,  # m
-        failure_position: tuple[float, float] = (-2.4, 2.4),  # m
-        failure_position_velo: tuple[float, float] = (-np.inf, np.inf),  # m/s
-        failure_angle: tuple[float, float] = (
-            -_DEFAULT_FAILURE_ANGLE,
-            _DEFAULT_FAILURE_ANGLE,
-        ),  # rad
-        failure_angle_velo: tuple[float, float] = (-np.inf, np.inf),  # rad/s
-        start_pos: float = 0,
+        start_pos: float = 0.0,
         start_pos_spread: float = 0.05,
-        start_pos_velo: float = 0,
+        start_pos_velo: float = 0.0,
         start_pos_velo_spread: float = 0.05,
-        start_angle: float = 0,
+        start_angle: float = 0.0,
         start_angle_spread: float = 0.05,
-        start_angle_velo: float = 0,
+        start_angle_velo: float = 0.0,
         start_angle_velo_spread: float = 0.05,
         force_mag: float = 10.0,  # N
         tau: float = 0.02,  # s, seconds between state updates
         integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
         integration_resolution: int = 100,  # number of steps to subdivide tau into
+        goal_params: Optional[Mapping[str, Any]] = None,
     ):
         self.name = name
 
@@ -69,11 +67,6 @@ class CartpoleAgent:
         self.friction_pole = friction_pole
 
         self.length = length
-
-        self.failure_position = failure_position
-        self.failure_position_velo = failure_position_velo
-        self.failure_angle = failure_angle
-        self.failure_angle_velo = failure_angle_velo
 
         self.start_pos = start_pos
         self.start_pos_spread = start_pos_spread
@@ -92,23 +85,26 @@ class CartpoleAgent:
 
         self.info: Mapping[str, Any] = {}
 
+        goal_params = {} if goal_params is None else goal_params
+        goal_params = self._DEFAULT_GOAL_PARAMS | goal_params
+
         # Calculate size of spaces.
         # Factors of 2 are to ensure that even failing observations are still within
         # the observation space.
         low = np.array(
             [
-                self.failure_position[0] * 2,  # Position
+                goal_params["failure_position"][0] * 2,  # Position
                 -_FLOAT_MAX,  # Velocity can be any float
-                self.failure_angle[0] * 2,  # Angle
+                goal_params["failure_angle"][0] * 2,  # Angle
                 -_FLOAT_MAX,  # Angular velocity
             ],
             dtype=FLOAT_TYPE,
         )
         high = np.array(
             [
-                self.failure_position[1] * 2,  # Position
+                goal_params["failure_position"][1] * 2,  # Position
                 _FLOAT_MAX,  # Velocity can be any float
-                self.failure_angle[1] * 2,  # Angle
+                goal_params["failure_angle"][1] * 2,  # Angle
                 _FLOAT_MAX,  # Angular velocity
             ],
             dtype=FLOAT_TYPE,
@@ -127,6 +123,10 @@ class CartpoleAgent:
         self.steps_beyond_done = 0
 
         self.setup()
+
+        goal_params = {} if goal_params is None else goal_params
+        self.initialise_goal(**self._DEFAULT_GOAL_PARAMS | goal_params)
+
         self.reset()
 
     def seed(self, seed: Optional[int] = None) -> list[Any]:
@@ -136,6 +136,12 @@ class CartpoleAgent:
     def reward(self, state: State) -> float:
         """
         This function takes in a state and returns the appropriate reward.
+        """
+        raise NotImplementedError("Override this.")
+
+    def check_state(self, state: State) -> bool:
+        """
+        This function takes in a state and returns True if the state is not failed.
         """
         raise NotImplementedError("Override this.")
 
@@ -151,10 +157,41 @@ class CartpoleAgent:
         raise NotImplementedError("Override this.")
 
     def reset(self) -> State:
+        self.reset_goal()
+        return self._reset()
+
+    def _reset(self) -> State:
         raise NotImplementedError("Override this.")
+
+    def initialise_goal(self, goal_params: Mapping[str, Any]) -> None:
+        """
+        Called by the agent after the main classes __init__ function
+        to allow mixins to initialise.
+
+        goal_params are passed through.
+        """
+
+    def reset_goal(self) -> None:
+        """
+        Called by main class to tell goal mixin to reset.
+        """
+
+    def pre_step(self, action: Action) -> None:
+        """
+        Called before the step.
+
+        Allows mixins to do stuff before steps.
+        """
 
     def step(self, action: Action) -> StepInfo:
         raise NotImplementedError("Override this.")
+
+    def post_step(self, action: Action) -> None:
+        """
+        Called after the step.
+
+        Allows mixins to do stuff after steps.
+        """
 
 
 class SimulatedCartpoleAgent(CartpoleAgent):
@@ -237,14 +274,14 @@ class SimulatedCartpoleAgent(CartpoleAgent):
             IntegratorOptions.RK45, (0, self.tau), self.tau / self.integration_resolution, force
         )
 
-        done = self._check_state(self.state)
+        done = self.check_state(self.state)
 
         if not done:
-            reward = 1.0
+            reward = self.reward(self.state)
 
         elif not self.steps_beyond_done:
             # First call after being done
-            reward = 1.0
+            reward = self.reward(self.state)
 
             self.steps_beyond_done += 1
 
@@ -291,7 +328,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
     def mass_length(self) -> float:
         return self.mass_pole * self.length
 
-    def _check_state(self, state: State) -> bool:
+    def check_state(self, state: State) -> bool:
         x = state[0]
         theta = state[2]
 
@@ -307,3 +344,171 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
 class ExperimentalCartpoleAgent(CartpoleAgent):
     ...
+
+
+class CommonGoalParams(TypedDict, total=False):
+    failure_position: tuple[float, float]  # m
+    failure_position_velo: tuple[float, float]  # m/s
+    failure_angle: tuple[float, float]  # rad
+    failure_angle_velo: tuple[float, float]  # rad/s
+
+    # Swingup
+    failure_time_above_threshold: float  # s
+
+
+class AgentGoalMixinBase(ABC):
+    """
+    Mixin that defines the goals and limits of the agent.
+
+    This should be enough to significantly change the behaviour of the system
+    without having to reimplement the mechanical logic.
+    """
+
+    @property
+    @abstractmethod
+    def _DEFAULT_GOAL_PARAMS(self) -> CommonGoalParams:
+        ...
+
+    def initialise_goal(self, **kwargs: Any) -> None:
+        ...
+
+    def reset_goal(self) -> None:
+        ...
+
+    @abstractmethod
+    def reward(self, state: State) -> float:
+        ...
+
+    @abstractmethod
+    def check_state(self, state: State) -> bool:
+        ...
+
+    def pre_step(self, action: Action) -> None:
+        ...
+
+    def post_step(self, action: Action) -> None:
+        ...
+
+
+class AgentTimeGoalMixin(AgentGoalMixinBase):
+    """
+    This agent is fails when the cartpole leaves the allowed position region
+    or the pole angle leaves the allowed angular region.
+    """
+
+    _DEFAULT_GOAL_PARAMS: Union[CommonGoalParams, dict[str, Any]] = {
+        "failure_position": (-2.4, 2.4),  # m
+        "failure_position_velo": (-np.inf, np.inf),  # m/s
+        "failure_angle": (
+            -_DEFAULT_FAILURE_ANGLE,
+            _DEFAULT_FAILURE_ANGLE,
+        ),  # rad
+        "failure_angle_velo": (-np.inf, np.inf),  # rad/s
+    }
+
+    def initialise_goal(
+        self,
+        failure_position: tuple[float, float],  # m
+        failure_position_velo: tuple[float, float],  # m/s
+        failure_angle: tuple[float, float],  # rad
+        failure_angle_velo: tuple[float, float],  # rad/s
+        **kwargs: Any,
+    ) -> None:
+
+        self.failure_position = failure_position
+        self.failure_position_velo = failure_position_velo
+        self.failure_angle = failure_angle
+        self.failure_angle_velo = failure_angle_velo
+
+    # TODO: Abstract failure parameters
+    def reward(self, state: State) -> float:
+        return 1.0
+
+    def check_state(self, state: State) -> bool:
+        x = state[0]
+        theta = state[2]
+
+        conditions = (
+            x < self.failure_position[0],
+            x > self.failure_position[1],
+            theta < self.failure_angle[0],
+            theta > self.failure_angle[1],
+        )
+
+        return any(conditions)
+
+
+class AgentSwingupGoalMixin(AgentGoalMixinBase):
+    """
+    This agent is rewarded based on how upright the pole is.
+    It fails if the pole has been above the horizontal for more than 10 seconds
+    and then falls below the horizon (i.e. it has lost balance)."""
+
+    _DEFAULT_GOAL_PARAMS: Union[CommonGoalParams, dict[str, Any]] = {
+        "failure_position": (-10.0, 10.0),  # m
+        "failure_position_velo": (-np.inf, np.inf),  # m/s
+        "failure_angle": (-np.inf, np.inf),  # rad
+        "failure_angle_velo": (-np.inf, np.inf),  # rad/s
+        "failure_time_above_threshold": 10.0,  # s
+    }
+
+    def initialise_goal(
+        self,
+        failure_position: tuple[float, float],  # m
+        failure_position_velo: tuple[float, float],  # m/s
+        failure_angle: tuple[float, float],  # rad
+        failure_angle_velo: tuple[float, float],  # rad/s
+        failure_time_above_threshold: float,  # s
+        **kwargs: Any,
+    ) -> None:
+
+        self.failure_position = failure_position
+        self.failure_position_velo = failure_position_velo
+        self.failure_angle = failure_angle
+        self.failure_angle_velo = failure_angle_velo
+        self.failure_time_above_threshold = failure_time_above_threshold
+
+        self.reset_goal()
+
+    def reset_goal(self) -> None:
+        self.time_spent_above_horizon: float = 0.0
+
+    def reward(self, state: State) -> float:
+        x = state[0]
+        theta = state[2]
+
+        position_failure = any((
+            x < self.failure_position[0],
+            x > self.failure_position[1],
+        ))
+
+        if position_failure:
+            reward = -1000.0
+        else:
+            reward = ((1.0 + np.sin(theta + np.pi / 2.0)) * 2 ) ** 2
+
+        return reward
+
+    def post_step(self, action: Action) -> None:
+        if self.reward(self.state) > 0.0:
+            self.time_spent_above_horizon += self.tau
+
+    def check_state(self, state: State) -> bool:
+        x = state[0]
+
+        # fmt: off
+        conditions = (
+            x < self.failure_position[0],
+            x > self.failure_position[1],
+            self.reward(state) < 0 and self.time_spent_above_horizon >= self.failure_time_above_threshold
+        )
+        # fmt: on
+
+        return any(conditions)
+
+
+def make_agent(goal: AgentGoalMixinBase, agent: CartpoleAgent, *args, **kwargs):
+    class Agent(goal, agent):
+        ...
+
+    return Agent(*args, **kwargs)

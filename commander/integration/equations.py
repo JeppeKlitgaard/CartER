@@ -170,7 +170,12 @@ class DerivativesWrapper:
         self.last_N_c = new_N_c
 
         if should_redo:
-            logger.debug("Should redo triggered")
+            logger.info(
+                "Normal force of cart changed sign, which requires recalculation. "
+                "If you are getting this a lot or see recursion errors, you probably want "
+                "to introduce more cart mass, as currently the experiment does not "
+                "support flying carts anyway."
+                )
             return self.equation(t, y, F, g, mu_c, mu_p, l, m_p, m_l, M)
 
         return derivs  # type: ignore

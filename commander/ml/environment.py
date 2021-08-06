@@ -187,7 +187,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
                 agent = self.agent_name_mapping[agent_name]
 
                 # If agent is done, set all as done
-                self.dones[agent_name] = agent._check_state(agent.observe()) or self.is_done()
+                self.dones[agent_name] = agent.check_state(agent.observe()) or self.is_done()
 
 
         self.agent_selection = self._agent_selector.next()
