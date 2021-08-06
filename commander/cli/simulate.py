@@ -90,15 +90,21 @@ def simulate(
     tensorboard_path = selected_output_dir / "tensorboard_logs"
     animation_path = selected_output_dir / "animation.mp4"
 
+
+    agent_params = {
+        "integration_resolution": 2,
+        "max_steps": 500,
+    }
+
     # Setup agents
     agent_1 = make_agent(AgentSwingupGoalMixin, SimulatedCartpoleAgent,
-        name="Cartpole_1", integration_resolution=2, start_angle=np.pi
+        name="Cartpole_1", start_angle=np.pi, **agent_params
     )
     # agent_1 = make_agent(AgentTimeGoalMixin, SimulatedCartpoleAgent,
     #     name="Cartpole_1", integration_resolution=2
     # )
-    agent_2 = make_agent(AgentTimeGoalMixin, SimulatedCartpoleAgent,
-        name="Cartpole_2", start_pos=1, length=0.75, integration_resolution=2
+    agent_2 = make_agent(AgentSwingupGoalMixin, SimulatedCartpoleAgent,
+        name="Cartpole_2", start_pos=1, length=0.75, **agent_params
     )
 
 
@@ -111,7 +117,6 @@ def simulate(
     env_params = {
         "agents": agents,
         "world_size": (-11, 11),
-        "max_steps": 2500,
     }
 
     # Algorithm-dependent hyperparameters

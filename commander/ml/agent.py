@@ -54,6 +54,7 @@ class CartpoleAgent:
         tau: float = 0.02,  # s, seconds between state updates
         integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
         integration_resolution: int = 100,  # number of steps to subdivide tau into
+        max_steps: int = 2500,
         goal_params: Optional[Mapping[str, Any]] = None,
     ):
         self.name = name
@@ -82,6 +83,8 @@ class CartpoleAgent:
 
         self.integrator = integrator
         self.integration_resolution = integration_resolution
+
+        self.max_steps = max_steps
 
         self.info: Mapping[str, Any] = {}
 
@@ -157,6 +160,9 @@ class CartpoleAgent:
         raise NotImplementedError("Override this.")
 
     def reset(self) -> State:
+        self.steps_beyond_done: int = 0
+        self.steps: int = 0
+
         self.reset_goal()
         return self._reset()
 
@@ -187,6 +193,8 @@ class CartpoleAgent:
         self.pre_step(action)
         step_info = self._step(action)
         self.post_step(action)
+
+        self.steps += 1
 
         return step_info
 
@@ -247,8 +255,6 @@ class SimulatedCartpoleAgent(CartpoleAgent):
                 ),
             ],
         )
-
-        self.steps_beyond_done = 0
 
         self.derivatives_wrapper.reset()
 
