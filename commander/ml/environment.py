@@ -324,7 +324,10 @@ def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
     env = make_parallel_env(*args, **kwargs)
 
     env = ss.pettingzoo_env_to_vec_env_v0(env)
-    env = ss.concat_vec_envs_v0(env, 1, num_cpus=0, base_class="stable_baselines3")
+
+    # Note: VecMonitor automatically vectorises it for us, I believe.
+    # It doesn't seem to behave nicely without this - probably need another wrapper
+    # like concat vec with just one env and 0 cpus
     env = VecMonitor(env)
 
     return env

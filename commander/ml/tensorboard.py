@@ -13,7 +13,9 @@ class SimulatedTimeCallback(BaseCallback):
         super().__init__(verbose)
 
     def _on_step(self) -> bool:
-        root_env = self.training_env.unwrapped.vec_envs[0].par_env.unwrapped
+        # Bit of an ugly hack, but par_env does not bring unwrapping forward
+        root_env = self.training_env.unwrapped.par_env.unwrapped
+
         self.logger.record("custom/world_time", root_env.world_time)
         self.logger.record("custom/total_world_time", root_env.total_world_time)
 
