@@ -184,6 +184,13 @@ class CartpoleAgent:
         """
 
     def step(self, action: Action) -> StepInfo:
+        self.pre_step(action)
+        step_info = self._step(action)
+        self.post_step(action)
+
+        return step_info
+
+    def _step(self, action: Action) -> StepInfo:
         raise NotImplementedError("Override this.")
 
     def post_step(self, action: Action) -> None:
@@ -211,7 +218,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
     def setup(self) -> None:
         self.derivatives_wrapper = DerivativesWrapper()
 
-    def reset(self) -> State:
+    def _reset(self) -> State:
         self.state = np.array(
             [
                 self._make_random_symmetrical(
@@ -247,7 +254,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
         return self.state
 
-    def step(self, action: Action) -> StepInfo:
+    def _step(self, action: Action) -> StepInfo:
         """
         Performs a single step in the environment using the given action.
 
@@ -354,6 +361,7 @@ class CommonGoalParams(TypedDict, total=False):
 
     # Swingup
     failure_time_above_threshold: float  # s
+    punishment_positional_failure: float
 
 
 class AgentGoalMixinBase(ABC):
@@ -450,6 +458,7 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         "failure_angle": (-np.inf, np.inf),  # rad
         "failure_angle_velo": (-np.inf, np.inf),  # rad/s
         "failure_time_above_threshold": 10.0,  # s
+        "punishment_positional_failure": 10000,
     }
 
     def initialise_goal(
@@ -459,6 +468,7 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         failure_angle: tuple[float, float],  # rad
         failure_angle_velo: tuple[float, float],  # rad/s
         failure_time_above_threshold: float,  # s
+        punishment_positional_failure: float,
         **kwargs: Any,
     ) -> None:
 
@@ -468,29 +478,34 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         self.failure_angle_velo = failure_angle_velo
         self.failure_time_above_threshold = failure_time_above_threshold
 
+        self.punishment_positional_failure = punishment_positional_failure
+
         self.reset_goal()
 
     def reset_goal(self) -> None:
-        self.time_spent_above_horizon: float = 0.0
+        self.time_spent_above_horizon = 0.0
 
     def reward(self, state: State) -> float:
         x = state[0]
         theta = state[2]
 
-        position_failure = any((
-            x < self.failure_position[0],
-            x > self.failure_position[1],
-        ))
+        position_failure = any(
+            (
+                x < self.failure_position[0],
+                x > self.failure_position[1],
+            )
+        )
 
         if position_failure:
-            reward = -1000.0
+            reward = -self.punishment_positional_failure
         else:
-            reward = ((1.0 + np.sin(theta + np.pi / 2.0)) * 2 ) ** 2
+            reward = ((1.0 + np.sin(theta + np.pi / 2.0)) * 2) ** 2
 
         return reward
 
     def post_step(self, action: Action) -> None:
-        if self.reward(self.state) > 0.0:
+        theta = self.state[2]
+        if np.sin(theta + np.pi / 2.0) > 0.0:
             self.time_spent_above_horizon += self.tau
 
     def check_state(self, state: State) -> bool:
