@@ -80,7 +80,7 @@ def simulate(
 ):
 
     # Setup paths
-    selected_output_dir = output_dir / algorithm
+    selected_output_dir = output_dir / (algorithm.upper() + "_" + configuration.lower())
     selected_output_dir = selected_output_dir.resolve()
     save_name = SAVE_NAME_BASE + algorithm
     save_path = selected_output_dir / save_name
