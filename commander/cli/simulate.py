@@ -171,7 +171,7 @@ def simulate(
 
     env_params = {
         "agents": agents,
-        "world_size": (-11, 11),
+        "world_size": (-5, 5),
     }
 
     # Algorithm-dependent hyperparameters

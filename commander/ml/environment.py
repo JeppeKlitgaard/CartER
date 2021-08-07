@@ -193,10 +193,10 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         scale = screen_width / world_width
 
         carty = 100  # TOP OF CART
-        cartwidth = 50.0
-        cartheight = 30.0
+        cartwidth = scale * 1.0
+        cartheight = scale * 0.6
 
-        polewidth = 10.0
+        polewidth = scale * 0.2
 
         axleoffset = cartheight / 4.0
 

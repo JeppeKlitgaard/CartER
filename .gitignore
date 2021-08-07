@@ -20,8 +20,5 @@ build/
 
 # ML
 *.avi
-events.out.tfevents.*
-model.pt
-plot*.png
 *.zip
 output_data/
