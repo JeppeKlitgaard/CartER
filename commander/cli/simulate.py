@@ -93,7 +93,7 @@ def simulate(
 
     agent_params = {
         "integration_resolution": 2,
-        "max_steps": 500,
+        "max_steps": 5000,
     }
 
     # Setup agents

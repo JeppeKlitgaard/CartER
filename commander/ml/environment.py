@@ -106,7 +106,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         }
 
         # Return observations from agent reset
-        return observations.get(0, ((0, 0, 0, 0), (0, 0, 0, 0)))
+        return observations
 
     def observe(self, agent: str) -> State:
         return self.agent_name_mapping[agent].observe()
@@ -156,17 +156,21 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         # First agent in reward cycle, reset previous rewards
         if self._agent_selector.is_first():
-            for agent_name in self.agents:
-                agent = self.agent_name_mapping[agent_name]
-
-                # If agent is done, set all as done
-                checks = agent.check_state(agent.observe())
-                self.dones[agent_name] = any(checks.values()) or self.is_done()
+            # Clear old rewards
+            self._clear_rewards()
             self.steps += 1
 
-            self._clear_rewards()
+        # for agn_n in self.agents:
+        #     agn = self.agent_name_mapping[agn_n]
+
+        #     # If agent is done, set all as done
+        #     checks = agn.check_state(agn.observe())
+        #     self.dones[agn_n] = any(checks.values()) or self.is_done()
+
 
         observation, reward, done, info = agent.step(action)
+
+        self.dones[agent_name] = done or self.is_done()
 
         # ## Update environment-level data
         self.rewards[agent_name] += reward

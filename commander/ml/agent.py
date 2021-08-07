@@ -63,7 +63,7 @@ class CartpoleAgent:
         start_angle_spread: float = 0.05,
         start_angle_velo: float = 0.0,
         start_angle_velo_spread: float = 0.05,
-        force_mag: float = 10.0,  # N
+        force_mag: float = 100.0,  # N
         tau: float = 0.02,  # s, seconds between state updates
         integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
         integration_resolution: int = 100,  # number of steps to subdivide tau into
@@ -159,8 +159,7 @@ class CartpoleAgent:
         """
         This function takes in a state and returns True if the state is not failed.
         """
-        # checks = self._check_state(state)
-        checks = {}
+        checks = self._check_state(state)
         checks[FailureDescriptors.MAX_STEPS_REACHED] = self.steps >= self.max_steps
 
         return checks
@@ -521,7 +520,7 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         if position_failure:
             reward = -self.punishment_positional_failure
         else:
-            reward = ((1.0 + np.sin(theta + np.pi / 2.0)) * 2) ** 2
+            reward = ((1.0 + np.sin(theta + np.pi / 2.0)) * 2.0) ** 2
 
         return reward
 
