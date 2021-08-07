@@ -10,7 +10,14 @@ from matplotlib import animation
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 from stable_baselines3.common.callbacks import EvalCallback
 
-from commander.ml.agent import AgentGoalMixinBase, AgentSwingupGoalMixin, SimulatedCartpoleAgent, make_agent, AgentTimeGoalMixin, CartpoleAgent
+from commander.ml.agent import (
+    AgentGoalMixinBase,
+    AgentSwingupGoalMixin,
+    SimulatedCartpoleAgent,
+    make_agent,
+    AgentTimeGoalMixin,
+    CartpoleAgent,
+)
 from commander.ml.environment import make_env, make_sb3_env
 from commander.ml.tensorboard import SimulatedTimeCallback
 
@@ -36,8 +43,10 @@ class Algorithm(str, Enum):
 
 
 class Configuration(str, Enum):
-    TWO_CARTS = "TWO_CARTS"
-    ONE_CART = "ONE_CART"
+    TWO_CARTS_SWINGUP = "TWO_CARTS_SWINGUP"
+    TWO_CARTS_BALANCE = "TWO_CARTS_BALANCE"
+    ONE_CART_SWINGUP = "ONE_CART_SWINGUP"
+    ONE_CART_BALANCE = "ONE_CART_BALANCE"
 
 
 @click.command()
@@ -52,7 +61,7 @@ class Configuration(str, Enum):
     "-c",
     "--configuration",
     type=click.Choice([_.value for _ in Configuration], case_sensitive=False),
-    default=Configuration.TWO_CARTS,
+    default=Configuration.ONE_CART_BALANCE,
 )
 @click.option(
     "-a",
@@ -90,29 +99,75 @@ def simulate(
     tensorboard_path = selected_output_dir / "tensorboard_logs"
     animation_path = selected_output_dir / "animation.mp4"
 
-
     agent_params = {
         "integration_resolution": 2,
         "max_steps": 5000,
     }
 
-    # Setup agents
-    agent_1 = make_agent(AgentSwingupGoalMixin, SimulatedCartpoleAgent,
-        name="Cartpole_1", start_angle=np.pi, **agent_params
-    )
-    # agent_1 = make_agent(AgentTimeGoalMixin, SimulatedCartpoleAgent,
-    #     name="Cartpole_1", integration_resolution=2
-    # )
-    agent_2 = make_agent(AgentSwingupGoalMixin, SimulatedCartpoleAgent,
-        name="Cartpole_2", start_pos=1, length=0.75, **agent_params
-    )
-
-
     # Changes to match in 3.10
-    if configuration == Configuration.TWO_CARTS:
+    if configuration == Configuration.TWO_CARTS_BALANCE:
+        agent_1 = make_agent(
+            AgentTimeGoalMixin,
+            SimulatedCartpoleAgent,
+            name="Cartpole_1",
+            start_pos=-1.0,
+            **agent_params,
+        )
+        agent_2 = make_agent(
+            AgentTimeGoalMixin,
+            SimulatedCartpoleAgent,
+            name="Cartpole_2",
+            start_pos=1.0,
+            length=0.75,
+            **agent_params,
+        )
+
         agents = [agent_1, agent_2]
-    elif configuration == Configuration.ONE_CART:
-        agents = [agent_1]
+
+    elif configuration == Configuration.TWO_CARTS_SWINGUP:
+        agent_1 = make_agent(
+            AgentSwingupGoalMixin,
+            SimulatedCartpoleAgent,
+            name="Cartpole_1",
+            start_pos=-1.0,
+            start_angle=np.pi,
+            **agent_params,
+        )
+        agent_2 = make_agent(
+            AgentSwingupGoalMixin,
+            SimulatedCartpoleAgent,
+            name="Cartpole_2",
+            start_pos=1.0,
+            start_angle=np.pi,
+            length=0.75,
+            **agent_params,
+        )
+
+        agents = [agent_1, agent_2]
+
+    elif configuration == Configuration.ONE_CART_BALANCE:
+        agents = [
+            make_agent(
+                AgentTimeGoalMixin,
+                SimulatedCartpoleAgent,
+                name="Cartpole_1",
+                **agent_params,
+            )
+        ]
+
+    elif configuration == Configuration.ONE_CART_SWINGUP:
+        agents = [
+            make_agent(
+                AgentSwingupGoalMixin,
+                SimulatedCartpoleAgent,
+                name="Cartpole_1",
+                start_angle=np.pi,
+                **agent_params,
+            )
+        ]
+    else:
+        # This should never happen due to Click verification.
+        raise AssertionError("Bad configuration")
 
     env_params = {
         "agents": agents,
