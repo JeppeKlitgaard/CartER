@@ -66,6 +66,7 @@ class Configuration(str, Enum):
     type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
     default=Algorithm.PPO,
 )
+@click.option("-n", "--num-frame-stacking", type=int, default=1)
 def simulate(
     ctx: click.Context,
     train: bool,
@@ -77,9 +78,10 @@ def simulate(
     total_timesteps: int,
     configuration: str,
     algorithm: str,
+    num_frame_stacking: int,
 ) -> None:
 
-    experiment_name = algorithm.upper() + "_" + configuration.lower()
+    experiment_name = algorithm.upper() + "_" + configuration.lower() + f"_F{num_frame_stacking}"
 
     # Setup paths
     output_dir = ctx.obj["output_dir"]
@@ -90,6 +92,8 @@ def simulate(
     best_model_path = selected_output_dir / "best_model"
     tensorboard_path = selected_output_dir / "tensorboard_logs"
     animation_path = selected_output_dir / "animation.mp4"
+
+    output_dir.mkdir(exist_ok=True)
 
     # Set latest
     with open(output_dir / "latest", "w") as f:
@@ -171,11 +175,7 @@ def simulate(
         # This should never happen due to Click verification.
         raise AssertionError("Bad configuration")
 
-    env_params = {
-        "agents": agents,
-        "world_size": (-5, 5),
-        "num_frame_stacking": 4
-    }
+    env_params = {"agents": agents, "world_size": (-5, 5), "num_frame_stacking": 4}
 
     # Algorithm-dependent hyperparameters
     policy_params = {}
