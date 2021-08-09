@@ -46,6 +46,7 @@ class Configuration(str, Enum):
 
 
 @click.command()
+@click.pass_context
 @click.option("--train/--no-train", default=True)
 @click.option("--load/--no-load", default=True)
 @click.option("--render/--no-render", default=True)
@@ -65,13 +66,8 @@ class Configuration(str, Enum):
     type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
     default=Algorithm.PPO,
 )
-@click.option(
-    "-o",
-    "--output-dir",
-    type=click.Path(file_okay=False, path_type=Path, writable=True, readable=True),
-    default=Path("./output_data"),
-)
 def simulate(
+    ctx: click.Context,
     train: bool,
     load: bool,
     render: bool,
@@ -81,17 +77,23 @@ def simulate(
     total_timesteps: int,
     configuration: str,
     algorithm: str,
-    output_dir: Path,
 ) -> None:
 
+    experiment_name = algorithm.upper() + "_" + configuration.lower()
+
     # Setup paths
-    selected_output_dir = output_dir / (algorithm.upper() + "_" + configuration.lower())
+    output_dir = ctx.obj["output_dir"]
+    selected_output_dir = output_dir / experiment_name
     selected_output_dir = selected_output_dir.resolve()
 
     model_path = selected_output_dir / "model.zip"
     best_model_path = selected_output_dir / "best_model"
     tensorboard_path = selected_output_dir / "tensorboard_logs"
     animation_path = selected_output_dir / "animation.mp4"
+
+    # Set latest
+    with open(output_dir / "latest", "w") as f:
+        f.write(experiment_name)
 
     agent_params = {
         "integration_resolution": 2,
@@ -172,6 +174,7 @@ def simulate(
     env_params = {
         "agents": agents,
         "world_size": (-5, 5),
+        "num_frame_stacking": 4
     }
 
     # Algorithm-dependent hyperparameters

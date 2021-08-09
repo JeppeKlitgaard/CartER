@@ -285,11 +285,12 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
     """
 
 
-def make_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
+def make_env(num_frame_stacking: int = 1, *args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
     env = SimulatedCartpoleEnv(*args, **kwargs)
 
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)
+    env = ss.frame_stack_v1(env, num_frames=num_frame_stacking)
 
     return env
 
