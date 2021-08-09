@@ -11,3 +11,4 @@ max-line-length = 100
 ignore =
     E741,  # Ambiguous name
     E203,  # Whitebespace before ":"
+    W503,  # Linebreak before binary operator

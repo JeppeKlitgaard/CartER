@@ -1,5 +1,4 @@
 import logging
-import os
 from enum import Enum
 from pathlib import Path
 
@@ -11,14 +10,11 @@ import stable_baselines3
 from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
 from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import (
-    AgentGoalMixinBase,
     AgentPositionalKnowledgeStateSpecification,
     AgentSwingupGoalMixin,
     AgentTimeGoalMixin,
-    CartpoleAgent,
     SimulatedCartpoleAgent,
     make_agent,
 )
@@ -91,8 +87,6 @@ def simulate(
     # Setup paths
     selected_output_dir = output_dir / (algorithm.upper() + "_" + configuration.lower())
     selected_output_dir = selected_output_dir.resolve()
-    save_name = SAVE_NAME_BASE + algorithm
-    save_path = selected_output_dir / save_name
 
     model_path = selected_output_dir / "model.zip"
     best_model_path = selected_output_dir / "best_model"

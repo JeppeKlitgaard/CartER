@@ -3,13 +3,21 @@ Provides the state specification interface for use with agents.
 """
 
 from abc import ABC, abstractmethod
-from gym import spaces
-from enum import IntEnum
 from typing import Type, cast
-from commander.type_aliases import InternalState, ExternalState
-import numpy as np
-from commander.constants import FLOAT_TYPE
 
+import numpy as np
+
+from gym import spaces
+
+from commander.constants import FLOAT_TYPE
+from commander.ml.agent.constants import (
+    ExternalPositionalKnowlegeStateIdx,
+    ExternalStateIdx,
+    ExternalTotalKnowledgeStateIdx,
+    InternalStateIdx,
+)
+from commander.ml.agent.type_aliases import GoalParams
+from commander.type_aliases import ExternalState, InternalState
 
 _FLOAT_MAX = np.finfo(FLOAT_TYPE).max
 
@@ -25,6 +33,7 @@ class AgentStateSpecificationBase(ABC):
     """
 
     observation_space: spaces.Space
+    goal_params: GoalParams
 
     @abstractmethod
     def initialise_state_spec(self) -> None:
@@ -38,7 +47,7 @@ class AgentStateSpecificationBase(ABC):
 
     @property
     @abstractmethod
-    def external_state_idx(self) -> Type[IntEnum]:
+    def external_state_idx(self) -> Type[ExternalStateIdx]:
         """
         Should return an IntEnum that will map a label to the appropriate
         index of the `np.array` of the `observe` method.
@@ -47,7 +56,7 @@ class AgentStateSpecificationBase(ABC):
 
     @property
     @abstractmethod
-    def internal_state_idx(self) -> Type[IntEnum]:
+    def internal_state_idx(self) -> Type[InternalStateIdx]:
         """
         Should return an IntEnum that will map a label to the appropriate
         index of the `np.array` of the `_state` attribute.
@@ -103,17 +112,11 @@ class AgentTotalKnowledgeStateSpecification(AgentStateSpecificationBase):
 
         self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
 
-
-    class internal_state_idx(IntEnum):
-        X = 0
-        DX = 1
-        THETA = 2
-        DTHETA = 3
-
-    external_state_idx = internal_state_idx
+    internal_state_idx = InternalStateIdx
+    external_state_idx = ExternalTotalKnowledgeStateIdx
 
     def externalise_state(self, internal_state: InternalState) -> ExternalState:
-        return cast(ExternalState, internal_state)
+        return internal_state
 
 
 class AgentPositionalKnowledgeStateSpecification(AgentStateSpecificationBase):
@@ -147,15 +150,8 @@ class AgentPositionalKnowledgeStateSpecification(AgentStateSpecificationBase):
 
         self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
 
-    class internal_state_idx(IntEnum):
-        X = 0
-        DX = 1
-        THETA = 2
-        DTHETA = 3
-
-    class external_state_idx(IntEnum):
-        X = 0
-        THETA = 1
+    internal_state_idx = InternalStateIdx
+    external_state_idx = ExternalPositionalKnowlegeStateIdx
 
     def externalise_state(self, _state: InternalState) -> ExternalState:
         external_state = np.array(

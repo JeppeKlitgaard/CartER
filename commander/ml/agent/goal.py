@@ -1,27 +1,16 @@
-from enum import Enum
 from abc import ABC, abstractmethod
-from commander.type_aliases import InternalState, ExternalState, StateChecks
-
-DEFAULT_GOAL_PARAMS = object()  # Sentinel for default goal params
-
-from typing import TypedDict, Any, Union
-from commander.ml.constants import Action, FailureDescriptors
 
 import numpy as np
 
+from commander.ml.agent.agent import CartpoleAgent
+from commander.ml.agent.type_aliases import GoalParams
+from commander.ml.constants import Action, FailureDescriptors
+from commander.type_aliases import ExternalState, StateChecks
 
-class CommonGoalParams(TypedDict, total=False):
-    failure_position: tuple[float, float]  # m
-    failure_position_velo: tuple[float, float]  # m/s
-    failure_angle: tuple[float, float]  # rad
-    failure_angle_velo: tuple[float, float]  # rad/s
-
-    # Swingup
-    failure_time_above_threshold: float  # s
-    punishment_positional_failure: float
+DEFAULT_GOAL_PARAMS = object()  # Sentinel for default goal params
 
 
-class AgentGoalMixinBase(ABC):
+class AgentGoalMixinBase(CartpoleAgent, ABC):
     """
     Mixin that defines the goals and limits of the agent.
 
@@ -29,12 +18,10 @@ class AgentGoalMixinBase(ABC):
     without having to reimplement the mechanical logic.
     """
 
-    @property
-    @abstractmethod
-    def _DEFAULT_GOAL_PARAMS(self) -> CommonGoalParams:
-        ...
-
-    def initialise_goal(self, **kwargs: Any) -> None:
+    def initialise_goal(
+        self,
+        goal_params: GoalParams,
+    ) -> None:
         ...
 
     def reset_goal(self) -> None:
@@ -60,9 +47,10 @@ class AgentTimeGoalMixin(AgentGoalMixinBase):
     This agent is fails when the cartpole leaves the allowed position region
     or the pole angle leaves the allowed angular region.
     """
+
     _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
 
-    _DEFAULT_GOAL_PARAMS: Union[CommonGoalParams, dict[str, Any]] = {
+    _DEFAULT_GOAL_PARAMS: GoalParams = {
         "failure_position": (-2.4, 2.4),  # m
         "failure_position_velo": (-np.inf, np.inf),  # m/s
         "failure_angle": (
@@ -74,19 +62,14 @@ class AgentTimeGoalMixin(AgentGoalMixinBase):
 
     def initialise_goal(
         self,
-        failure_position: tuple[float, float],  # m
-        failure_position_velo: tuple[float, float],  # m/s
-        failure_angle: tuple[float, float],  # rad
-        failure_angle_velo: tuple[float, float],  # rad/s
-        **kwargs: Any,
+        goal_params: GoalParams,
     ) -> None:
 
-        self.failure_position = failure_position
-        self.failure_position_velo = failure_position_velo
-        self.failure_angle = failure_angle
-        self.failure_angle_velo = failure_angle_velo
+        self.failure_position = goal_params["failure_position"]
+        self.failure_position_velo = goal_params["failure_position_velo"]
+        self.failure_angle = goal_params["failure_angle"]
+        self.failure_angle_velo = goal_params["failure_angle_velo"]
 
-    # TODO: Abstract failure parameters
     def reward(self, state: ExternalState) -> float:
         return 1.0
 
@@ -110,7 +93,7 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
     It fails if the pole has been above the horizontal for more than 10 seconds
     and then falls below the horizon (i.e. it has lost balance)."""
 
-    _DEFAULT_GOAL_PARAMS: Union[CommonGoalParams, dict[str, Any]] = {
+    _DEFAULT_GOAL_PARAMS: GoalParams = {
         "failure_position": (-10.0, 10.0),  # m
         "failure_position_velo": (-np.inf, np.inf),  # m/s
         "failure_angle": (-np.inf, np.inf),  # rad
@@ -121,22 +104,16 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
 
     def initialise_goal(
         self,
-        failure_position: tuple[float, float],  # m
-        failure_position_velo: tuple[float, float],  # m/s
-        failure_angle: tuple[float, float],  # rad
-        failure_angle_velo: tuple[float, float],  # rad/s
-        failure_time_above_threshold: float,  # s
-        punishment_positional_failure: float,
-        **kwargs: Any,
+        goal_params: GoalParams,
     ) -> None:
 
-        self.failure_position = failure_position
-        self.failure_position_velo = failure_position_velo
-        self.failure_angle = failure_angle
-        self.failure_angle_velo = failure_angle_velo
-        self.failure_time_above_threshold = failure_time_above_threshold
+        self.failure_position = goal_params["failure_position"]
+        self.failure_position_velo = goal_params["failure_position_velo"]
+        self.failure_angle = goal_params["failure_angle"]
+        self.failure_angle_velo = goal_params["failure_angle_velo"]
 
-        self.punishment_positional_failure = punishment_positional_failure
+        self.failure_time_above_threshold: float = goal_params["failure_time_above_threshold"]  # s
+        self.punishment_positional_failure: float = goal_params["punishment_positional_failure"]
 
         self.reset_goal()
 

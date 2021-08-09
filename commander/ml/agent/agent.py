@@ -1,9 +1,7 @@
 import logging
-import math
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from enum import Enum, IntEnum
-from typing import Any, Optional, Type, TypedDict, Union, cast
+from typing import Any, Optional, Type, cast
 
 import numpy as np
 
@@ -11,13 +9,14 @@ from gym import spaces
 from gym.envs.classic_control import rendering
 from gym.utils import seeding
 
-from numba.core.types import abstract
 from scipy.integrate import solve_ivp
 
 from commander.constants import FLOAT_TYPE
 from commander.integration import DerivativesWrapper, IntegratorOptions
+from commander.ml.agent.constants import ExternalStateIdx, InternalStateIdx
+from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
-from commander.type_aliases import ExternalState, InternalState, StepInfo, StateChecks
+from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +25,18 @@ class CartpoleAgent(ABC):
     """
     Base class for all Cartpole Agents.
     """
+
+    failure_position: tuple[float, float]  # m
+    failure_position_velo: tuple[float, float]  # m/s
+    failure_angle: tuple[float, float]  # rad
+    failure_angle_velo: tuple[float, float]  # rad/s
+
+    @property
+    @abstractmethod
+    def _DEFAULT_GOAL_PARAMS(self) -> GoalParams:
+        ...
+
+    observation_space: spaces.Space
 
     def __init__(
         self,
@@ -49,7 +60,7 @@ class CartpoleAgent(ABC):
         integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
         integration_resolution: int = 100,  # number of steps to subdivide tau into
         max_steps: int = 2500,
-        goal_params: Optional[Mapping[str, Any]] = None,
+        goal_params: Optional[GoalParams] = None,
     ):
         self.name = name
 
@@ -97,11 +108,9 @@ class CartpoleAgent(ABC):
         # This is private for a reason
         self._state: InternalState
 
-        self.steps_beyond_done = 0
-
         self.setup()
 
-        self.initialise_goal(**self.goal_params)
+        self.initialise_goal(self.goal_params)
         self.initialise_state_spec()
 
         self.reset()
@@ -129,7 +138,7 @@ class CartpoleAgent(ABC):
 
     @property
     @abstractmethod
-    def external_state_idx(self) -> Type[IntEnum]:
+    def external_state_idx(self) -> Type[ExternalStateIdx]:
         """
         Should return an IntEnum that will map a label to the appropriate
         index of the `np.array` of the `observe` method.
@@ -138,7 +147,7 @@ class CartpoleAgent(ABC):
 
     @property
     @abstractmethod
-    def internal_state_idx(self) -> Type[IntEnum]:
+    def internal_state_idx(self) -> Type[InternalStateIdx]:
         """
         Should return an IntEnum that will map a label to the appropriate
         index of the `np.array` of the `_state` attribute.
@@ -218,7 +227,7 @@ class CartpoleAgent(ABC):
         """
         ...
 
-    def initialise_goal(self, goal_params: Mapping[str, Any]) -> None:
+    def initialise_goal(self, goal_params: GoalParams) -> None:
         """
         Called by the agent after the main classes __init__ function
         to allow mixins to initialise.

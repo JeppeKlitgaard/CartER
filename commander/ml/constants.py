@@ -2,7 +2,7 @@
 Contains constants for the ML setup.
 """
 
-from enum import IntEnum, Enum
+from enum import Enum, IntEnum
 
 
 class Action(IntEnum):
