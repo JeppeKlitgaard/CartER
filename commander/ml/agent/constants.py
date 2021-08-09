@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Union
+from typing import TypedDict, Union
 
 
 class InternalStateIdx(IntEnum):
@@ -18,3 +18,18 @@ class ExternalPositionalKnowlegeStateIdx(IntEnum):
 
 
 ExternalStateIdx = Union[ExternalTotalKnowledgeStateIdx, ExternalPositionalKnowlegeStateIdx]
+
+
+class ExternalTotalKnowledgeStateMap(TypedDict):
+    x: float
+    dx: float
+    theta: float
+    dtheta: float
+
+
+class ExternalPositionKnowledgeStateMap(TypedDict):
+    x: float
+    theta: float
+
+
+ExternalStateMap = Union[ExternalTotalKnowledgeStateMap, ExternalPositionalKnowlegeStateIdx]

@@ -259,16 +259,16 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         for agent_name, cart in self.carts.items():
             agent = self.agent_name_mapping[agent_name]
-            state = agent.observe()
+            state = agent.observe_as_dict()
 
-            cartx = state[0] * scale + screen_width / 2.0  # MIDDLE OF CART
+            cartx = state["x"] * scale + screen_width / 2.0  # MIDDLE OF CART
             self.carttrans[agent_name].set_translation(cartx, carty)
 
         for agent_name, pole in self.poles.items():
             agent = self.agent_name_mapping[agent_name]
-            state = agent.observe()
+            state = agent.observe_as_dict()
 
-            self.poletrans[agent_name].set_rotation(-state[2])
+            self.poletrans[agent_name].set_rotation(-state["theta"])
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 

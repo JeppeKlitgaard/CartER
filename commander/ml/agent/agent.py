@@ -13,7 +13,7 @@ from scipy.integrate import solve_ivp
 
 from commander.constants import FLOAT_TYPE
 from commander.integration import DerivativesWrapper, IntegratorOptions
-from commander.ml.agent.constants import ExternalStateIdx, InternalStateIdx
+from commander.ml.agent.constants import ExternalStateIdx, InternalStateIdx, ExternalStateMap
 from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
@@ -191,6 +191,18 @@ class CartpoleAgent(ABC):
         Returns the current external state of the environment as seen by the agent.
         """
         return self.externalise_state(self._state)
+
+    def observe_as_dict(self) -> ExternalStateMap:
+        """
+        Returns the current external state as a dictionary.
+        """
+        obs_ = self.observe()
+
+        observation = {
+            self.external_state_idx(x).name.lower(): obs_[x] for x in range(len(obs_))
+        }
+
+        return observation
 
     @abstractmethod
     def setup(self) -> None:

@@ -1,11 +1,10 @@
 """
 Implements extra Tensorboard metrics.
 """
-import logging
 from typing import Any, cast
 
 from stable_baselines3.common.callbacks import BaseCallback
-
+from stable_baselines3.common.logger import Logger
 
 class SimulatedTimeCallback(BaseCallback):
     """
@@ -20,7 +19,7 @@ class SimulatedTimeCallback(BaseCallback):
         self.training_env = cast(Any, self.training_env)  # Unwrapping is not nice with typing
         root_env = self.training_env.unwrapped.par_env.unwrapped
 
-        assert isinstance(self.logger, logging.Logger)
+        assert isinstance(self.logger, Logger)
 
         self.logger.record("custom/world_time", root_env.world_time)
         self.logger.record("custom/total_world_time", root_env.total_world_time)
