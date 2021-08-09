@@ -65,6 +65,7 @@ module = [
     "scipy.*",
     "matplotlib.*",
     "torchvision.*",
+    "tensorboard.*",
     "seaborn.*",
     "serial.*",
     "supersuit.*",

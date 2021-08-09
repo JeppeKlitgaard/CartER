@@ -1,10 +1,10 @@
-from commander.cli.tensorboard import tensorboard
+from pathlib import Path
+
 import click
 
 from commander.cli.simulate import simulate
+from commander.cli.tensorboard import tensorboard
 from commander.log import setup_logging
-
-from pathlib import Path
 
 
 @click.group()

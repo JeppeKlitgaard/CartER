@@ -1,3 +1,4 @@
+from commander.ml.agent.state_specification import AgentTotalKnowledgeStateSpecification
 import logging
 from enum import Enum
 from pathlib import Path
@@ -11,6 +12,8 @@ from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
 from stable_baselines3.common.callbacks import EvalCallback
 
+from commander.ml.configurations import DeepPILCOConfiguration
+
 from commander.ml.agent import (
     AgentPositionalKnowledgeStateSpecification,
     AgentSwingupGoalMixin,
@@ -19,7 +22,11 @@ from commander.ml.agent import (
     make_agent,
 )
 from commander.ml.environment import make_env, make_sb3_env
-from commander.ml.tensorboard import SimulatedTimeCallback
+from commander.ml.tensorboard import (
+    FailureModeCallback,
+    SimulatedTimeCallback,
+    VideoRecorderCallback,
+)
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -38,11 +45,26 @@ class Algorithm(str, Enum):
     TD3 = "TD3"
 
 
-class Configuration(str, Enum):
-    TWO_CARTS_SWINGUP = "TWO_CARTS_SWINGUP"
-    TWO_CARTS_BALANCE = "TWO_CARTS_BALANCE"
-    ONE_CART_SWINGUP = "ONE_CART_SWINGUP"
-    ONE_CART_BALANCE = "ONE_CART_BALANCE"
+class ConfigurationGoal(str, Enum):
+    BALANCE = "BALANCE"
+    SWINGUP = "SWINGUP"
+
+
+CONFIGURATION_GOAL_MAP = {
+    "BALANCE": AgentTimeGoalMixin,
+    "SWINGUP": AgentSwingupGoalMixin,
+}
+
+
+class ConfigurationStateSpec(str, Enum):
+    TOTAL_KNOWLEDGE = "TOTAL_KNOWLEDGE"
+    POSITIONAL_KNOWLEDGE = "POSITIONAL_KNOWLEDGE"
+
+
+CONFIGURATION_STATE_SPEC_MAP = {
+    "TOTAL_KNOWLEDGE": AgentTotalKnowledgeStateSpecification,
+    "POSITIONAL_KNOWLEDGE": AgentPositionalKnowledgeStateSpecification,
+}
 
 
 @click.command()
@@ -56,9 +78,21 @@ class Configuration(str, Enum):
 @click.option("-t", "--total-timesteps", type=int, default=100000)
 @click.option(
     "-c",
-    "--configuration",
-    type=click.Choice([_.value for _ in Configuration], case_sensitive=False),
-    default=Configuration.ONE_CART_BALANCE,
+    "--carts",
+    type=int,
+    default=1,
+)
+@click.option(
+    "-g",
+    "--goal",
+    type=click.Choice([_.value for _ in ConfigurationGoal], case_sensitive=False),
+    default=ConfigurationGoal.BALANCE,
+)
+@click.option(
+    "-s",
+    "--state-spec",
+    type=click.Choice([_.value for _ in ConfigurationStateSpec], case_sensitive=False),
+    default=ConfigurationStateSpec.POSITIONAL_KNOWLEDGE,
 )
 @click.option(
     "-a",
@@ -66,7 +100,7 @@ class Configuration(str, Enum):
     type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
     default=Algorithm.PPO,
 )
-@click.option("-n", "--num-frame-stacking", type=int, default=1)
+@click.option("-n", "--num-frame-stacking", type=int, default=-1)
 def simulate(
     ctx: click.Context,
     train: bool,
@@ -76,12 +110,25 @@ def simulate(
     tensorboard: bool,
     record: bool,
     total_timesteps: int,
-    configuration: str,
+    carts: str,
+    goal: str,
+    state_spec: str,
     algorithm: str,
     num_frame_stacking: int,
 ) -> None:
 
-    experiment_name = algorithm.upper() + "_" + configuration.lower() + f"_F{num_frame_stacking}"
+    if num_frame_stacking == -1:
+        num_frame_stacking = 1 if state_spec == ConfigurationStateSpec.TOTAL_KNOWLEDGE else 4
+
+    _experiment_name_partials = [
+        algorithm.upper(),
+        str(carts) + "carts",
+        goal.lower(),
+        state_spec.lower(),
+        "F" + str(num_frame_stacking),
+    ]
+
+    experiment_name = "_".join(_experiment_name_partials)
 
     # Setup paths
     output_dir = ctx.obj["output_dir"]
@@ -99,90 +146,31 @@ def simulate(
     with open(output_dir / "latest", "w") as f:
         f.write(experiment_name)
 
-    agent_params = {
-        "integration_resolution": 2,
-        "max_steps": 5000,
-    }
+    agent_params = DeepPILCOConfiguration["agent"].copy()
+    agent_params["agent"] = SimulatedCartpoleAgent
+    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]
+    agent_params["state_spec"] = CONFIGURATION_STATE_SPEC_MAP[state_spec]
 
-    # Changes to match in 3.10
-    if configuration == Configuration.TWO_CARTS_BALANCE:
-        agent_1 = make_agent(
-            SimulatedCartpoleAgent,
-            AgentPositionalKnowledgeStateSpecification,
-            AgentTimeGoalMixin,
-            name="Cartpole_1",
-            start_pos=-1.0,
-            **agent_params,
-        )
-        agent_2 = make_agent(
-            SimulatedCartpoleAgent,
-            AgentPositionalKnowledgeStateSpecification,
-            AgentTimeGoalMixin,
-            name="Cartpole_2",
-            start_pos=1.0,
-            length=0.75,
-            **agent_params,
-        )
+    agents = []
+    for i in range(carts):
+        params = agent_params.copy()
+        params["name"] = f"Cartpole_{i+1}"
 
-        agents = [agent_1, agent_2]
+        agents.append(make_agent(**params))
 
-    elif configuration == Configuration.TWO_CARTS_SWINGUP:
-        agent_1 = make_agent(
-            SimulatedCartpoleAgent,
-            AgentPositionalKnowledgeStateSpecification,
-            AgentSwingupGoalMixin,
-            name="Cartpole_1",
-            start_pos=-1.0,
-            start_angle=np.pi,
-            **agent_params,
-        )
-        agent_2 = make_agent(
-            SimulatedCartpoleAgent,
-            AgentPositionalKnowledgeStateSpecification,
-            AgentSwingupGoalMixin,
-            name="Cartpole_2",
-            start_pos=1.0,
-            start_angle=np.pi,
-            length=0.75,
-            **agent_params,
-        )
-
-        agents = [agent_1, agent_2]
-
-    elif configuration == Configuration.ONE_CART_BALANCE:
-        agents = [
-            make_agent(
-                SimulatedCartpoleAgent,
-                AgentPositionalKnowledgeStateSpecification,
-                AgentTimeGoalMixin,
-                name="Cartpole_1",
-                **agent_params,
-            )
-        ]
-
-    elif configuration == Configuration.ONE_CART_SWINGUP:
-        agents = [
-            make_agent(
-                SimulatedCartpoleAgent,
-                AgentPositionalKnowledgeStateSpecification,
-                AgentSwingupGoalMixin,
-                name="Cartpole_1",
-                start_angle=np.pi,
-                **agent_params,
-            )
-        ]
-    else:
-        # This should never happen due to Click verification.
-        raise AssertionError("Bad configuration")
-
-    env_params = {"agents": agents, "world_size": (-5, 5), "num_frame_stacking": 4}
+    env_params = {"agents": agents, "world_size": (-5, 5), "num_frame_stacking": num_frame_stacking}
 
     # Algorithm-dependent hyperparameters
     policy_params = {}
     if algorithm == Algorithm.PPO:
-        # policy_params["target_kl"] = 0.85
-        policy_params["learning_rate"] = lambda x: 0.003 * x
-        pass
+        policy_params["n_steps"] = 32 * 8
+        policy_params["batch_size"] = 64
+        policy_params["gae_lambda"] = 0.8
+        policy_params["gamma"] = 0.98
+        policy_params["n_epochs"] = 20
+        policy_params["ent_coef"] = 0.0
+        policy_params["learning_rate"] = lambda x: 0.001 * x
+        policy_params["clip_range"] = lambda x: 0.2 * x
 
     # Callbacks
     eval_env = make_sb3_env(**env_params)
@@ -190,12 +178,17 @@ def simulate(
         eval_env, best_model_save_path=str(best_model_path), eval_freq=int(total_timesteps / 25)
     )
     simulated_time_callback = SimulatedTimeCallback()
-    callbacks = [eval_callback, simulated_time_callback]
+    failure_mode_callback = FailureModeCallback()
+
+    callbacks = [eval_callback, simulated_time_callback, failure_mode_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
 
     env = make_sb3_env(**env_params)
-
+    logger.info(
+        f"Observation spaces: env={env.observation_space.shape}, "
+        f"agent={env.unwrapped.par_env.unwrapped._agents[0].observation_space.shape}"
+    )
     if train:
         _kwargs = {
             "policy": "MlpPolicy",
@@ -252,6 +245,7 @@ def simulate(
                 env.render()
 
             if done:
+                logger.info(f"Reward: {reward}")
                 env.close()
                 obs = env.reset()
 

@@ -1,13 +1,15 @@
-from tensorboard import program
+from time import sleep
 
 import click
+from tensorboard import program
+import webbrowser as webbrowser_m
 
-from time import sleep
 
 @click.command()
 @click.pass_context
 @click.argument("experiment", default="latest")
-def tensorboard(ctx: click.Context, experiment: str):
+@click.option("-w", "--webbrowser/--no-webbrowser", default=True)
+def tensorboard(ctx: click.Context, experiment: str, webbrowser: bool) -> None:
     tb = program.TensorBoard()
 
     output_dir = ctx.obj["output_dir"]
@@ -22,6 +24,9 @@ def tensorboard(ctx: click.Context, experiment: str):
 
     tb.configure(argv=[None, "--logdir", str(logdir)])
     tb.launch()
+
+    if webbrowser:
+        webbrowser_m.open_new_tab("http://localhost:6006")
 
     while True:
         sleep(100.0)

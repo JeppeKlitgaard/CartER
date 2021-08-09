@@ -98,6 +98,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         self.agent_selection = self._agent_selector.next()
 
         # Agent -> done status mapping
+        self.observations: dict[str, ExternalState] = {agent.name: agent.observe() for agent in self._agents}
         self.rewards: dict[str, float] = {agent.name: 0 for agent in self._agents}
         self._cumulative_rewards: dict[str, float] = {agent.name: 0 for agent in self._agents}
         self.dones: dict[str, bool] = {agent.name: False for agent in self._agents}
@@ -145,10 +146,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         agent_name = self.agent_selection
         agent = self.agent_name_mapping[agent_name]
 
-        if self.dones[agent_name] or self.is_done():
-            # If any agent done, all should be done
-            self.dones = {agent_name: True for agent_name in self.dones}
-
+        if self.dones[agent_name]:
             # We thus remove all agents in within one cycle
 
             self._was_done_step(action)
@@ -162,10 +160,14 @@ class SimulatedCartpoleEnv(CartpoleEnv):
 
         observation, reward, done, info = agent.step(action)
 
-        self.dones[agent_name] = done or self.is_done()
+        self.observations[agent_name] = observation
 
         # ## Update environment-level data
         self.rewards[agent_name] += reward
+
+        self.dones[agent_name] = done or self.is_done()
+
+        self.infos[agent_name] = info
 
         # Put rewards into cumulative_rewards
         self._accumulate_rewards()
@@ -303,7 +305,6 @@ def make_parallel_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
 
     return env
 
-
 def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
     """
     Wrappers all the way down...
@@ -318,3 +319,6 @@ def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
     venv = VecMonitor(env)
 
     return venv
+
+def get_sb3_env_root_env(env: VecMonitor) -> CartpoleEnv:
+    return env.unwrapped.par_env.unwrapped

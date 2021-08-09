@@ -13,7 +13,7 @@ from scipy.integrate import solve_ivp
 
 from commander.constants import FLOAT_TYPE
 from commander.integration import DerivativesWrapper, IntegratorOptions
-from commander.ml.agent.constants import ExternalStateIdx, InternalStateIdx, ExternalStateMap
+from commander.ml.agent.constants import ExternalStateIdx, ExternalStateMap, InternalStateIdx
 from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
@@ -198,9 +198,7 @@ class CartpoleAgent(ABC):
         """
         obs_ = self.observe()
 
-        observation = {
-            self.external_state_idx(x).name.lower(): obs_[x] for x in range(len(obs_))
-        }
+        observation = {self.external_state_idx(x).name.lower(): obs_[x] for x in range(len(obs_))}
 
         return observation
 
@@ -368,6 +366,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         checks = self.check_state(self.observe())
         done = any(checks.values())
 
+        failure_modes = []
         if not done:
             reward = self.reward(self.observe())
 
@@ -387,7 +386,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
             self.steps_beyond_done += 1
             reward = 0.0
 
-        return self.observe(), reward, done, {}
+        return self.observe(), reward, done, {"failure_modes": failure_modes}
 
     def _integrate(
         self, method: IntegratorOptions, t_span: tuple[float, float], t_step: float, force: float
