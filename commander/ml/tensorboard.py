@@ -2,13 +2,13 @@
 Implements extra Tensorboard metrics.
 """
 from typing import Any
-from stable_baselines3.common.callbacks import BaseCallback
+
 import gym
 import torch as th
+
 from stable_baselines3 import A2C
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.logger import Video
 from stable_baselines3.common.logger import Video
 
 
@@ -17,7 +17,7 @@ class SimulatedTimeCallback(BaseCallback):
     Adds simulated world time to tensorboard.
     """
 
-    def __init__(self, verbose=0):
+    def __init__(self, verbose=0) -> None:
         super().__init__(verbose)
 
     def _on_step(self) -> bool:

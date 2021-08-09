@@ -1,10 +1,9 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
+from gym_ext.equations import derivatives_wrapper
 from matplotlib.ticker import FormatStrFormatter
 from scipy.integrate import solve_ivp
-
-from gym_ext.equations import derivatives_wrapper
 
 plt.rcParams["figure.figsize"] = (16, 12)
 
