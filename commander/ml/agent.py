@@ -1,22 +1,23 @@
-from abc import ABC, abstractmethod
-from enum import Enum
 import logging
+import math
+from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Optional, TypedDict, cast, Union
+from enum import Enum, IntEnum
+from typing import Any, Optional, Type, TypedDict, Union, cast
 
 import numpy as np
-import math
 
 from gym import spaces
 from gym.envs.classic_control import rendering
 from gym.utils import seeding
 
+from numba.core.types import abstract
 from scipy.integrate import solve_ivp
 
+from commander.constants import FLOAT_TYPE
 from commander.integration import DerivativesWrapper, IntegratorOptions
 from commander.ml.constants import Action
-from commander.constants import FLOAT_TYPE
-from commander.type_aliases import State
+from commander.type_aliases import ExternalState, InternalState
 
 _FLOAT_MAX = np.finfo(FLOAT_TYPE).max
 _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
@@ -24,8 +25,9 @@ _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
 logger = logging.getLogger(__name__)
 
 
-StepInfo = tuple[State, float, bool, Mapping[str, Any]]
+StepInfo = tuple[ExternalState, float, bool, Mapping[str, Any]]
 StateChecks = dict[str, bool]
+
 
 class FailureDescriptors(str, Enum):
     MAX_STEPS_REACHED = "steps/max"
@@ -41,7 +43,7 @@ class FailureDescriptors(str, Enum):
 DEFAULT_GOAL_PARAMS = object()  # Sentinel for default goal params
 
 
-class CartpoleAgent:
+class CartpoleAgent(ABC):
     """
     Base class for all Cartpole Agents.
     """
@@ -103,45 +105,25 @@ class CartpoleAgent:
 
         goal_params = {} if goal_params is None else goal_params
         goal_params = self._DEFAULT_GOAL_PARAMS | goal_params
-
-        # Calculate size of spaces.
-        # Factors of 2 are to ensure that even failing observations are still within
-        # the observation space.
-        low = np.array(
-            [
-                goal_params["failure_position"][0] * 2,  # Position
-                -_FLOAT_MAX,  # Velocity can be any float
-                goal_params["failure_angle"][0] * 2,  # Angle
-                -_FLOAT_MAX,  # Angular velocity
-            ],
-            dtype=FLOAT_TYPE,
-        )
-        high = np.array(
-            [
-                goal_params["failure_position"][1] * 2,  # Position
-                _FLOAT_MAX,  # Velocity can be any float
-                goal_params["failure_angle"][1] * 2,  # Angle
-                _FLOAT_MAX,  # Angular velocity
-            ],
-            dtype=FLOAT_TYPE,
-        )
+        self.goal_params = goal_params
 
         # Can only apply two actions, back or forth
         self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
 
         self.np_random: np.random.RandomState
         self.seed()
 
         self.viewer: Optional[rendering.Viewer] = None
-        self.state: State
+
+        # This is private for a reason
+        self._state: InternalState
 
         self.steps_beyond_done = 0
 
         self.setup()
 
-        goal_params = {} if goal_params is None else goal_params
-        self.initialise_goal(**self._DEFAULT_GOAL_PARAMS | goal_params)
+        self.initialise_goal(**self.goal_params)
+        self.initialise_state_spec()
 
         self.reset()
 
@@ -149,13 +131,54 @@ class CartpoleAgent:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def reward(self, state: State) -> float:
+    @abstractmethod
+    def reward(self, state: ExternalState) -> float:
         """
         This function takes in a state and returns the appropriate reward.
         """
-        raise NotImplementedError("Override this.")
+        ...
 
-    def check_state(self, state: State) -> StateChecks:
+    @abstractmethod
+    def initialise_state_spec(self) -> None:
+        """
+        Initialises the state specfication.
+
+        This method should set `observation_space` and is called after
+        the initialisation of the AgentGoal.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def external_state_idx(self) -> Type[IntEnum]:
+        """
+        Should return an IntEnum that will map a label to the appropriate
+        index of the `np.array` of the `observe` method.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def internal_state_idx(self) -> Type[IntEnum]:
+        """
+        Should return an IntEnum that will map a label to the appropriate
+        index of the `np.array` of the `_state` attribute.
+        """
+        ...
+
+    @abstractmethod
+    def externalise_state(self, internal_state: InternalState) -> ExternalState:
+        """
+        This allows us to hide (or potentially invent) knowledge for our agent
+        while keeping a different state for the use of physical simulation.
+
+        This is important for the framestacking implementation that hides
+        the positional and angular velocities in order to force the agent to
+        infer this from the stacked observation frames.
+        """
+        ...
+
+    def check_state(self, state: ExternalState) -> StateChecks:
         """
         This function takes in a state and returns True if the state is not failed.
         """
@@ -164,38 +187,64 @@ class CartpoleAgent:
 
         return checks
 
+    @abstractmethod
+    def _check_state(self, state: ExternalState) -> StateChecks:
+        """
+        This is the actual method that does the majority of state checking.
 
-    def _check_state(self, state: State) -> StateChecks:
-        raise NotImplementedError("Override this.")
+        This should be overridden rather than `check_state` in most cases.
 
+        This method should be implemented by the AgentGoalMixin in most cases.
+        """
+        ...
 
-    def observe(self) -> State:
-        return self.state
+    def observe(self) -> ExternalState:
+        """
+        Returns the current external state of the environment as seen by the agent.
+        """
+        return self.externalise_state(self._state)
 
+    @abstractmethod
     def setup(self) -> None:
         """
         Called once when first initialised.
 
         Not called when agent is reset!
         """
-        raise NotImplementedError("Override this.")
+        ...
 
-    def reset(self) -> State:
+    def reset(self) -> ExternalState:
+        """
+        Called when the agent is initialised or reset.
+
+        This should not generally be overridden. Rather, the `_reset_` method
+        is appropriate for that.
+
+        Further, the `reset_goal` method is the appropriate method to implement
+        AgentGoalMixin-specific resets.
+
+        Returns:
+            External state of new agent
+        """
         self.steps_beyond_done: int = 0
         self.steps: int = 0
 
         self.reset_goal()
         return self._reset()
 
-    def _reset(self) -> State:
-        raise NotImplementedError("Override this.")
+    @abstractmethod
+    def _reset(self) -> ExternalState:
+        """
+        This should be overridden by the CartpoleAgent subclass.
+        """
+        ...
 
     def initialise_goal(self, goal_params: Mapping[str, Any]) -> None:
         """
         Called by the agent after the main classes __init__ function
         to allow mixins to initialise.
 
-        goal_params are passed through.
+        `goal_params` are passed through.
         """
 
     def reset_goal(self) -> None:
@@ -211,6 +260,14 @@ class CartpoleAgent:
         """
 
     def step(self, action: Action) -> StepInfo:
+        """
+        Does a step and returns the StepInfo related to the step.
+
+        In order to easily implement additional step logic in AgentGoalMixins
+        two additional methods `pre_step` and `post_step` will be called by this method.
+
+        This should in general not be overridden.
+        """
         self.pre_step(action)
         step_info = self._step(action)
         self.post_step(action)
@@ -237,18 +294,18 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
     def _make_random_symmetrical(
         self, mean: float, spread: float, minimum: float, maximum: float
-    ) -> State:
+    ) -> InternalState:
         new_state = self.np_random.uniform(
             low=max(mean - spread, minimum), high=min(mean + spread, maximum)
         )
 
-        return cast(State, new_state)
+        return cast(InternalState, new_state)
 
     def setup(self) -> None:
         self.derivatives_wrapper = DerivativesWrapper()
 
-    def _reset(self) -> State:
-        self.state = np.array(
+    def _reset(self) -> ExternalState:
+        self._state = np.array(
             [
                 self._make_random_symmetrical(
                     self.start_pos,
@@ -279,7 +336,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
         self.derivatives_wrapper.reset()
 
-        return self.state
+        return self.observe()
 
     def _step(self, action: Action) -> StepInfo:
         """
@@ -304,19 +361,19 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         force = self.force_mag if action == 1 else -self.force_mag
 
         # Update state
-        self.state = self._integrate(
+        self._state = self._integrate(
             IntegratorOptions.RK45, (0, self.tau), self.tau / self.integration_resolution, force
         )
 
-        checks = self.check_state(self.state)
+        checks = self.check_state(self.observe())
         done = any(checks.values())
 
         if not done:
-            reward = self.reward(self.state)
+            reward = self.reward(self.observe())
 
         elif not self.steps_beyond_done:
             # First call after being done
-            reward = self.reward(self.state)
+            reward = self.reward(self.observe())
 
             self.steps_beyond_done += 1
 
@@ -330,16 +387,16 @@ class SimulatedCartpoleAgent(CartpoleAgent):
             self.steps_beyond_done += 1
             reward = 0.0
 
-        return self.state, reward, done, {}
+        return self.observe(), reward, done, {}
 
     def _integrate(
         self, method: IntegratorOptions, t_span: tuple[float, float], t_step: float, force: float
-    ) -> State:
+    ) -> InternalState:
         t = np.arange(t_span[0], t_span[1], t_step)
         sol = solve_ivp(
             fun=self.derivatives_wrapper.equation,
             t_span=t_span,
-            y0=self.state,
+            y0=self._state,
             method=method,
             t_eval=t,
             args=(
@@ -354,7 +411,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
             ),
         )
 
-        new_state = cast(State, np.fromiter((x[-1] for x in sol.y), FLOAT_TYPE))
+        new_state = cast(InternalState, np.fromiter((x[-1] for x in sol.y), FLOAT_TYPE))
 
         return new_state
 
@@ -382,6 +439,157 @@ class CommonGoalParams(TypedDict, total=False):
     punishment_positional_failure: float
 
 
+class AgentStateSpecificationBase(ABC):
+    """
+    Mixin that defines what an idealised world state looks like
+    as well as how this is observed, perhaps not ideally, by an agent.
+
+    This mixin can be used to hide certain dimensions of observations or
+    indeed introduce random noise into each observation in an OOP-friendly
+    manner.
+    """
+
+    observation_space: spaces.Space
+
+    @abstractmethod
+    def initialise_state_spec(self) -> None:
+        """
+        Initialises the state specfication.
+
+        This method should set `observation_space` and is called after
+        the initialisation of the AgentGoal.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def external_state_idx(self) -> Type[IntEnum]:
+        """
+        Should return an IntEnum that will map a label to the appropriate
+        index of the `np.array` of the `observe` method.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def internal_state_idx(self) -> Type[IntEnum]:
+        """
+        Should return an IntEnum that will map a label to the appropriate
+        index of the `np.array` of the `_state` attribute.
+        """
+        ...
+
+    @abstractmethod
+    def externalise_state(self, internal_state: InternalState) -> ExternalState:
+        """
+        This allows us to hide (or potentially invent) knowledge for our agent
+        while keeping a different state for the use of physical simulation.
+
+        This is important for the framestacking implementation that hides
+        the positional and angular velocities in order to force the agent to
+        infer this from the stacked observation frames.
+        """
+        ...
+
+
+class AgentTotalKnowledgeStateSpecification(AgentStateSpecificationBase):
+    """
+    This mixin gives the agent full, perfect knowledge of the underlying world state.
+
+    This means the agent will have access to:
+    - Position [X]
+    - Velocity [DX]
+    - Angular Position [THETA]
+    - Angular Velocity [DTHETA]
+    """
+
+    def initialise_state_spec(self) -> None:
+        # Calculate size of spaces.
+        # Factors of 2 are to ensure that even failing observations are still within
+        # the observation space.
+        low = np.array(
+            [
+                self.goal_params["failure_position"][0] * 2,  # Position
+                -_FLOAT_MAX,  # Velocity can be any float
+                self.goal_params["failure_angle"][0] * 2,  # Angle
+                -_FLOAT_MAX,  # Angular velocity
+            ],
+            dtype=FLOAT_TYPE,
+        )
+        high = np.array(
+            [
+                self.goal_params["failure_position"][1] * 2,  # Position
+                _FLOAT_MAX,  # Velocity can be any float
+                self.goal_params["failure_angle"][1] * 2,  # Angle
+                _FLOAT_MAX,  # Angular velocity
+            ],
+            dtype=FLOAT_TYPE,
+        )
+
+        self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
+
+
+    class internal_state_idx(IntEnum):
+        X = 0
+        DX = 1
+        THETA = 2
+        DTHETA = 3
+
+    external_state_idx = internal_state_idx
+
+    def externalise_state(self, internal_state: InternalState) -> ExternalState:
+        return cast(ExternalState, internal_state)
+
+
+class AgentPositionalKnowledgeStateSpecification(AgentStateSpecificationBase):
+    """
+    This mixin gives the agent limited knowledge of the system and indeed
+    a single observation does not fully describe the system in a way
+    that allows the agent to act in an unambigiuous manner.
+
+    For this reason, this should be used with some method of frame stacking
+    in order to encode the first derivatives of the positional data.
+    """
+
+    def initialise_state_spec(self) -> None:
+        # Calculate size of spaces.
+        # Factors of 2 are to ensure that even failing observations are still within
+        # the observation space.
+        low = np.array(
+            [
+                self.goal_params["failure_position"][0] * 2,  # Position
+                self.goal_params["failure_angle"][0] * 2,  # Angle
+            ],
+            dtype=FLOAT_TYPE,
+        )
+        high = np.array(
+            [
+                self.goal_params["failure_position"][1] * 2,  # Position
+                self.goal_params["failure_angle"][1] * 2,  # Angle
+            ],
+            dtype=FLOAT_TYPE,
+        )
+
+        self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
+
+    class internal_state_idx(IntEnum):
+        X = 0
+        DX = 1
+        THETA = 2
+        DTHETA = 3
+
+    class external_state_idx(IntEnum):
+        X = 0
+        THETA = 1
+
+    def externalise_state(self, _state: InternalState) -> ExternalState:
+        external_state = np.array(
+            [_state[self.internal_state_idx.X], _state[self.internal_state_idx.THETA]]
+        )
+
+        return cast(ExternalState, external_state)
+
+
 class AgentGoalMixinBase(ABC):
     """
     Mixin that defines the goals and limits of the agent.
@@ -402,11 +610,11 @@ class AgentGoalMixinBase(ABC):
         ...
 
     @abstractmethod
-    def reward(self, state: State) -> float:
+    def reward(self, state: ExternalState) -> float:
         ...
 
     @abstractmethod
-    def _check_state(self, state: State) -> StateChecks:
+    def _check_state(self, state: ExternalState) -> StateChecks:
         ...
 
     def pre_step(self, action: Action) -> None:
@@ -432,7 +640,6 @@ class AgentTimeGoalMixin(AgentGoalMixinBase):
         "failure_angle_velo": (-np.inf, np.inf),  # rad/s
     }
 
-
     def initialise_goal(
         self,
         failure_position: tuple[float, float],  # m
@@ -448,12 +655,12 @@ class AgentTimeGoalMixin(AgentGoalMixinBase):
         self.failure_angle_velo = failure_angle_velo
 
     # TODO: Abstract failure parameters
-    def reward(self, state: State) -> float:
+    def reward(self, state: ExternalState) -> float:
         return 1.0
 
-    def _check_state(self, state: State) -> StateChecks:
-        x = state[0]
-        theta = state[2]
+    def _check_state(self, state: ExternalState) -> StateChecks:
+        x = state[self.external_state_idx.X]
+        theta = state[self.external_state_idx.THETA]
 
         checks = {
             FailureDescriptors.POSITION_LEFT: x < self.failure_position[0],
@@ -480,8 +687,6 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         "punishment_positional_failure": 10000,
     }
 
-
-
     def initialise_goal(
         self,
         failure_position: tuple[float, float],  # m
@@ -506,9 +711,9 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
     def reset_goal(self) -> None:
         self.time_spent_above_horizon = 0.0
 
-    def reward(self, state: State) -> float:
-        x = state[0]
-        theta = state[2]
+    def reward(self, state: ExternalState) -> float:
+        x = state[self.external_state_idx.X]
+        theta = state[self.external_state_idx.THETA]
 
         position_failure = any(
             (
@@ -525,12 +730,14 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         return reward
 
     def post_step(self, action: Action) -> None:
-        theta = self.state[2]
+        state = self.observe()
+        theta = state[self.external_state_idx.THETA]
+
         if np.sin(theta + np.pi / 2.0) > 0.0:
             self.time_spent_above_horizon += self.tau
 
-    def _check_state(self, state: State) -> StateChecks:
-        x = state[0]
+    def _check_state(self, state: ExternalState) -> StateChecks:
+        x = state[self.external_state_idx.X]
 
         checks = {
             FailureDescriptors.POSITION_LEFT: x < self.failure_position[0],
@@ -542,8 +749,16 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         return checks
 
 
-def make_agent(goal: AgentGoalMixinBase, agent: CartpoleAgent, *args, **kwargs):
-    class Agent(goal, agent):
+# Any to stop 'only concrete class can be given' mypy error.
+# See: https://github.com/python/mypy/issues/5374
+def make_agent(
+    agent: Any,
+    state_spec: Type[AgentStateSpecificationBase],
+    goal: Type[AgentGoalMixinBase],
+    *args,
+    **kwargs,
+) -> CartpoleAgent:
+    class Agent(goal, state_spec, agent):
         ...
 
     return Agent(*args, **kwargs)

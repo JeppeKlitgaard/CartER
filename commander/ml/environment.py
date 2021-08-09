@@ -15,7 +15,7 @@ from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import CartpoleAgent
 from commander.ml.constants import Action
-from commander.type_aliases import State
+from commander.type_aliases import ExternalState
 
 
 class CartpoleEnv(AECEnv):  # type: ignore [misc]
@@ -70,7 +70,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         """
         self.total_world_time: float = 0.0
 
-    def reset(self) -> Mapping[str, State]:
+    def reset(self) -> Mapping[str, ExternalState]:
         observations = {}
 
         for agent in self._agents:
@@ -108,7 +108,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         # Return observations from agent reset
         return observations
 
-    def observe(self, agent: str) -> State:
+    def observe(self, agent: str) -> ExternalState:
         return self.agent_name_mapping[agent].observe()
 
     def close(self) -> None:
@@ -159,14 +159,6 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             # Clear old rewards
             self._clear_rewards()
             self.steps += 1
-
-        # for agn_n in self.agents:
-        #     agn = self.agent_name_mapping[agn_n]
-
-        #     # If agent is done, set all as done
-        #     checks = agn.check_state(agn.observe())
-        #     self.dones[agn_n] = any(checks.values()) or self.is_done()
-
 
         observation, reward, done, info = agent.step(action)
 
@@ -322,6 +314,6 @@ def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
     # Note: VecMonitor automatically vectorises it for us, I believe.
     # It doesn't seem to behave nicely without this - probably need another wrapper
     # like concat vec with just one env and 0 cpus
-    env = VecMonitor(env)
+    venv = VecMonitor(env)
 
-    return env
+    return venv

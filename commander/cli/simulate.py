@@ -3,27 +3,27 @@ import os
 from enum import Enum
 from pathlib import Path
 
+import numpy as np
+
 import click
 import matplotlib.pyplot as plt
 import stable_baselines3
 from matplotlib import animation
-from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+from matplotlib.animation import FFMpegWriter
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import (
     AgentGoalMixinBase,
+    AgentPositionalKnowledgeStateSpecification,
     AgentSwingupGoalMixin,
-    SimulatedCartpoleAgent,
-    make_agent,
     AgentTimeGoalMixin,
     CartpoleAgent,
+    SimulatedCartpoleAgent,
+    make_agent,
 )
 from commander.ml.environment import make_env, make_sb3_env
 from commander.ml.tensorboard import SimulatedTimeCallback
-
-import numpy as np
-
-from matplotlib.animation import FFMpegWriter
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -86,7 +86,7 @@ def simulate(
     configuration: str,
     algorithm: str,
     output_dir: Path,
-):
+) -> None:
 
     # Setup paths
     selected_output_dir = output_dir / (algorithm.upper() + "_" + configuration.lower())
@@ -107,15 +107,17 @@ def simulate(
     # Changes to match in 3.10
     if configuration == Configuration.TWO_CARTS_BALANCE:
         agent_1 = make_agent(
-            AgentTimeGoalMixin,
             SimulatedCartpoleAgent,
+            AgentPositionalKnowledgeStateSpecification,
+            AgentTimeGoalMixin,
             name="Cartpole_1",
             start_pos=-1.0,
             **agent_params,
         )
         agent_2 = make_agent(
-            AgentTimeGoalMixin,
             SimulatedCartpoleAgent,
+            AgentPositionalKnowledgeStateSpecification,
+            AgentTimeGoalMixin,
             name="Cartpole_2",
             start_pos=1.0,
             length=0.75,
@@ -126,16 +128,18 @@ def simulate(
 
     elif configuration == Configuration.TWO_CARTS_SWINGUP:
         agent_1 = make_agent(
-            AgentSwingupGoalMixin,
             SimulatedCartpoleAgent,
+            AgentPositionalKnowledgeStateSpecification,
+            AgentSwingupGoalMixin,
             name="Cartpole_1",
             start_pos=-1.0,
             start_angle=np.pi,
             **agent_params,
         )
         agent_2 = make_agent(
-            AgentSwingupGoalMixin,
             SimulatedCartpoleAgent,
+            AgentPositionalKnowledgeStateSpecification,
+            AgentSwingupGoalMixin,
             name="Cartpole_2",
             start_pos=1.0,
             start_angle=np.pi,
@@ -148,8 +152,9 @@ def simulate(
     elif configuration == Configuration.ONE_CART_BALANCE:
         agents = [
             make_agent(
-                AgentTimeGoalMixin,
                 SimulatedCartpoleAgent,
+                AgentPositionalKnowledgeStateSpecification,
+                AgentTimeGoalMixin,
                 name="Cartpole_1",
                 **agent_params,
             )
@@ -158,8 +163,9 @@ def simulate(
     elif configuration == Configuration.ONE_CART_SWINGUP:
         agents = [
             make_agent(
-                AgentSwingupGoalMixin,
                 SimulatedCartpoleAgent,
+                AgentPositionalKnowledgeStateSpecification,
+                AgentSwingupGoalMixin,
                 name="Cartpole_1",
                 start_angle=np.pi,
                 **agent_params,
@@ -184,7 +190,7 @@ def simulate(
     # Callbacks
     eval_env = make_sb3_env(**env_params)
     eval_callback = EvalCallback(
-        eval_env, best_model_save_path=best_model_path, eval_freq=total_timesteps / 25
+        eval_env, best_model_save_path=str(best_model_path), eval_freq=int(total_timesteps / 25)
     )
     simulated_time_callback = SimulatedTimeCallback()
     callbacks = [eval_callback, simulated_time_callback]
@@ -234,8 +240,6 @@ def simulate(
         obs = env.reset()
         for agent in env.agent_iter():
             obs, reward, done, info = env.last()
-
-            # print(f"{obs=}, {reward=}, {done=}, {info=}")
 
             action, state = model.predict(obs) if not done else (None, None)
 

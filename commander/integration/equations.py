@@ -28,7 +28,7 @@ from numpy import sin
 
 from numba import jit
 
-from commander.type_aliases import State
+from commander.type_aliases import InternalState
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def N_c(g: float, M: float, m_l: float, theta: float, thetadot: float, thetaddot
 @jit(**_NUMBA_OPTIONS)  # type: ignore
 def derivatives(
     t: float,
-    y: State,
+    y: InternalState,
     last_N_c: float,
     F: float,
     g: float,
@@ -137,7 +137,7 @@ class DerivativesWrapper:
 
     last_N_c: float
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reset()
 
     def reset(self) -> None:
@@ -175,7 +175,7 @@ class DerivativesWrapper:
                 "If you are getting this a lot or see recursion errors, you probably want "
                 "to introduce more cart mass, as currently the experiment does not "
                 "support flying carts anyway."
-                )
+            )
             return self.equation(t, y, F, g, mu_c, mu_p, l, m_p, m_l, M)
 
         return derivs  # type: ignore
