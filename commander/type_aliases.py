@@ -1,7 +1,7 @@
 """
 Contains related type aliases.
 """
-from typing import Any, Mapping, TypedDict
+from typing import Any, Mapping
 
 import numpy.typing as npt
 

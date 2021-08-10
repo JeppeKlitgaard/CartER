@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import gym
 import supersuit as ss
@@ -98,7 +98,9 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         self.agent_selection = self._agent_selector.next()
 
         # Agent -> done status mapping
-        self.observations: dict[str, ExternalState] = {agent.name: agent.observe() for agent in self._agents}
+        self.observations: dict[str, ExternalState] = {
+            agent.name: agent.observe() for agent in self._agents
+        }
         self.rewards: dict[str, float] = {agent.name: 0 for agent in self._agents}
         self._cumulative_rewards: dict[str, float] = {agent.name: 0 for agent in self._agents}
         self.dones: dict[str, bool] = {agent.name: False for agent in self._agents}
@@ -287,7 +289,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
     """
 
 
-def make_env(num_frame_stacking: int = 1, *args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
+def make_env(*args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> SimulatedCartpoleEnv:
     env = SimulatedCartpoleEnv(*args, **kwargs)
 
     env = wrappers.AssertOutOfBoundsWrapper(env)
@@ -297,19 +299,22 @@ def make_env(num_frame_stacking: int = 1, *args: Any, **kwargs: Any) -> Simulate
     return env
 
 
-def make_parallel_env(*args: Any, **kwargs: Any) -> SimulatedCartpoleEnv:
-    env = make_env(*args, **kwargs)
+def make_parallel_env(
+    *args: Any, num_frame_stacking: int = 1, **kwargs: Any
+) -> SimulatedCartpoleEnv:
+    env = make_env(*args, num_frame_stacking=num_frame_stacking, **kwargs)
 
     env = to_parallel(env)
     env = ss.black_death_v1(env)
 
     return env
 
-def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
+
+def make_sb3_env(*args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> gym.vector.VectorEnv:
     """
     Wrappers all the way down...
     """
-    env = make_parallel_env(*args, **kwargs)
+    env = make_parallel_env(*args, num_frame_stacking=num_frame_stacking, **kwargs)
 
     env = ss.pettingzoo_env_to_vec_env_v0(env)
 
@@ -320,5 +325,8 @@ def make_sb3_env(*args: Any, **kwargs: Any) -> gym.vector.VectorEnv:
 
     return venv
 
+
 def get_sb3_env_root_env(env: VecMonitor) -> CartpoleEnv:
-    return env.unwrapped.par_env.unwrapped
+    root_env = cast(Any, env).unwrapped.par_env.unwrapped
+
+    return cast(CartpoleEnv, root_env)

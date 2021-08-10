@@ -198,7 +198,10 @@ class CartpoleAgent(ABC):
         """
         obs_ = self.observe()
 
-        observation = {self.external_state_idx(x).name.lower(): obs_[x] for x in range(len(obs_))}
+        observation = cast(
+            ExternalStateMap,
+            {self.external_state_idx(x).name.lower(): obs_[x] for x in range(len(obs_))},
+        )
 
         return observation
 

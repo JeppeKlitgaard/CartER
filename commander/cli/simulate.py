@@ -1,9 +1,6 @@
-from commander.ml.agent.state_specification import AgentTotalKnowledgeStateSpecification
 import logging
 from enum import Enum
-from pathlib import Path
-
-import numpy as np
+from typing import Any
 
 import click
 import matplotlib.pyplot as plt
@@ -12,8 +9,6 @@ from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
 from stable_baselines3.common.callbacks import EvalCallback
 
-from commander.ml.configurations import DeepPILCOConfiguration
-
 from commander.ml.agent import (
     AgentPositionalKnowledgeStateSpecification,
     AgentSwingupGoalMixin,
@@ -21,12 +16,10 @@ from commander.ml.agent import (
     SimulatedCartpoleAgent,
     make_agent,
 )
+from commander.ml.agent.state_specification import AgentTotalKnowledgeStateSpecification
+from commander.ml.configurations import DeepPILCOConfiguration
 from commander.ml.environment import make_env, make_sb3_env
-from commander.ml.tensorboard import (
-    FailureModeCallback,
-    SimulatedTimeCallback,
-    VideoRecorderCallback,
-)
+from commander.ml.tensorboard import FailureModeCallback, SimulatedTimeCallback
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -110,7 +103,7 @@ def simulate(
     tensorboard: bool,
     record: bool,
     total_timesteps: int,
-    carts: str,
+    carts: int,
     goal: str,
     state_spec: str,
     algorithm: str,
@@ -147,9 +140,9 @@ def simulate(
         f.write(experiment_name)
 
     agent_params = DeepPILCOConfiguration["agent"].copy()
-    agent_params["agent"] = SimulatedCartpoleAgent
-    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]
-    agent_params["state_spec"] = CONFIGURATION_STATE_SPEC_MAP[state_spec]
+    agent_params["agent"] = SimulatedCartpoleAgent  # type: ignore [misc]
+    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]  # type: ignore [misc]
+    agent_params["state_spec"] = CONFIGURATION_STATE_SPEC_MAP[state_spec]  # type: ignore [misc]
 
     agents = []
     for i in range(carts):
@@ -158,10 +151,14 @@ def simulate(
 
         agents.append(make_agent(**params))
 
-    env_params = {"agents": agents, "world_size": (-5, 5), "num_frame_stacking": num_frame_stacking}
+    env_params: dict[str, Any] = {
+        "num_frame_stacking": num_frame_stacking,
+        "agents": agents,
+        "world_size": (-5, 5),
+    }
 
     # Algorithm-dependent hyperparameters
-    policy_params = {}
+    policy_params: dict[str, Any] = {}
     if algorithm == Algorithm.PPO:
         policy_params["n_steps"] = 32 * 8
         policy_params["batch_size"] = 64
@@ -183,7 +180,6 @@ def simulate(
     callbacks = [eval_callback, simulated_time_callback, failure_mode_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
-
     env = make_sb3_env(**env_params)
     logger.info(
         f"Observation spaces: env={env.observation_space.shape}, "

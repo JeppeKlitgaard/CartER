@@ -1,24 +1,18 @@
 """
 Implements extra Tensorboard metrics.
 """
+import logging
 from typing import Any, cast
-
-from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.logger import Logger
-
-from commander.ml.environment import get_sb3_env_root_env
-import numpy as np
 
 import gym
 import torch as th
 
-from stable_baselines3 import A2C
+from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.evaluation import evaluate_policy
-from stable_baselines3.common.logger import Video
+from stable_baselines3.common.logger import Logger, Video
 
-
-import logging
+from commander.ml.environment import get_sb3_env_root_env
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +63,6 @@ class FailureModeCallback(BaseCallback):
         super().__init__(verbose)
 
     def _on_step(self) -> bool:
-
-        # Bit of an ugly hack, but par_env does not bring unwrapping forward
-        self.training_env = cast(Any, self.training_env)  # Unwrapping is not nice with typing
-        root_env = get_sb3_env_root_env(self.training_env)
-
         done = any(self.locals["dones"])
 
         if done:
@@ -96,6 +85,8 @@ class FailureModeCallback(BaseCallback):
                 logger.warn(f"Bad failure mode: {failure_mode}")
 
             failure_category = failure_mode.split("/")[0]
+
+            assert isinstance(self.logger, Logger)
 
             self.logger.record("failure_mode/descriptor_text", failure_mode)
             self.logger.record(
@@ -138,14 +129,19 @@ class VideoRecorderCallback(BaseCallback):
 
             def grab_screens(_locals: dict[str, Any], _globals: dict[str, Any]) -> None:
                 """
-                Renders the environment in its current state, recording the screen in the captured `screens` list
+                Renders the environment in its current state, recording the screen in the
+                captured `screens` list
 
-                :param _locals: A dictionary containing all local variables of the callback's scope
-                :param _globals: A dictionary containing all global variables of the callback's scope
+                :param _locals: A dictionary containing all local variables
+                    of the callback's scope
+                :param _globals: A dictionary containing all global variables
+                    of the callback's scope
                 """
                 screen = self._eval_env.render(mode="rgb_array")
                 # PyTorch uses CxHxW vs HxWxC gym (and tensorflow) image convention
                 screens.append(screen.transpose(2, 0, 1))
+
+            self.model = cast(BaseAlgorithm, self.model)
 
             evaluate_policy(
                 self.model,
@@ -154,6 +150,9 @@ class VideoRecorderCallback(BaseCallback):
                 n_eval_episodes=self._n_eval_episodes,
                 deterministic=self._deterministic,
             )
+
+            assert isinstance(self.logger, Logger)
+
             self.logger.record(
                 "trajectory/video",
                 Video(th.ByteTensor([screens]), fps=40),

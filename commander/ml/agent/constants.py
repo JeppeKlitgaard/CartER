@@ -27,9 +27,9 @@ class ExternalTotalKnowledgeStateMap(TypedDict):
     dtheta: float
 
 
-class ExternalPositionKnowledgeStateMap(TypedDict):
+class ExternalPositionalKnowledgeStateMap(TypedDict):
     x: float
     theta: float
 
 
-ExternalStateMap = Union[ExternalTotalKnowledgeStateMap, ExternalPositionalKnowlegeStateIdx]
+ExternalStateMap = Union[ExternalTotalKnowledgeStateMap, ExternalPositionalKnowledgeStateMap]

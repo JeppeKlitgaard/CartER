@@ -1,8 +1,8 @@
+import webbrowser as webbrowser_m
 from time import sleep
 
 import click
 from tensorboard import program
-import webbrowser as webbrowser_m
 
 
 @click.command()
