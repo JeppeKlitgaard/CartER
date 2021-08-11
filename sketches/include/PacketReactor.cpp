@@ -7,18 +7,10 @@
 #include <PacketSender.h>
 #include <BufferUtils.h>
 #include <PString.h>
-// #include <Utils.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
 
-// void PacketReactor::send(Packet &packet) const
-// {
-//     RawPacket raw_packet = packet.to_raw_packet();
-
-//     _s.write(raw_packet.data(), raw_packet.size());
-//     _s.write(PACKET_END);
-// }
 
 std::unique_ptr<Packet> PacketReactor::read_packet()
 {
@@ -78,9 +70,6 @@ void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
         debug_msg.print("Received unknown packet with ID: ");
         debug_msg.print(packet->observed_id);
 
-        S.print("String size: ");
-        S.println(debug_msg.length());
-
         debug_pkg->construct(s_buf, debug_msg.length());
 
         packet_sender.send(std::move(debug_pkg));
@@ -91,15 +80,17 @@ void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
     case NullPacket::id:
         S.println("NULL");
         break;
+
     case PingPacket::id:
     {
-        S.println("PONG");
-        PongPacket pong;
-        unsigned long ts = read_unsigned_long(S);
-        pong.construct(ts);
-        S.println(ts);
 
-        packet_sender.send(pong);
+        std::unique_ptr<PingPacket>
+        ping_pkt(static_cast<PingPacket*>(packet.release()));
+        std::unique_ptr<PongPacket> pong_pkt = std::make_unique<PongPacket>();
+
+        pong_pkt->construct(ping_pkt->ping_timestamp);
+
+        packet_sender.send(std::move(pong_pkt));
         break;
     }
     }

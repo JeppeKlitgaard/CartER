@@ -26,8 +26,8 @@ void DebugPacket::construct(char *msg, size_t size) {
 
 RawPacket DebugPacket::to_raw_packet() {
     RawPacket raw_packet;
-    raw_packet.add(id);
-    raw_packet.add(_msg, _size);
+    raw_packet.add(this->get_id());
+    raw_packet.add(this->_msg, this->_size);
     raw_packet.add_newline();
 
     return raw_packet;
@@ -53,13 +53,12 @@ void PingPacket::construct(unsigned long timestamp)
 
 RawPacket PingPacket::to_raw_packet()
 {
-    // RawPacket raw_packet (get_id());
     RawPacket raw_packet;
 
-    raw_packet.push_back(get_id());
+    raw_packet.add(this->get_id());
 
-    std::array<byte, 4> timestamp = ulong_to_bytes(ping_timestamp);
-    raw_packet.insert(raw_packet.end(), timestamp.begin(), timestamp.end());
+    std::array<byte, 4> timestamp = ulong_to_bytes(this->ping_timestamp);
+    raw_packet.add(timestamp);
 
     return raw_packet;
 }

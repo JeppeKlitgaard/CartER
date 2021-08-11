@@ -8,6 +8,10 @@
 #include <Packet.h>
 #include <Init.h>
 
+/** Protocol is little-endian.
+  */
+
+
 // Null
 class NullPacket : public Packet
 {
@@ -15,6 +19,7 @@ public:
     static const byte id = 0x00; // NUL
 
     NullPacket();
+    using Packet::construct;
 
     virtual byte get_id() const override;
 };
@@ -25,9 +30,10 @@ class UnknownPacket : public Packet
 public:
     static const byte id = 0x3F; // ?
 
-    virtual byte get_id() const override;
-
     UnknownPacket();
+    using Packet::construct;
+
+    virtual byte get_id() const override;
 };
 
 // Debug
@@ -39,12 +45,13 @@ public:
 
     static const byte id = 0x7E; // ~
 
+    DebugPacket();
+    using Packet::construct;
+
     virtual byte get_id() const override;
     virtual RawPacket to_raw_packet() override;
 
     void construct(char *message, size_t size);
-
-    DebugPacket();
 };
 
 // Error
@@ -53,9 +60,10 @@ class ErrorPacket : public Packet
 public:
     static const byte id = 0x21; // !
 
-    virtual byte get_id() const override;
-
     ErrorPacket();
+    using Packet::construct;
+
+    virtual byte get_id() const override;
 };
 
 // Ping
@@ -68,12 +76,14 @@ public:
     unsigned long ping_timestamp;
 
     PingPacket();
+    using Packet::construct;
 
     virtual byte get_id() const override;
 
     virtual RawPacket to_raw_packet() override;
     virtual void consume(Stream &sbuf) override;
 
+    // virtual void construct();
     virtual void construct(unsigned long timestamp);
 };
 

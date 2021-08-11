@@ -26,6 +26,8 @@ protected:
         packet->consume(_s);
         packet->post_consume();
 
+        packet->construct();
+
         return packet;
     }
 

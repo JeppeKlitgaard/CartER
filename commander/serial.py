@@ -8,9 +8,6 @@ from serial import Serial
 
 from commander.protocol import PACKET_ID_MAP, Packet
 
-PORT: str = "COM3"
-BAUDRATE: int = 74880
-
 
 class Connection:
     _serial: Serial

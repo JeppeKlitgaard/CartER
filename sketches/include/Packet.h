@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <array>
 
 class RawPacket : private std::vector<byte>
 {
@@ -42,6 +43,11 @@ public:
     void add(T value) {
         std::copy((byte*) &value, ((byte*) &value) + sizeof(T), std::back_inserter(*this));
     }
+    template <size_t SIZE>
+    void add(std::array<byte, SIZE> &b_array) {
+        this->insert(this->end(), b_array.begin(), b_array.end());
+    }
+
 };
 
 /**

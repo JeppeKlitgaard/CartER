@@ -14,6 +14,7 @@ class PacketSender {
     public:
         PacketSender(Stream &stream);
 
+        void send(Packet &packet);
         void send(std::unique_ptr<Packet> packet);
 };
 

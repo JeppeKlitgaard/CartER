@@ -1,4 +1,5 @@
 #include <BufferUtils.h>
+#include <Init.h>
 
 // Do not use with serial.Timeout
 unsigned long read_unsigned_long(Stream &buf)
@@ -8,11 +9,10 @@ unsigned long read_unsigned_long(Stream &buf)
     byte bytes[4];
     buf.readBytes(bytes, 4);
 
-    unsigned long l = static_cast<unsigned long>(bytes[0]) |
-                      static_cast<unsigned long>(bytes[1]) << 8 |
-                      static_cast<unsigned long>(bytes[2]) << 16 |
-                      static_cast<unsigned long>(bytes[3]) << 24;
-
+    unsigned long l = (bytes[0]) |
+                      (bytes[1]) << 8 |
+                      (bytes[2]) << 16 |
+                      (bytes[3]) << 24;
     return l;
 }
 
@@ -21,10 +21,10 @@ std::array<byte, 4> ulong_to_bytes(unsigned long v)
     static_assert(sizeof(unsigned long) == 4, "Unsigned long is not right size");
 
     return std::array<byte, 4>{
-        static_cast<byte>((v >> 24) & 0xFF),
-        static_cast<byte>((v >> 16) & 0xFF),
-        static_cast<byte>((v >> 8) & 0xFF),
         static_cast<byte>((v)&0xFF),
+        static_cast<byte>((v >> 8) & 0xFF),
+        static_cast<byte>((v >> 16) & 0xFF),
+        static_cast<byte>((v >> 24) & 0xFF),
     };
 }
 
@@ -36,6 +36,6 @@ std::array<byte, 4> uint_to_bytes(unsigned int v)
         static_cast<byte>((v >> 24) & 0xFF),
         static_cast<byte>((v >> 16) & 0xFF),
         static_cast<byte>((v >> 8) & 0xFF),
-        static_cast<byte>((v) & 0xFF),
+        static_cast<byte>((v)&0xFF),
     };
 }

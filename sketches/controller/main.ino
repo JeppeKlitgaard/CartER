@@ -58,6 +58,7 @@ void setup()
     S.println("Starting loop.");
     S.println("--------------");
     S.println();
+    S.write(INITIAL_OUTPUT_STOP_MARKER, INITIAL_OUTPUT_STOP_MARKER_LENGTH);
 }
 
 void loop()
