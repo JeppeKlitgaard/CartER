@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include <vector>
+#include <string>
 
 class RawPacket : private std::vector<byte>
 {
@@ -15,6 +16,7 @@ public:
     typedef typename base_vector::size_type size_type;
     typedef typename base_vector::iterator iterator;
     typedef typename base_vector::const_iterator const_iterator;
+    typedef typename base_vector::value_type value_type;
 
     using base_vector::vector; // constructor
 
@@ -32,6 +34,14 @@ public:
     using base_vector::insert;
 
     unsigned long pop_unsigned_long();
+
+    void add(char *msg, size_t size);
+    void add_newline();
+
+    template <class T>
+    void add(T value) {
+        std::copy((byte*) &value, ((byte*) &value) + sizeof(T), std::back_inserter(*this));
+    }
 };
 
 /**
@@ -41,6 +51,7 @@ class Packet
 {
 public:
     static const byte id = 0x00; // NUL
+    byte observed_id = 0x0F; // For UnknownPacket case
 
     explicit Packet();
     virtual ~Packet() = default;
@@ -56,6 +67,7 @@ public:
     virtual void post_consume();
 
     virtual void construct();
+    virtual void construct(byte id); // For UnknownPacket case
 };
 
 #endif

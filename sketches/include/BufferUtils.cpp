@@ -16,12 +16,26 @@ unsigned long read_unsigned_long(Stream &buf)
     return l;
 }
 
-std::array<byte, 4> ulong_to_bytes(unsigned long l)
+std::array<byte, 4> ulong_to_bytes(unsigned long v)
 {
+    static_assert(sizeof(unsigned long) == 4, "Unsigned long is not right size");
+
     return std::array<byte, 4>{
-        (byte)(l >> 24) & 0xFF,
-        (byte)(l >> 16) & 0xFF,
-        (byte)(l >> 8) & 0xFF,
-        (byte)(l)&0xFF,
+        static_cast<byte>((v >> 24) & 0xFF),
+        static_cast<byte>((v >> 16) & 0xFF),
+        static_cast<byte>((v >> 8) & 0xFF),
+        static_cast<byte>((v)&0xFF),
+    };
+}
+
+std::array<byte, 4> uint_to_bytes(unsigned int v)
+{
+    static_assert(sizeof(unsigned int) == 4, "Unsigned int is not right size");
+
+    return std::array<byte, 4>{
+        static_cast<byte>((v >> 24) & 0xFF),
+        static_cast<byte>((v >> 16) & 0xFF),
+        static_cast<byte>((v >> 8) & 0xFF),
+        static_cast<byte>((v) & 0xFF),
     };
 }

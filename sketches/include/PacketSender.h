@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+#include <memory>
+
 #include <Packet.h>
 
 class PacketSender {
@@ -12,7 +14,7 @@ class PacketSender {
     public:
         PacketSender(Stream &stream);
 
-        void send(Packet &packet);
+        void send(std::unique_ptr<Packet> packet);
 };
 
 extern PacketSender packet_sender;

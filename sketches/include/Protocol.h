@@ -4,8 +4,9 @@
 #include <Arduino.h>
 
 #include <vector>
-
+#include <PString.h>
 #include <Packet.h>
+#include <Init.h>
 
 // Null
 class NullPacket : public Packet
@@ -23,22 +24,25 @@ class UnknownPacket : public Packet
 {
 public:
     static const byte id = 0x3F; // ?
-    byte observed_id = 0x0F;
-
-    UnknownPacket();
 
     virtual byte get_id() const override;
 
-    virtual void construct(byte id);
+    UnknownPacket();
 };
 
 // Debug
 class DebugPacket : public Packet
 {
 public:
+    char* _msg;
+    size_t _size;
+
     static const byte id = 0x7E; // ~
 
     virtual byte get_id() const override;
+    virtual RawPacket to_raw_packet() override;
+
+    void construct(char *message, size_t size);
 
     DebugPacket();
 };

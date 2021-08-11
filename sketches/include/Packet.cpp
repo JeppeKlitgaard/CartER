@@ -1,4 +1,5 @@
 #include <Packet.h>
+#include <BufferUtils.h>
 
 // RawPacket
 unsigned long RawPacket::pop_unsigned_long()
@@ -13,6 +14,17 @@ unsigned long RawPacket::pop_unsigned_long()
     this->erase(this->begin(), this->begin() + 4);
 
     return l;
+}
+
+void RawPacket::add(char *msg, size_t size) {
+    add(size);
+    for (size_t i = 0; i < size; ++i)
+        add(msg[i]);
+}
+
+void RawPacket::add_newline() {
+    add((byte)0x0D);
+    add((byte)0x0A);
 }
 
 // Packet
@@ -30,5 +42,10 @@ void Packet::consume(Stream &sbuf) {}
 void Packet::post_consume() {}
 
 void Packet::construct() {}
+void Packet::construct(byte id)
+{
+    observed_id = id;
+}
+
 
 RawPacket Packet::to_raw_packet() {}

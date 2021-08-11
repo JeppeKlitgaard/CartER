@@ -6,6 +6,8 @@
 #include <Init.h>
 #include <PacketSender.h>
 #include <BufferUtils.h>
+#include <PString.h>
+// #include <Utils.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
@@ -20,12 +22,14 @@ PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
 
 std::unique_ptr<Packet> PacketReactor::read_packet()
 {
-    int id = _s.read();
+    int id_raw = _s.read();
 
-    if (id == -1)
+    if (id_raw == -1)
     {
         return std::make_unique<NullPacket>();
     }
+
+    byte id = static_cast<byte>(id_raw);
 
     std::unique_ptr<Packet> packet = std::make_unique<Packet>();
 
@@ -51,7 +55,7 @@ std::unique_ptr<Packet> PacketReactor::read_packet()
         packet = _read_and_construct_packet<PongPacket>();
         break;
     default:
-        std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
+        packet = std::make_unique<UnknownPacket>();
         packet->construct(id);
         break;
     }
@@ -63,16 +67,32 @@ void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
 {
     byte id = packet->get_id();
 
-    S.print("ID4: ");
-    S.println(id);
-
-
     switch (id)
     {
+    case UnknownPacket::id:
+    {
+        std::unique_ptr<DebugPacket> debug_pkg = std::make_unique<DebugPacket>();
+
+        char s_buf[STRING_BUF_SIZE];
+        PString debug_msg(s_buf, sizeof(s_buf));
+        debug_msg.print("Received unknown packet with ID: ");
+        debug_msg.print(packet->observed_id);
+
+        S.print("String size: ");
+        S.println(debug_msg.length());
+
+        debug_pkg->construct(s_buf, debug_msg.length());
+
+        packet_sender.send(std::move(debug_pkg));
+
+        // S.print(debug_pkg->to_raw_packet().data());
+        break;
+    }
     case NullPacket::id:
         S.println("NULL");
         break;
     case PingPacket::id:
+    {
         S.println("PONG");
         PongPacket pong;
         unsigned long ts = read_unsigned_long(S);
@@ -80,15 +100,13 @@ void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
         S.println(ts);
 
         packet_sender.send(pong);
+        break;
+    }
     }
 }
 
 void PacketReactor::tick()
 {
     auto packet = read_packet();
-    S.print("ID3: ");
-    S.println(packet->id);
-    S.print("GetID3: ");
-    S.println(packet->get_id());
     react_packet(std::move(packet));
 }

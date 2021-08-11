@@ -2,6 +2,7 @@
 
 #include <array>
 
+
 #include <BufferUtils.h>
 #include <Packet.h>
 #include <DebugUtils.h>
@@ -15,14 +16,22 @@ byte NullPacket::get_id() const { return NullPacket::id;}
 UnknownPacket::UnknownPacket() {}
 byte UnknownPacket::get_id() const { return UnknownPacket::id;}
 
-void UnknownPacket::construct(byte id)
-{
-    observed_id = id;
-}
-
 // Debug
 DebugPacket::DebugPacket() {}
 byte DebugPacket::get_id() const { return DebugPacket::id;}
+void DebugPacket::construct(char *msg, size_t size) {
+    _msg = msg;
+    _size = size;
+}
+
+RawPacket DebugPacket::to_raw_packet() {
+    RawPacket raw_packet;
+    raw_packet.add(id);
+    raw_packet.add(_msg, _size);
+    raw_packet.add_newline();
+
+    return raw_packet;
+}
 
 // Error
 ErrorPacket::ErrorPacket() {}

@@ -21,6 +21,7 @@ const String ModeStrings[] = {
 
 extern Mode mode;
 
+void set_mode(const Mode target_mode);
 void toggle_mode();
 
 // Configuration

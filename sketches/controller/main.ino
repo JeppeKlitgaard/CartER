@@ -17,6 +17,8 @@
 
 void setup()
 {
+    initialise();
+
     // Serial
     S.begin(BAUD_RATE);
 
