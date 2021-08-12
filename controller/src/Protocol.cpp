@@ -17,7 +17,10 @@ UnknownPacket::UnknownPacket() {}
 byte UnknownPacket::get_id() const { return UnknownPacket::id;}
 
 // Debug
-DebugPacket::DebugPacket() {}
+DebugPacket::DebugPacket() {
+    _msg = "";
+    _size = 0;
+}
 byte DebugPacket::get_id() const { return DebugPacket::id;}
 void DebugPacket::construct(char *msg, size_t size) {
     _msg = msg;
@@ -38,7 +41,9 @@ ErrorPacket::ErrorPacket() {}
 byte ErrorPacket::get_id() const { return ErrorPacket::id;}
 
 // Ping
-PingPacket::PingPacket() {}
+PingPacket::PingPacket() {
+    ping_timestamp = 0;
+}
 byte PingPacket::get_id() const { return 0x70;}
 
 void PingPacket::consume(Stream &buf)

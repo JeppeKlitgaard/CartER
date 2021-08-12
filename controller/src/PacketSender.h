@@ -12,7 +12,7 @@ class PacketSender {
         Stream &_s;
 
     public:
-        PacketSender(Stream &stream);
+        explicit PacketSender(Stream &stream);
 
         void send(Packet &packet);
         void send(std::unique_ptr<Packet> packet);

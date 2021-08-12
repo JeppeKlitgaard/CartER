@@ -15,9 +15,10 @@
 // Null
 class NullPacket : public Packet
 {
-public:
+private:
     static const byte id = 0x00; // NUL
 
+public:
     NullPacket();
     using Packet::construct;
 
@@ -27,9 +28,10 @@ public:
 // Unknown
 class UnknownPacket : public Packet
 {
-public:
+private:
     static const byte id = 0x3F; // ?
 
+public:
     UnknownPacket();
     using Packet::construct;
 
@@ -39,11 +41,13 @@ public:
 // Debug
 class DebugPacket : public Packet
 {
+private:
+    static const byte id = 0x7E; // ~
+
 public:
     char* _msg;
     size_t _size;
 
-    static const byte id = 0x7E; // ~
 
     DebugPacket();
     using Packet::construct;
@@ -57,9 +61,10 @@ public:
 // Error
 class ErrorPacket : public Packet
 {
-public:
+private:
     static const byte id = 0x21; // !
 
+public:
     ErrorPacket();
     using Packet::construct;
 
@@ -69,10 +74,10 @@ public:
 // Ping
 class PingPacket : public Packet
 {
-
-public:
+private:
     static const byte id = 0x70; // p
 
+public:
     unsigned long ping_timestamp;
 
     PingPacket();
@@ -90,8 +95,10 @@ public:
 // Pong
 class PongPacket : public PingPacket
 {
-public:
+private:
     static const byte id = 0x50; // P
+
+public:
 
     PongPacket();
 

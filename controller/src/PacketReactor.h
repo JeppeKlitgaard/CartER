@@ -33,7 +33,7 @@ protected:
     }
 
 public:
-    PacketReactor(Stream &stream);
+    explicit PacketReactor(Stream &stream);
 
     std::unique_ptr<Packet> read_packet();
     void react_packet(std::unique_ptr<Packet> packet);
