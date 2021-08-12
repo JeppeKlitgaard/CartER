@@ -15,10 +15,10 @@
 // Null
 class NullPacket : public Packet
 {
-private:
-    static const byte id = 0x00; // NUL
 
 public:
+    static const byte id = 0x00; // NUL
+
     NullPacket();
     using Packet::construct;
 
@@ -28,79 +28,92 @@ public:
 // Unknown
 class UnknownPacket : public Packet
 {
-private:
+public:
     static const byte id = 0x3F; // ?
 
-public:
     UnknownPacket();
     using Packet::construct;
 
     virtual byte get_id() const override;
 };
 
-// Debug
-class DebugPacket : public Packet
+class DebugErrorBasePacket : public Packet
 {
-private:
-    static const byte id = 0x7E; // ~
-
 public:
     char* _msg;
     size_t _size;
 
-
-    DebugPacket();
+    DebugErrorBasePacket();
     using Packet::construct;
 
-    virtual byte get_id() const override;
+    virtual byte get_id() const override = 0;
     virtual RawPacket to_raw_packet() override;
 
     void construct(char *message, size_t size);
 };
 
-// Error
-class ErrorPacket : public Packet
+// Debug
+class DebugPacket : public DebugErrorBasePacket
 {
-private:
-    static const byte id = 0x21; // !
-
 public:
-    ErrorPacket();
-    using Packet::construct;
+    static const byte id = 0x7E; // ~
+
+    DebugPacket();
+    using DebugErrorBasePacket::construct;
 
     virtual byte get_id() const override;
 };
 
-// Ping
-class PingPacket : public Packet
+// Error
+class ErrorPacket : public DebugErrorBasePacket
 {
-private:
-    static const byte id = 0x70; // p
+public:
+    static const byte id = 0x21; // !
 
+    ErrorPacket();
+    using DebugErrorBasePacket::construct;
+
+    virtual byte get_id() const override;
+};
+
+// PingPongBase
+class PingPongBasePacket : public Packet
+{
 public:
     unsigned long ping_timestamp;
 
-    PingPacket();
+    PingPongBasePacket();
     using Packet::construct;
 
-    virtual byte get_id() const override;
+    virtual byte get_id() const override = 0;
 
     virtual RawPacket to_raw_packet() override;
     virtual void consume(Stream &sbuf) override;
 
-    // virtual void construct();
     virtual void construct(unsigned long timestamp);
 };
 
-// Pong
-class PongPacket : public PingPacket
+// Ping
+class PingPacket : public PingPongBasePacket
 {
-private:
-    static const byte id = 0x50; // P
 
 public:
+    static const byte id = 0x70; // p
+
+    PingPacket();
+    using PingPongBasePacket::construct;
+
+    virtual byte get_id() const override;
+};
+
+// Pong
+class PongPacket : public PingPongBasePacket
+{
+public:
+    static const byte id = 0x50; // P
 
     PongPacket();
+    using PingPongBasePacket::construct;
 
     virtual byte get_id() const override;
 };

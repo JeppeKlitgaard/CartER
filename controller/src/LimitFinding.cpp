@@ -183,6 +183,10 @@ void loop_limit_finding()
             toggle_limit_finding_mode();
         }
         break;
+
+    case LimitFindingMode::DONE:
+        DPL("Already done.");
+        break;
     }
     asteppers_run();
 }

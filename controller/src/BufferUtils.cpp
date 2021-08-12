@@ -1,6 +1,19 @@
 #include <BufferUtils.h>
 #include <Init.h>
 
+#include <struct.h>
+
+uint32_t unpack_uint_32(Stream &sbuf) {
+    char buf[4];
+    sbuf.readBytes(buf, 4);
+
+    uint32_t rval;
+
+    struct_unpack(buf, "i", &rval);
+
+    return rval;
+}
+
 // Do not use with serial.Timeout
 unsigned long read_unsigned_long(Stream &buf)
 {

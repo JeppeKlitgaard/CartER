@@ -56,7 +56,7 @@ public:
 class Packet
 {
 private:
-    static const byte id = 0x00; // NUL
+    static const byte id; // NUL
 
 public:
     byte observed_id = 0x0F; // For UnknownPacket case

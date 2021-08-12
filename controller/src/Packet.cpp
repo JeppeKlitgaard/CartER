@@ -16,13 +16,15 @@ unsigned long RawPacket::pop_unsigned_long()
     return l;
 }
 
-void RawPacket::add(char *msg, size_t size) {
+void RawPacket::add(char *msg, size_t size)
+{
     add(size);
     for (size_t i = 0; i < size; ++i)
         add(msg[i]);
 }
 
-void RawPacket::add_newline() {
+void RawPacket::add_newline()
+{
     add((byte)0x0D);
     add((byte)0x0A);
 }
@@ -32,10 +34,7 @@ Packet::Packet()
 {
 }
 
-
-byte Packet::get_id() const {
-    return id;
-}
+byte Packet::get_id() const { return 0x00; }
 
 void Packet::pre_consume() {}
 void Packet::consume(Stream &sbuf) {}
@@ -47,8 +46,8 @@ void Packet::construct(byte id)
     observed_id = id;
 }
 
-
-RawPacket Packet::to_raw_packet() {
+RawPacket Packet::to_raw_packet()
+{
     RawPacket raw_packet;
 
     return raw_packet;
