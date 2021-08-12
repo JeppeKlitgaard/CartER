@@ -185,26 +185,28 @@ class SetPositionPacket(OutboundOnlyPacket):
         return bytes_
 
 
+#! Currently unused
 class GetPositionPacket(InboundOnlyPacket):
     id_ = byte(0x58)  # X
 
-    def __init__(self, position_steps: int, position_mm: float) -> None:
-        self.position_steps = position_steps
-        self.position_mm = position_mm
+    def __init__(self, value_steps: int, value_mm: float) -> None:
+        self.value_steps = value_steps
+        self.value_mm = value_mm
 
     @classmethod
     def read(cls, serial: Serial) -> GetPositionPacket:
-        position_steps = unpack(Format.INT_32, serial)
-        position_mm = unpack(Format.FLOAT_32, serial)
+        value_steps = unpack(Format.INT_32, serial)
+        value_mm = unpack(Format.FLOAT_32, serial)
 
-        return cls(position_steps=position_steps, position_mm=position_mm)
+        return cls(value_steps=value_steps, value_mm=value_mm)
 
 
-class SetVelocityPacket:
+class SetVelocityPacket(SetPositionPacket):
     id_ = byte(0x76)  # v
 
 
-class GetVelocityPacket(Packet):
+#! Currently unused
+class GetVelocityPacket(GetPositionPacket):
     id_ = byte(0x76)  # V
 
 
