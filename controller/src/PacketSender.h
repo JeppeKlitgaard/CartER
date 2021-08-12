@@ -14,8 +14,8 @@ class PacketSender {
     public:
         explicit PacketSender(Stream &stream);
 
-        void send(Packet &packet);
-        void send(std::unique_ptr<Packet> packet);
+        void send(const OutboundPacket &packet);
+        void send(std::unique_ptr<OutboundPacket> packet);
 };
 
 extern PacketSender packet_sender;

@@ -7,13 +7,18 @@
 #include <DebugUtils.h>
 #include <Fixes.h>
 
-// Null
-NullPacket::NullPacket() {}
-byte NullPacket::get_id() const { return NullPacket::id; }
+
+const char* SetOperationChars[] = {
+    "-",
+    "=",
+    "+",
+    "0",
+};
 
 // Unknown
 UnknownPacket::UnknownPacket() {}
 byte UnknownPacket::get_id() const { return UnknownPacket::id; }
+void UnknownPacket::read(Stream &sbuf) {};
 
 // DebugErrorBase
 DebugErrorBasePacket::DebugErrorBasePacket()
@@ -28,7 +33,7 @@ void DebugErrorBasePacket::construct(char *msg, size_t size)
     _size = size;
 }
 
-RawPacket DebugErrorBasePacket::to_raw_packet()
+RawPacket DebugErrorBasePacket::to_raw_packet() const
 {
     RawPacket raw_packet;
     raw_packet.add(this->get_id());
@@ -53,7 +58,7 @@ PingPongBasePacket::PingPongBasePacket()
 }
 // byte PingPongBasePacket::get_id() const { return 0x70; }
 
-void PingPongBasePacket::consume(Stream &buf)
+void PingPongBasePacket::read(Stream &buf)
 {
     ping_timestamp = read_unsigned_long(buf);
 }
@@ -63,7 +68,7 @@ void PingPongBasePacket::construct(unsigned long timestamp)
     ping_timestamp = timestamp;
 }
 
-RawPacket PingPongBasePacket::to_raw_packet()
+RawPacket PingPongBasePacket::to_raw_packet() const
 {
     RawPacket raw_packet;
 

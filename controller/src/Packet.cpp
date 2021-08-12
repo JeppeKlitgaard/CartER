@@ -30,25 +30,28 @@ void RawPacket::add_newline()
 }
 
 // Packet
-Packet::Packet()
-{
-}
-
-byte Packet::get_id() const { return 0x00; }
-
-void Packet::pre_consume() {}
-void Packet::consume(Stream &sbuf) {}
-void Packet::post_consume() {}
-
 void Packet::construct() {}
 void Packet::construct(byte id)
 {
     observed_id = id;
 }
 
-RawPacket Packet::to_raw_packet()
+// NullInbound
+NullInboundPacket::NullInboundPacket() {}
+byte NullInboundPacket::get_id() const { return NullPacket::id; }
+void NullInboundPacket::read(Stream &sbuf) {}
+
+// NullOutbound
+NullOutboundPacket::NullOutboundPacket() {}
+byte NullOutboundPacket::get_id() const { return NullPacket::id; }
+
+RawPacket NullOutboundPacket::to_raw_packet() const
 {
     RawPacket raw_packet;
+    raw_packet.add(this->get_id());
 
     return raw_packet;
 }
+
+NullPacket::NullPacket() : NullInboundPacket() {}
+byte NullPacket::get_id() const { return NullPacket::id; }

@@ -28,11 +28,11 @@ public:
     using base_vector::data;
     using base_vector::end;
     using base_vector::erase;
+    using base_vector::insert;
     using base_vector::push_back;
     using base_vector::reserve;
     using base_vector::resize;
     using base_vector::size;
-    using base_vector::insert;
 
     unsigned long pop_unsigned_long();
 
@@ -40,14 +40,15 @@ public:
     void add_newline();
 
     template <class T>
-    void add(T value) {
-        std::copy((byte*) &value, ((byte*) &value) + sizeof(T), std::back_inserter(*this));
+    void add(T value)
+    {
+        std::copy((byte *)&value, ((byte *)&value) + sizeof(T), std::back_inserter(*this));
     }
     template <size_t SIZE>
-    void add(std::array<byte, SIZE> &b_array) {
+    void add(std::array<byte, SIZE> &b_array)
+    {
         this->insert(this->end(), b_array.begin(), b_array.end());
     }
-
 };
 
 /**
@@ -58,21 +59,68 @@ class Packet
 public:
     byte observed_id = 0x0F; // For UnknownPacket case
 
-    explicit Packet();
+    explicit Packet() = default;
     virtual ~Packet() = default;
-    Packet(const Packet&) = delete;
-    Packet& operator=(const Packet&) = delete;
+    Packet(const Packet &) = delete;
+    Packet &operator=(const Packet &) = delete;
 
-    virtual RawPacket to_raw_packet();
-
-    virtual byte get_id() const;
-
-    virtual void pre_consume();
-    virtual void consume(Stream &sbuf);
-    virtual void post_consume();
+    virtual byte get_id() const = 0;
 
     virtual void construct();
     virtual void construct(byte id); // For UnknownPacket case
+};
+
+class InboundPacket : virtual public Packet
+{
+public:
+    explicit InboundPacket() = default;
+    virtual ~InboundPacket() = default;
+    using Packet::construct;
+
+    virtual void read(Stream &sbuf) = 0;
+};
+
+class OutboundPacket : virtual public Packet
+{
+public:
+    explicit OutboundPacket() = default;
+    virtual ~OutboundPacket() = default;
+    using Packet::construct;
+
+    virtual RawPacket to_raw_packet() const = 0;
+};
+
+class NullInboundPacket : public InboundPacket
+{
+public:
+    NullInboundPacket();
+    using InboundPacket::construct;
+
+    virtual byte get_id() const override;
+
+    virtual void read(Stream &sbuf) override;
+};
+
+class NullOutboundPacket : public OutboundPacket
+{
+public:
+    NullOutboundPacket();
+    using OutboundPacket::construct;
+
+    virtual byte get_id() const override;
+
+    virtual RawPacket to_raw_packet() const override;
+};
+
+class NullPacket : public NullOutboundPacket, NullInboundPacket
+{
+public:
+    static const byte id = 0x00; // NUL
+
+    NullPacket();
+    using OutboundPacket::construct;
+
+    virtual byte get_id() const override;
 };
 
 #endif

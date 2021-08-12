@@ -1,12 +1,10 @@
 #ifndef PACKET_REACTOR_H
 #define PACKET_REACTOR_H
 
-// #include <CustomArduino.h>
 #include <CustomArduino.h>
 
 #include <memory>
 
-#include <Packet.h>
 #include <Utils.h>
 
 // Packet buffer
@@ -23,9 +21,7 @@ protected:
         // std::make_unique<T> packet;
         std::unique_ptr<T> packet = std::make_unique<T>();
 
-        packet->pre_consume();
-        packet->consume(_s);
-        packet->post_consume();
+        packet->read(_s);
 
         packet->construct();
 
@@ -35,8 +31,6 @@ protected:
 public:
     explicit PacketReactor(Stream &stream);
 
-    std::unique_ptr<Packet> read_packet();
-    void react_packet(std::unique_ptr<Packet> packet);
     void tick();
 };
 

@@ -6,63 +6,63 @@
 #include <Init.h>
 #include <PacketSender.h>
 #include <BufferUtils.h>
+#include <DebugUtils.h>
 #include <PString.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
 
-
-std::unique_ptr<Packet> PacketReactor::read_packet()
+void PacketReactor::tick()
 {
+    // Read
     int id_raw = _s.read();
 
     if (id_raw == -1)
     {
-        return std::make_unique<NullPacket>();
+        id_raw = 0; // NullPacket::id as int
     }
 
     byte id = static_cast<byte>(id_raw);
 
-    std::unique_ptr<Packet> packet = std::make_unique<Packet>();
-
-    // // This could definitely be templated
+    //
     switch (id)
     {
     case NullPacket::id:
-        packet = _read_and_construct_packet<NullPacket>();
+    {
+        std::unique_ptr<NullInboundPacket> packet = _read_and_construct_packet<NullInboundPacket>();
         break;
+
+        // Reaction
+        DPL("NUL");
+    }
     case UnknownPacket::id:
-        packet = _read_and_construct_packet<UnknownPacket>();
-        break;
-    case DebugPacket::id:
-        packet = _read_and_construct_packet<DebugPacket>();
-        break;
-    case ErrorPacket::id:
-        packet = _read_and_construct_packet<ErrorPacket>();
-        break;
-    case PingPacket::id:
-        packet = _read_and_construct_packet<PingPacket>();
-        break;
-    case PongPacket::id:
-        packet = _read_and_construct_packet<PongPacket>();
-        break;
-    default:
-        packet = std::make_unique<UnknownPacket>();
-        packet->construct(id);
+    {
+        std::unique_ptr<UnknownPacket> packet = _read_and_construct_packet<UnknownPacket>();
         break;
     }
-
-    return packet;
-}
-
-void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
-{
-    byte id = packet->get_id();
-
-    switch (id)
+    case PingPacket::id:
     {
-    case UnknownPacket::id:
+        std::unique_ptr<PingPacket> packet = _read_and_construct_packet<PingPacket>();
+
+        // Reaction
+        std::unique_ptr<PongPacket> pong_pkt = std::make_unique<PongPacket>();
+
+        pong_pkt->construct(packet->ping_timestamp);
+
+        packet_sender.send(std::move(pong_pkt));
+        break;
+
+    }
+    case PongPacket::id:
     {
+        std::unique_ptr<PongPacket> packet = _read_and_construct_packet<PongPacket>();
+        break;
+    }
+    default:
+        std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
+        packet->construct(id);
+
+        // Reaction
         std::unique_ptr<DebugPacket> debug_pkg = std::make_unique<DebugPacket>();
 
         char s_buf[STRING_BUF_SIZE];
@@ -74,30 +74,6 @@ void PacketReactor::react_packet(std::unique_ptr<Packet> packet)
 
         packet_sender.send(std::move(debug_pkg));
 
-        // S.print(debug_pkg->to_raw_packet().data());
         break;
     }
-    case NullPacket::id:
-        S.println("NULL");
-        break;
-
-    case PingPacket::id:
-    {
-
-        std::unique_ptr<PingPacket>
-        ping_pkt(static_cast<PingPacket*>(packet.release()));
-        std::unique_ptr<PongPacket> pong_pkt = std::make_unique<PongPacket>();
-
-        pong_pkt->construct(ping_pkt->ping_timestamp);
-
-        packet_sender.send(std::move(pong_pkt));
-        break;
-    }
-    }
-}
-
-void PacketReactor::tick()
-{
-    auto packet = read_packet();
-    react_packet(std::move(packet));
 }
