@@ -51,11 +51,11 @@ class NetworkManager:
         id_ = self.serial.read(1)
 
         try:
-            packet = PACKET_ID_MAP[id_]()
+            packet_cls = PACKET_ID_MAP[id_]
         except KeyError:
             raise ConnectionError(f"Invalid packet ID: {id_}")
 
-        packet.read(self.serial)
+        packet = packet_cls.read(self.serial)
         return packet
 
     def send_packet(self, packet: Packet) -> None:

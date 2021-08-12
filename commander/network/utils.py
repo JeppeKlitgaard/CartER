@@ -6,7 +6,7 @@ Note: All types are little-endian when transferred.
 """
 import struct
 from enum import Enum
-from typing import Union, cast
+from typing import Literal, Union, cast, overload
 
 from serial import Serial
 
@@ -35,11 +35,47 @@ class Format(str, Enum):
     ASCII_CHAR = "A"  # home-made
 
 
-PackableT = Union[str, int]
+PackableT = Union[str, int, float, bytes]
 UnpackableT = PackableT
 
+StringFormats = Literal[Format.STRING, Format.ASCII_CHAR]
+IntFormats = Literal[
+    Format.INT_8,
+    Format.UINT_8,
+    Format.INT_16,
+    Format.UINT_16,
+    Format.INT_32,
+    Format.UINT_32,
+    Format.INT_64,
+    Format.UINT_64,
+]
+FloatFormats = Literal[Format.FLOAT_32, Format.FLOAT_64]
+ByteFormats = Literal[Format.CHAR]
 
-def unpack(fmt: Union[Format, str], serial: Serial) -> UnpackableT:
+
+@overload
+def unpack(fmt: StringFormats, serial: Serial) -> str:
+    ...
+
+
+@overload
+def unpack(fmt: IntFormats, serial: Serial) -> int:
+    ...
+
+
+@overload
+def unpack(fmt: FloatFormats, serial: Serial) -> float:
+    ...
+
+
+@overload
+def unpack(fmt: ByteFormats, serial: Serial) -> bytes:
+    ...
+
+
+def unpack(
+    fmt: Union[StringFormats, IntFormats, FloatFormats, ByteFormats], serial: Serial
+) -> UnpackableT:
     """
     Wraps struct.unpack to make calcsizing easier.
 
@@ -50,23 +86,24 @@ def unpack(fmt: Union[Format, str], serial: Serial) -> UnpackableT:
         # String consists of an size_t (ulong on Due)
         # And then that many characters of ASCII formatted characters
         size_str = unpack(Format.UINT_32, serial)
-        fmt = str(size_str) + "s"
+        fmt_str = str(size_str) + "s"
 
-        msg_bytes = cast(bytes, unpack(fmt, serial))
+        size = struct.calcsize(fmt_str)
+        buf = serial.read(size)
+        msg_bytes = cast(bytes, struct.unpack(fmt_str, buf)[0])
 
         return msg_bytes.decode("ascii")
 
     if fmt is Format.ASCII_CHAR:
-        obj = cast(bytes, unpack(Format.CHAR, serial))
+        obj = unpack(Format.CHAR, serial)
 
         return obj.decode("ascii")
 
-    if isinstance(fmt, Format):
-        fmt = fmt.value
+    fmt_str = fmt.value
 
-    size = struct.calcsize(fmt)
+    size = struct.calcsize(fmt_str)
     buf = serial.read(size)
-    return cast(UnpackableT, struct.unpack(fmt, buf)[0])
+    return cast(UnpackableT, struct.unpack(fmt_str, buf)[0])
 
 
 def pack(fmt: Union[Format, str], obj: PackableT) -> bytes:

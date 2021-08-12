@@ -31,8 +31,10 @@ Note that simulate has a few configurable options. See the help page:
 cartpoleml --help
 ```
 
-## Arduino Libraries
+## Build system
 
-The following C++/C/Arduino libraries are used and must be installed:
-- svperbeast's `struct` (https://github.com/svperbeast/struct). __note: not an Arduino library!__
-- TODO (see source)
+CartpoleML makes use of the PlatformIO toolchain for managing the embedded
+controller code for the Arduino Due that powers the project.
+
+The libraries used are defined in `./controller/platformio.ini` along with the
+build configuration.

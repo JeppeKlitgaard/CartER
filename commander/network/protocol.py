@@ -5,7 +5,7 @@ Contains the networking logic for communication with the Controller.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, cast
+from typing import Any, Dict, Type
 
 from serial import Serial
 
@@ -15,8 +15,8 @@ from commander.network.utils import Format, byte, pack, unpack
 
 class Packet(ABC):
     id_: bytes
-    is_constructed: bool = False
 
+    @abstractmethod
     def __init__(self) -> None:
         ...
 
@@ -41,23 +41,13 @@ class Packet(ABC):
 
         return f"<{__name__}: {prop_str}>"
 
+    @classmethod
     @abstractmethod
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
+    def read(cls, serial: Serial) -> Packet:
         ...
 
     @abstractmethod
-    def read(self, serial: Serial) -> None:
-        ...
-
     def to_bytes(self) -> bytes:
-        if not self.is_constructed:
-            raise RuntimeError(
-                "Packet was not yet fully constructed. Call construct() or read() first"
-            )
-        return self._to_bytes()
-
-    @abstractmethod
-    def _to_bytes(self) -> bytes:
         ...
 
 
@@ -69,7 +59,7 @@ class InboundOnlyPacket(Packet):
     but wouldn't ever be useful.
     """
 
-    def _to_bytes(self) -> bytes:
+    def to_bytes(self) -> bytes:
         raise NotImplementedError(
             f"{self.__class__.__name__} is an inbound only packet. "
             "It does not have a serialisation method."
@@ -84,9 +74,10 @@ class OutboundOnlyPacket(Packet):
     but wouldn't ever be useful.
     """
 
-    def read(self, serial: Serial) -> None:
+    @classmethod
+    def read(cls, serial: Serial) -> OutboundOnlyPacket:
         raise NotImplementedError(
-            f"{self.__class__.__name__} is an outbound only packet. "
+            f"{cls.__name__} is an outbound only packet. "
             "It does not have a deserialisation method."
         )
 
@@ -96,11 +87,12 @@ class OnlyIDPacket(Packet):
     A packet that has no attributes apart from its ID.
     """
 
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        self.is_constructed = True
+    def __init__(self) -> None:
+        ...
 
-    def read(self, serial: Serial) -> None:
-        self.construct()
+    @classmethod
+    def read(cls, serial: Serial) -> OnlyIDPacket:
+        return cls()
 
     def _to_bytes(self) -> bytes:
         return self.id_
@@ -113,15 +105,11 @@ class NullPacket(OnlyIDPacket):
 class UnknownPacket(Packet):
     id_ = byte(0x3F)  # ?
 
-    observed_id: Optional[bytes] = None
+    def __init__(self, observed_id: bytes) -> None:
+        self.observed_id = observed_id
 
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        assert isinstance(kwargs["observed_id"], bytes)
-        self.observed_id = kwargs.pop("observed_id")
-
-        self.is_constructed = True
-
-    def read(self, serial: Serial) -> None:
+    @classmethod
+    def read(self, serial: Serial) -> UnknownPacket:
         raise NotImplementedError("UnknownPacket does not have a read method.")
 
     def _to_bytes(self) -> bytes:
@@ -131,18 +119,14 @@ class UnknownPacket(Packet):
 class DebugPacket(Packet):
     id_ = byte(0x7E)  # ~
 
-    msg: Optional[str] = None
+    def __init__(self, msg: str) -> None:
+        self.msg = msg
 
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        assert isinstance(kwargs["msg"], str)
-        self.msg = kwargs.pop("msg")
-
-        self.is_constructed = True
-
-    def read(self, serial: Serial) -> None:
+    @classmethod
+    def read(cls, serial: Serial) -> DebugPacket:
         msg = unpack(Format.STRING, serial)
 
-        self.construct(msg=msg)
+        return cls(msg=msg)
 
     def _to_bytes(self) -> bytes:
         bytes_ = b""
@@ -160,18 +144,14 @@ class ErrorPacket(DebugPacket):
 class PingPacket(Packet):
     id_ = byte(0x70)  # p
 
-    timestamp: Optional[int] = None
+    def __init__(self, timestamp: int) -> None:
+        self.timestamp = timestamp
 
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        assert isinstance(kwargs["timestamp"], int)
-        self.timestamp = kwargs.pop("timestamp")
-
-        self.is_constructed = True
-
-    def read(self, serial: Serial) -> None:
+    @classmethod
+    def read(cls, serial: Serial) -> PingPacket:
         timestamp = unpack(Format.UINT_32, serial)
 
-        self.construct(timestamp=timestamp)
+        return cls(timestamp=timestamp)
 
     def _to_bytes(self) -> bytes:
         bytes_ = b""
@@ -189,28 +169,18 @@ class PongPacket(PingPacket):
 class SetPositionPacket(OutboundOnlyPacket):
     id_ = byte(0x78)  # x
 
-    operation: Optional[SetOperation] = None
-    cart_id: Optional[CartID] = None
-    value: Optional[int] = None  # In steps
-
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        assert isinstance(kwargs["operation"], SetOperation)
-        assert isinstance(kwargs["cart_id"], int)
-        assert isinstance(kwargs["value"], int)
-
-        self.operation = kwargs.pop("operation")
-        self.cart_id = kwargs.pop("cart_id")
-        self.value = kwargs.pop("value")
-
-        self.is_constructed = True
+    def __init__(self, operation: SetOperation, cart_id: CartID, value: int) -> None:
+        self.operation = operation
+        self.cart_id = cart_id
+        self.value = value
 
     def _to_bytes(self) -> bytes:
         bytes_ = b""
 
         bytes_ += self.id_
-        bytes_ += pack(Format.ASCII_CHAR, cast(str, self.operation.value))
-        bytes_ += pack(Format.UINT_8, cast(int, self.cart_id.value))
-        bytes_ += pack(Format.INT_16, cast(int, self.value))
+        bytes_ += pack(Format.ASCII_CHAR, self.operation.value)
+        bytes_ += pack(Format.UINT_8, self.cart_id.value)
+        bytes_ += pack(Format.INT_16, self.value)
 
         return bytes_
 
@@ -218,23 +188,16 @@ class SetPositionPacket(OutboundOnlyPacket):
 class GetPositionPacket(InboundOnlyPacket):
     id_ = byte(0x58)  # X
 
-    position_steps: Optional[int] = None
-    position_mm: Optional[float] = None
+    def __init__(self, position_steps: int, position_mm: float) -> None:
+        self.position_steps = position_steps
+        self.position_mm = position_mm
 
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        assert isinstance(kwargs["position_steps"], int)
-        assert isinstance(kwargs["position_mm"], float)
-
-        self.position_steps = kwargs.pop("position_steps")
-        self.position_mm = kwargs.pop("position_mm")
-
-        self.is_constructed = True
-
-    def read(self, serial: Serial) -> None:
+    @classmethod
+    def read(cls, serial: Serial) -> GetPositionPacket:
         position_steps = unpack(Format.INT_32, serial)
         position_mm = unpack(Format.FLOAT_32, serial)
 
-        self.construct(position_steps=position_steps, position_mm=position_mm)
+        return cls(position_steps=position_steps, position_mm=position_mm)
 
 
 class SetVelocityPacket:
@@ -256,31 +219,22 @@ class CheckLimitPacket(OnlyIDPacket):
 class ObservationPacket(InboundOnlyPacket):
     id_ = byte(0x40)  # @
 
-    timestamp_micros: Optional[int] = None
-    cart_id: Optional[CartID] = None
-    position_steps: Optional[int] = None
-    angle: Optional[float] = None
+    def __init__(
+        self, timestamp_micros: int, cart_id: CartID, position_steps: int, angle: float
+    ) -> None:
+        self.timestamp_micros = timestamp_micros
+        self.cart_id = cart_id
+        self.position_steps = position_steps
+        self.angle = angle
 
-    def construct(self, *args: Any, **kwargs: Dict[str, Any]) -> None:
-        assert isinstance(kwargs["timestamp_micros"], int)
-        assert isinstance(kwargs["cart_id"], int)
-        assert isinstance(kwargs["position_steps"], int)
-        assert isinstance(kwargs["angle"], float)
-
-        self.timestamp_micros = kwargs.pop("timestamp_micros")
-        self.cart_id = kwargs.pop("cart_id")
-        self.position_steps = kwargs.pop("position_steps")
-        self.angle = kwargs.pop("angle")
-
-        self.is_constructed = True
-
-    def read(self, serial: Serial) -> None:
+    @classmethod
+    def read(cls, serial: Serial) -> ObservationPacket:
         timestamp_micros = unpack(Format.UINT_32, serial)
-        cart_id = unpack(Format.UINT_32, serial)
+        cart_id = CartID(unpack(Format.UINT_32, serial))
         position_steps = unpack(Format.INT_32, serial)
         angle = unpack(Format.FLOAT_32, serial)
 
-        self.construct(
+        return cls(
             timestamp_micros=timestamp_micros,
             cart_id=cart_id,
             position_steps=position_steps,
