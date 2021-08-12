@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 #include <Init.h>
 #include <DebugUtils.h>

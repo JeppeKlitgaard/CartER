@@ -1,7 +1,7 @@
 #ifndef STREAM_WRAPPER_H
 #define STREAM_WRAPPER_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 #include <array>
 

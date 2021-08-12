@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 // I2C Multiplexer
 const uint8_t TCA9548A_ADDR = 0x70;

@@ -1,7 +1,7 @@
 #ifndef PACKET_SENDER_H
 #define PACKET_SENDER_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 #include <memory>
 

@@ -1,7 +1,7 @@
 #ifndef LIMIT_FINDING_H
 #define LIMIT_FINDING_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 #include <Bounce2.h>
 
 // Buttons

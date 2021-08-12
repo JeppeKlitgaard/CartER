@@ -48,4 +48,8 @@ void Packet::construct(byte id)
 }
 
 
-RawPacket Packet::to_raw_packet() {}
+RawPacket Packet::to_raw_packet() {
+    RawPacket raw_packet;
+
+    return raw_packet;
+}

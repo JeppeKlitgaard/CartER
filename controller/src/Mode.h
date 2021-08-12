@@ -1,7 +1,7 @@
 #ifndef MODE_H
 #define MODE_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 // Mode
 enum Mode

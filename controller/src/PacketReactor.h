@@ -1,7 +1,8 @@
 #ifndef PACKET_REACTOR_H
 #define PACKET_REACTOR_H
 
-#include <Arduino.h>
+// #include <CustomArduino.h>
+#include <CustomArduino.h>
 
 #include <memory>
 

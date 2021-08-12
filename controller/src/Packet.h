@@ -1,7 +1,7 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 #include <vector>
 #include <string>

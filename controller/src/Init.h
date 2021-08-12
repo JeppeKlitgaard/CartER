@@ -1,7 +1,7 @@
 #ifndef INIT_H
 #define INIT_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 #include <PacketReactor.h>
 #include <PacketSender.h>
 #include <Mode.h>

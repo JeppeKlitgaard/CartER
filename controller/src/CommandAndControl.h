@@ -1,7 +1,7 @@
 #ifndef COMMAND_AND_CONTROL_H
 #define COMMAND_AND_CONTROL_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 #include <Utils.h>
 #include <map>
 

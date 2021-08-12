@@ -30,3 +30,9 @@ Note that simulate has a few configurable options. See the help page:
 ```sh
 cartpoleml --help
 ```
+
+## Arduino Libraries
+
+The following C++/C/Arduino libraries are used and must be installed:
+- svperbeast's `struct` (https://github.com/svperbeast/struct). __note: not an Arduino library!__
+- TODO (see source)

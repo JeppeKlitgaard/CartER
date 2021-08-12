@@ -1,7 +1,7 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include <Arduino.h>
+#include <CustomArduino.h>
 
 #include <vector>
 #include <PString.h>
