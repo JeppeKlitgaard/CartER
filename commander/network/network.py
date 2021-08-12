@@ -1,3 +1,5 @@
+from typing import cast
+
 from serial import Serial
 
 from commander.network.protocol import PACKET_ID_MAP, Packet
@@ -14,18 +16,20 @@ class NetworkManager:
         self.serial.port = port
         self.serial.baudrate = baudrate
 
-    def open(self):
+    def open(self) -> None:
         self.serial.open()
 
-    def close(self):
+    def close(self) -> None:
         self.serial.close()
 
-    def tick(self):
+    def tick(self) -> None:
         pass
 
     def read_initial_output(self) -> str:
         raw = self.serial.read_until(self.INITIAL_OUTPUT_STOP_MARKER)
-        return raw.decode("ascii")
+        output = raw.decode("ascii")
+
+        return cast(str, output)
 
     def _cpp_initial_output_decl(self) -> str:
         hex_space_str = self.INITIAL_OUTPUT_STOP_MARKER.hex(" ")
