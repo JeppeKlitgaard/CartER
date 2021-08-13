@@ -10,7 +10,7 @@ from typing import Any, Dict, Type
 from serial import Serial
 
 from commander.network.constants import CartID, SetOperation
-from commander.network.utils import Format, byte, pack, unpack
+from commander.network.utils import CRLF, Format, byte, bytes_to_hexstr, pack, skip_crlf, unpack
 
 
 class Packet(ABC):
@@ -36,7 +36,7 @@ class Packet(ABC):
         return properties
 
     def __repr__(self) -> str:
-        props = [f"{k}| {v}" for (k, v) in self._get_local_properties().items()]
+        props = [f"{k}: {v}" for (k, v) in self._get_local_properties().items()]
         prop_str = ", ".join(props)
 
         return f"<{__name__}: {prop_str}>"
@@ -49,6 +49,9 @@ class Packet(ABC):
     @abstractmethod
     def to_bytes(self) -> bytes:
         ...
+
+    def to_hexstr(self) -> str:
+        return bytes_to_hexstr(self.to_bytes())
 
 
 class InboundOnlyPacket(Packet):
@@ -94,7 +97,7 @@ class OnlyIDPacket(Packet):
     def read(cls, serial: Serial) -> OnlyIDPacket:
         return cls()
 
-    def _to_bytes(self) -> bytes:
+    def to_bytes(self) -> bytes:
         return self.id_
 
 
@@ -112,7 +115,7 @@ class UnknownPacket(Packet):
     def read(self, serial: Serial) -> UnknownPacket:
         raise NotImplementedError("UnknownPacket does not have a read method.")
 
-    def _to_bytes(self) -> bytes:
+    def to_bytes(self) -> bytes:
         raise NotImplementedError("UnknownPacket does not have a to_bytes method.")
 
 
@@ -125,14 +128,16 @@ class DebugPacket(Packet):
     @classmethod
     def read(cls, serial: Serial) -> DebugPacket:
         msg = unpack(Format.STRING, serial)
+        skip_crlf(serial)
 
         return cls(msg=msg)
 
-    def _to_bytes(self) -> bytes:
+    def to_bytes(self) -> bytes:
         bytes_ = b""
 
         bytes_ += self.id_
         bytes_ += pack(Format.STRING, self.msg)
+        bytes_ += CRLF
 
         return bytes_
 
@@ -153,7 +158,7 @@ class PingPacket(Packet):
 
         return cls(timestamp=timestamp)
 
-    def _to_bytes(self) -> bytes:
+    def to_bytes(self) -> bytes:
         bytes_ = b""
 
         bytes_ += self.id_
@@ -174,7 +179,7 @@ class SetPositionPacket(OutboundOnlyPacket):
         self.cart_id = cart_id
         self.value = value
 
-    def _to_bytes(self) -> bytes:
+    def to_bytes(self) -> bytes:
         bytes_ = b""
 
         bytes_ += self.id_
