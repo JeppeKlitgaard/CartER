@@ -1,8 +1,12 @@
+from logging import getLogger
 from typing import cast
 
 from serial import Serial
 
 from commander.network.protocol import PACKET_ID_MAP, Packet
+from commander.network.utils import bytes_to_hexes, bytes_to_hexstr
+
+logger = getLogger(__name__)
 
 PORT: str = "COM3"
 BAUDRATE: int = 74880
@@ -32,10 +36,7 @@ class NetworkManager:
         return cast(str, output)
 
     def _cpp_initial_output_decl(self) -> str:
-        hex_space_str = self.INITIAL_OUTPUT_STOP_MARKER.hex(" ")
-        hexes = hex_space_str.split(" ")
-        hexes = [hex.upper() for hex in hexes]
-        hexes = ["0x" + hex for hex in hexes]
+        hexes = bytes_to_hexes(self.INITIAL_OUTPUT_STOP_MARKER)
 
         hex_str = ", ".join(hexes)
         hex_len_str = str(len(hexes))
@@ -53,7 +54,18 @@ class NetworkManager:
         try:
             packet_cls = PACKET_ID_MAP[id_]
         except KeyError:
-            raise ConnectionError(f"Invalid packet ID: {id_}")
+            rest_of_data = self.serial.read_all()
+            rest_of_data_str = rest_of_data.decode("ascii", "replace")
+
+            hex_str = bytes_to_hexstr(rest_of_data, prefix=False)
+            ascii_str = "".join([f" {char} " for char in rest_of_data_str])
+
+            logger.warn("Rest of data (HEX)  : " + hex_str)
+            logger.warn("Rest of data (ASCII): " + ascii_str)
+
+            err = f"Invalid packet ID: {id_}"
+
+            raise ConnectionError(err)
 
         packet = packet_cls.read(self.serial)
         return packet
