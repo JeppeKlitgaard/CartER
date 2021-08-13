@@ -2,12 +2,15 @@
 #include <DebugUtils.h>
 
 CustomAccelStepper::CustomAccelStepper(
+    uint8_t cart_id,
     uint8_t interface,
     uint8_t pin1,
     uint8_t pin2,
     uint8_t pin3,
     uint8_t pin4,
-    bool enable) : AccelStepper(interface, pin1, pin2, pin3, pin4, enable) {}
+    bool enable) : AccelStepper(interface, pin1, pin2, pin3, pin4, enable) {
+        cart_id = cart_id;
+    }
 
 /**
  * Converts a distance to an integer number of steps

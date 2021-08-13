@@ -13,6 +13,8 @@ extern Bounce2::Button limit_sw_right;
 const int LEFT_LIMIT_SW_PIN = 22;
 const int RIGHT_LIMIT_SW_PIN = 23;
 
+const int LIMIT_SAFETY_DISTANCE_STEPS = 50;
+
 void setup_limit_switches();
 void update_limit_switches();
 
@@ -45,12 +47,14 @@ const String LimitFindingModeStrings[] = {
 };
 
 extern LimitFindingMode limit_finding_mode;
-extern float track_length_distance;
+extern float_t track_length_distance;
+extern int32_t track_length_steps;
 
 void toggle_limit_finding_mode();
 
 void loop_limit_finding();
 void enter_limit_finding();
 void exit_limit_finding();
+void do_limit_finding();
 
 #endif

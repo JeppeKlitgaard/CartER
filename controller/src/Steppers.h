@@ -13,7 +13,7 @@
 extern TMC26XStepper stepper1;
 extern TMC26XStepper stepper2;
 
-const unsigned int STEPPER_CURRENT = 1000; // mA
+const unsigned int STEPPER_CURRENT = 700; // mA
 const int STEPPER_STEPS_PER_ROTATION = 200;
 const float STEPPER_DRIVE_GEAR_OD_MM = 13.0;
 const unsigned int STEPPER_MICROSTEPS = 4;
@@ -58,7 +58,10 @@ void setup_steppers();
 void setup_stepper_drivers();
 void start_stepper_drivers();
 void setup_asteppers();
+CustomAccelStepper& get_astepper_by_id(uint8_t cart_id);
 void asteppers_run();
+int8_t position_within_limits(int32_t position);
+void asteppers_speed_run(CustomAccelStepper & astepper);
 void asteppers_enable();
 void asteppers_disable();
 void asteppers_toggle_enabled();

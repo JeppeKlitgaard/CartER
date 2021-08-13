@@ -90,6 +90,16 @@ public:
     virtual RawPacket to_raw_packet() const = 0;
 };
 
+class OnlyIDPacket : public OutboundPacket, public InboundPacket {
+public:
+    explicit OnlyIDPacket() = default;
+    virtual ~OnlyIDPacket() = default;
+    using Packet::construct;
+
+    virtual void read(Stream &sbuf) override;
+    virtual RawPacket to_raw_packet() const override;
+};
+
 class NullInboundPacket : public InboundPacket
 {
 public:
@@ -112,7 +122,7 @@ public:
     virtual RawPacket to_raw_packet() const override;
 };
 
-class NullPacket : public NullOutboundPacket, NullInboundPacket
+class NullPacket : public NullOutboundPacket, public NullInboundPacket
 {
 public:
     static const byte id = 0x00; // NUL

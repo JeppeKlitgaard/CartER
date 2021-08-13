@@ -25,6 +25,8 @@ const byte INITIAL_OUTPUT_STOP_MARKER[22] = {0x45, 0x4E, 0x44, 0x20, 0x4F, 0x46,
 
 const unsigned int STRING_BUF_SIZE = 100;
 
+extern bool experiment_done;
+
 // Networking
 const unsigned int BAUD_RATE = 74880;
 // Can't get higher rates to work on Due (Programming Port)

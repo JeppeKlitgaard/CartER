@@ -8,6 +8,9 @@
 #include <BufferUtils.h>
 #include <DebugUtils.h>
 #include <PString.h>
+#include <Steppers.h>
+#include <CustomAccelStepper.h>
+#include <LimitFinding.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
@@ -50,12 +53,47 @@ void PacketReactor::tick()
 
         packet_sender.send(std::move(pong_pkt));
         break;
-
     }
     case PongPacket::id:
     {
         std::unique_ptr<PongPacket> packet = _read_and_construct_packet<PongPacket>();
         break;
+    }
+    case SetPositionPacket::id:
+    {
+
+        std::unique_ptr<SetPositionPacket> packet = _read_and_construct_packet<SetPositionPacket>();
+
+        packet_sender.send_debug("Received <SetPositionPacket| operation: "+
+                                 std::to_string(static_cast<char>(packet->operation)) +
+                                 ", cart_id: " + std::to_string(packet->cart_id) +
+                                 ", value: " + std::to_string(packet->value));
+
+        CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
+
+
+        switch (packet->operation)
+        {
+        case SetOperation::ADD:
+            astepper.move(packet->value);
+            break;
+        case SetOperation::EQUAL:
+            astepper.moveTo(packet->value);
+            break;
+        case SetOperation::SUBTRACT:
+            astepper.move(-packet->value);
+            break;
+        case SetOperation::NUL:
+            break;
+        }
+
+        astepper1.runToPosition();
+
+        break;
+    }
+    case FindLimitsPacket::id:
+    {
+        do_limit_finding();
     }
     default:
         std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
@@ -69,3 +107,5 @@ void PacketReactor::tick()
         break;
     }
 }
+
+void experiment_done_trigger(){};

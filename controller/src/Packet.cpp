@@ -36,6 +36,14 @@ void Packet::construct(byte id)
     observed_id = id;
 }
 
+void OnlyIDPacket::read(Stream &sbuf) {}
+RawPacket OnlyIDPacket::to_raw_packet() const {
+    RawPacket raw_packet;
+    raw_packet.add(this->get_id());
+
+    return raw_packet;
+}
+
 // NullInbound
 NullInboundPacket::NullInboundPacket() {}
 byte NullInboundPacket::get_id() const { return NullPacket::id; }

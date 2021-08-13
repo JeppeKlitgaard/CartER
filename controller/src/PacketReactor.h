@@ -32,6 +32,8 @@ public:
     void tick();
 };
 
+void experiment_done_trigger();
+
 extern PacketReactor packet_reactor;
 
 #endif

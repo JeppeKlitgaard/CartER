@@ -38,12 +38,12 @@ public:
 class DebugErrorBasePacket : public OutboundPacket
 {
 public:
-    char* _msg;
+    const char *_msg;
     size_t _size;
 
     DebugErrorBasePacket();
     using OutboundPacket::construct;
-    void construct(char *message, size_t size);
+    void construct(const char *message, size_t size);
 
     virtual byte get_id() const override = 0;
     virtual RawPacket to_raw_packet() const override;
@@ -114,8 +114,9 @@ public:
     virtual byte get_id() const override;
 };
 
-// SetPosition
-class SetQuantityBasePacket : public InboundPacket {
+// SetQuantityBase
+class SetQuantityBasePacket : public InboundPacket
+{
 public:
     SetOperation operation;
     uint8_t cart_id;
@@ -123,11 +124,34 @@ public:
 
     SetQuantityBasePacket();
     using Packet::construct;
-    virtual void construct(SetOperation operation, uint8_t cart_id, int16_t value);
 
     virtual byte get_id() const override = 0;
 
     virtual void read(Stream &sbuf) override;
+};
+
+// SetPosition
+class SetPositionPacket : public SetQuantityBasePacket
+{
+public:
+    static const byte id = 0x78;
+
+    SetPositionPacket();
+    using SetQuantityBasePacket::construct;
+
+    virtual byte get_id() const override;
+};
+
+// FindLimits
+class FindLimitsPacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0x7C;
+
+    FindLimitsPacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
 };
 
 #endif

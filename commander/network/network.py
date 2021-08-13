@@ -70,6 +70,20 @@ class NetworkManager:
         packet = packet_cls.read(self.serial)
         return packet
 
+    def read_packets(self) -> list[Packet]:
+        packets = []
+
+        while self.serial.in_waiting:
+            packets.append(self.read_packet())
+
+        return packets
+
+    def dump_packets(self) -> None:
+        packets = self.read_packets()
+
+        for packet in packets:
+            print(packet)
+
     def send_packet(self, packet: Packet) -> None:
         bytes_to_transfer = packet.to_bytes()
 

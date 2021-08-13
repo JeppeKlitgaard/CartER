@@ -35,6 +35,29 @@ const String ConfigurationStrings[] ={
     "TWO_CARRIAGES",
 };
 
+// Failure
+enum class FailureMode {
+    POSITION_RIGHT,
+    POSITION_LEFT,
+
+    ANGLE_RIGHT,
+    ANGLE_LEFT,
+
+    OTHER,
+};
+
+const String FailureModeStrings[] = {
+    "position/right",
+    "position/left",
+
+    "angle/right",
+    "angle/left",
+
+    "other/other",
+};
+
 extern const Configuration configuration;
+extern FailureMode failure_mode;
+extern uint8_t failure_cart_id;
 
 #endif

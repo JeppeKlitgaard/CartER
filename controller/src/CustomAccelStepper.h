@@ -17,7 +17,10 @@ protected:
     int _angleToSteps(float angle);
 
 public:
+    uint8_t cart_id;
+
     CustomAccelStepper(
+        uint8_t cart_id,
         uint8_t interface = AccelStepper::FULL4WIRE,
         uint8_t pin1 = 2,
         uint8_t pin2 = 3,

@@ -2,6 +2,7 @@
 
 #include <Mode.h>
 #include <Steppers.h>
+#include <Init.h>
 
 #include <DebugUtils.h>
 
@@ -10,7 +11,7 @@ Bounce2::Button limit_sw_right = Bounce2::Button();
 
 void setup_limit_switches()
 {
-    DPL("Configuring limit switches.");
+    packet_sender.send_debug("Configuring limit switches.");
 
     // LEFT
     limit_sw_left.attach(LEFT_LIMIT_SW_PIN, INPUT_PULLUP);
@@ -81,7 +82,7 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_FAST:
         if (limit_sw_left.pressed())
         {
-            S.println("LEFT LIMIT HIT!");
+            packet_sender.send_debug("LEFT LIMIT HIT!");
             astepper1.stop();
 
             toggle_limit_finding_mode();
@@ -97,7 +98,7 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_RETRACT:
         if (astepper1.distanceToGo() == 0)
         {
-            DPL("Done left retracting.");
+            packet_sender.send_debug("Done left retracting.");
             toggle_limit_finding_mode();
 
             astepper1.setMaxSpeedDistance(Speed::SLOW);
@@ -108,7 +109,7 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_SLOW:
         if (limit_sw_left.pressed())
         {
-            S.println("LEFT LIMIT HIT!");
+            packet_sender.send_debug("LEFT LIMIT HIT!");
             astepper1.stop();
 
             astepper1.setMaxSpeedDistance(Speed::FAST);
@@ -125,7 +126,7 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_POSITION_SET:
         if (astepper1.distanceToGo() == 0)
         {
-            DPL("Setting left position");
+            packet_sender.send_debug("Setting left position");
 
             astepper1.setCurrentPositionDistance(0.0);
 
@@ -135,7 +136,7 @@ void loop_limit_finding()
     case LimitFindingMode::RIGHT_FAST:
         if (limit_sw_right.pressed())
         {
-            S.println("RIGHT LIMIT HIT!");
+            packet_sender.send_debug("RIGHT LIMIT HIT!");
             astepper1.stop();
 
             toggle_limit_finding_mode();
@@ -150,7 +151,7 @@ void loop_limit_finding()
     case LimitFindingMode::RIGHT_RETRACT:
         if (astepper1.distanceToGo() == 0)
         {
-            DPL("Done right retracting.");
+            packet_sender.send_debug("Done right retracting.");
             toggle_limit_finding_mode();
 
             astepper1.setMaxSpeedDistance(Speed::SLOW);
@@ -159,11 +160,12 @@ void loop_limit_finding()
     case LimitFindingMode::RIGHT_SLOW:
         if (limit_sw_right.pressed())
         {
-            S.println("RIGHT LIMIT HIT!");
+            packet_sender.send_debug("RIGHT LIMIT HIT!");
             astepper1.stop();
 
             astepper1.setMaxSpeedDistance(Speed::FAST);
-            track_length_distance = astepper1.getCurrentPositionDistance() - 50.0;
+            track_length_distance = astepper1.getCurrentPositionDistance();
+            track_length_steps = astepper1.currentPosition();
 
             astepper1.setMaxSpeedDistance(Speed::ULTRA_FAST);
             astepper1.moveToDistance(track_length_distance / 2.0);
@@ -179,13 +181,13 @@ void loop_limit_finding()
     case LimitFindingMode::REPOSITION:
         if (astepper1.distanceToGo() == 0)
         {
-            DPL("Done repositioning.");
+            packet_sender.send_debug("Done repositioning.");
             toggle_limit_finding_mode();
         }
         break;
 
     case LimitFindingMode::DONE:
-        DPL("Already done.");
+        packet_sender.send_debug("Already done.");
         break;
     }
     asteppers_run();
@@ -199,4 +201,12 @@ void exit_limit_finding() {
     asteppers_stop();
     asteppers_run_to_position();
     asteppers_disable();
+}
+
+void do_limit_finding() {
+    limit_finding_mode = LimitFindingMode::INIT;
+
+    while (limit_finding_mode != LimitFindingMode::DONE) {
+        loop_limit_finding();
+    }
 }

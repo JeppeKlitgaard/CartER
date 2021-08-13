@@ -9,7 +9,7 @@
 // Unknown
 UnknownPacket::UnknownPacket() {}
 byte UnknownPacket::get_id() const { return UnknownPacket::id; }
-void UnknownPacket::read(Stream &sbuf) {};
+void UnknownPacket::read(Stream &sbuf){};
 
 // DebugErrorBase
 DebugErrorBasePacket::DebugErrorBasePacket()
@@ -18,7 +18,7 @@ DebugErrorBasePacket::DebugErrorBasePacket()
     _size = 0;
 }
 
-void DebugErrorBasePacket::construct(char *msg, size_t size)
+void DebugErrorBasePacket::construct(const char *msg, size_t size)
 {
     _msg = msg;
     _size = size;
@@ -78,3 +78,28 @@ byte PingPacket::get_id() const { return PingPacket::id; }
 // Pong
 PongPacket::PongPacket() {}
 byte PongPacket::get_id() const { return PongPacket::id; }
+
+// SetQuantityBase
+SetQuantityBasePacket::SetQuantityBasePacket()
+{
+    operation = SetOperation::NUL;
+    cart_id = 0;
+    value = 0;
+}
+
+void SetQuantityBasePacket::read(Stream &sbuf)
+{
+    char operation_char = read_char(sbuf);
+
+    operation = static_cast<SetOperation>(operation_char);
+    cart_id = read_uint8(sbuf);
+    value = read_int16(sbuf);
+}
+
+// SetPosition
+SetPositionPacket::SetPositionPacket() {}
+byte SetPositionPacket::get_id() const { return SetPositionPacket::id; }
+
+// FindLimits
+FindLimitsPacket::FindLimitsPacket() {}
+byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }

@@ -1,9 +1,10 @@
 #include <Steppers.h>
-#include <CustomAccelStepper.h>
 
 #include <DebugUtils.h>
 #include <Init.h>
 #include <Mode.h>
+#include <Utils.h>
+#include <LimitFinding.h>
 
 /*
  ! Stepper information:
@@ -16,8 +17,8 @@
 TMC26XStepper stepper1;
 TMC26XStepper stepper2;
 
-CustomAccelStepper astepper1 = CustomAccelStepper(astepper1.DRIVER, STEPPER1_STEP_PIN, STEPPER1_DIR_PIN);
-CustomAccelStepper astepper2 = CustomAccelStepper(astepper2.DRIVER, STEPPER2_STEP_PIN, STEPPER2_DIR_PIN);
+CustomAccelStepper astepper1 = CustomAccelStepper(1, astepper1.DRIVER, STEPPER1_STEP_PIN, STEPPER1_DIR_PIN);
+CustomAccelStepper astepper2 = CustomAccelStepper(2, astepper2.DRIVER, STEPPER2_STEP_PIN, STEPPER2_DIR_PIN);
 
 void setup_steppers()
 {
@@ -94,6 +95,17 @@ void setup_asteppers()
     }
 }
 
+CustomAccelStepper& get_astepper_by_id(uint8_t cart_id) {
+    switch (cart_id) {
+        case 1:
+            return astepper1;
+        case 2:
+            return astepper2;
+        default:
+            packet_sender.send_debug("Invalid cart_id: " + std::to_string(cart_id));
+    }
+}
+
 // There is definitely a smarter way to define these and in the future I
 // will probably refactor this to be smarter.
 void asteppers_run()
@@ -103,6 +115,35 @@ void asteppers_run()
     {
         astepper2.run();
     }
+}
+
+int8_t position_within_limits(int32_t position) {
+    if (LIMIT_SAFETY_DISTANCE_STEPS > position) {
+        return -1;
+    } else if (position > (track_length_steps - LIMIT_SAFETY_DISTANCE_STEPS)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void astepper_speed_run(CustomAccelStepper &astepper) {
+    int8_t limit_check = position_within_limits(astepper.currentPosition());
+
+    if (limit_check != 0) {
+        experiment_done = true;
+        if (limit_check == -1) {
+            failure_mode = FailureMode::POSITION_LEFT;
+        } else {
+            failure_mode = FailureMode::POSITION_RIGHT;
+        }
+
+        experiment_done_trigger();
+    }
+
+    int direction = sgn(astepper.speed());
+    astepper.move(direction * STEPPER_STEP_DISTANCE);
+    astepper.run();
 }
 
 void asteppers_enable()
