@@ -2,13 +2,7 @@
 #define UTILS_H
 
 #include <CustomArduino.h>
-#include <cstddef>
-#include <memory>
 
-#include <type_traits>
-#include <utility>
-#include <algorithm>
-#include <iterator>
 
 byte ctob(const char *c);
 

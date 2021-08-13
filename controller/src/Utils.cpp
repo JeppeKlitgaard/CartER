@@ -1,5 +1,7 @@
 #include <Utils.h>
 
+#include <algorithm>
+
 byte ctob(const char *c) {
     return byte(atoi(c));
 }
