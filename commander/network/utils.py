@@ -12,6 +12,8 @@ from serial import Serial
 
 ENDIANNESS = "<"  # Little endian
 
+CRLF: bytes = "\r\n".encode("ascii")
+
 
 class Format(str, Enum):
     CHAR = "c"
@@ -127,3 +129,27 @@ def pack(fmt: Union[Format, str], obj: PackableT) -> bytes:
 
 def byte(num: int) -> bytes:
     return bytes([num])
+
+
+def bytes_to_hexes(bytes_: bytes, prefix: bool = True) -> list[str]:
+    hex_space_str = bytes_.hex(" ")
+    hexes = hex_space_str.split(" ")
+    hexes = [hex.upper() for hex in hexes]
+
+    if prefix:
+        hexes = ["0x" + hex for hex in hexes]
+
+    return hexes
+
+
+def bytes_to_hexstr(bytes_: bytes, prefix: bool = True) -> str:
+    hexes = bytes_to_hexes(bytes_, prefix)
+
+    return " ".join(hexes)
+
+
+def skip_crlf(serial: Serial) -> None:
+    crlf = serial.read(2)
+
+    if crlf != CRLF:
+        raise ValueError(f"CRLF misaligned. Was actually: {bytes_to_hexstr(crlf)}")
