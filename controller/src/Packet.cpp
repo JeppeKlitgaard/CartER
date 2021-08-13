@@ -16,7 +16,7 @@ unsigned long RawPacket::pop_unsigned_long()
     return l;
 }
 
-void RawPacket::add(char *msg, size_t size)
+void RawPacket::add(const char *msg, size_t size)
 {
     add(size);
     for (size_t i = 0; i < size; ++i)

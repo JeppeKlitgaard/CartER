@@ -1,18 +1,23 @@
 #include <PacketSender.h>
+#include <Protocol.h>
+#include <string>
 
-PacketSender::PacketSender(Stream &stream)  : _s(stream) {}
+PacketSender::PacketSender(Stream &stream) : _s(stream) {}
 
-void PacketSender::send(const OutboundPacket &packet) {
-    RawPacket raw_packet = packet.to_raw_packet();
+void PacketSender::send_debug(const std::string msg) const
+{
+    std::unique_ptr<DebugPacket> packet = std::make_unique<DebugPacket>();
 
-    _s.print("Size: ");
-    _s.println(raw_packet.size());
-    _s.write(raw_packet.data(), raw_packet.size());
+    packet->construct(msg.c_str(), msg.length());
+
+    send(std::move(packet));
 }
-void PacketSender::send(std::unique_ptr<OutboundPacket> packet) {
-    RawPacket raw_packet = packet->to_raw_packet();
 
-    // _s.print("Size: ");
-    // _s.println(raw_packet.size());
-    _s.write(raw_packet.data(), raw_packet.size());
+void PacketSender::send_error(const std::string msg) const
+{
+    std::unique_ptr<ErrorPacket> packet = std::make_unique<ErrorPacket>();
+
+    packet->construct(msg.c_str(), msg.length());
+
+    send(std::move(packet));
 }

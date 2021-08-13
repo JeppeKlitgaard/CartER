@@ -36,7 +36,7 @@ public:
 
     unsigned long pop_unsigned_long();
 
-    void add(char *msg, size_t size);
+    void add(const char *msg, size_t size);
     void add_newline();
 
     template <class T>

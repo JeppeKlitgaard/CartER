@@ -32,8 +32,7 @@ void PacketReactor::tick()
         std::unique_ptr<NullInboundPacket> packet = _read_and_construct_packet<NullInboundPacket>();
         break;
 
-        // Reaction
-        DPL("NUL");
+        packet_sender.send_debug("NUL");
     }
     case UnknownPacket::id:
     {
@@ -65,14 +64,7 @@ void PacketReactor::tick()
         // Reaction
         std::unique_ptr<DebugPacket> debug_pkg = std::make_unique<DebugPacket>();
 
-        char s_buf[STRING_BUF_SIZE];
-        PString debug_msg(s_buf, sizeof(s_buf));
-        debug_msg.print("Received unknown packet with ID: ");
-        debug_msg.print(packet->observed_id);
-
-        debug_pkg->construct(s_buf, debug_msg.length());
-
-        packet_sender.send(std::move(debug_pkg));
+        packet_sender.send_debug("Received unknown packet with ID: " + std::to_string(packet->observed_id));
 
         break;
     }
