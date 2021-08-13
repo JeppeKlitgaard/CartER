@@ -23,3 +23,11 @@ int free_memory() {
   return __brkval ? &top - __brkval : &top - __malloc_heap_start;
 #endif  // __arm__
 }
+
+// https://stackoverflow.com/questions/7875581/c-get-index-of-char-element-in-array
+int index_of(const char *array, size_t size, char c)
+{
+     const char* end = array + size;
+     const char* match = std::find(array, end, c);
+     return (end == match)? -1 : (match-array);
+}

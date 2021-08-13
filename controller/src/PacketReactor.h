@@ -5,8 +5,6 @@
 
 #include <memory>
 
-#include <Utils.h>
-
 // Packet buffer
 constexpr byte PACKET_END = 0x0A; // \n
 
