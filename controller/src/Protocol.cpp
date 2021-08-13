@@ -7,14 +7,6 @@
 #include <DebugUtils.h>
 #include <Fixes.h>
 
-
-const char* SetOperationChars[] = {
-    "-",
-    "=",
-    "+",
-    "0",
-};
-
 // Unknown
 UnknownPacket::UnknownPacket() {}
 byte UnknownPacket::get_id() const { return UnknownPacket::id; }
@@ -60,7 +52,7 @@ PingPongBasePacket::PingPongBasePacket()
 
 void PingPongBasePacket::read(Stream &buf)
 {
-    ping_timestamp = read_unsigned_long(buf);
+    ping_timestamp = read_uint32(buf);
 }
 
 void PingPongBasePacket::construct(unsigned long timestamp)

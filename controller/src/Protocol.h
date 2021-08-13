@@ -13,15 +13,13 @@
 
 // Enums
 // Mode
-enum SetOperation
+enum class SetOperation : char
 {
-    SUBTRACT,
-    EQUAL,
-    ADD,
-    NUL,
+    SUBTRACT = '-',
+    EQUAL = '=',
+    ADD = '+',
+    NUL = '0',
 };
-
-extern const char* SetOperationChars[];
 
 // Unknown
 class UnknownPacket : public InboundPacket
