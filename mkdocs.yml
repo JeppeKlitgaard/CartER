@@ -2,3 +2,21 @@ site_name: CartpoleML
 
 theme:
   name: material
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+repo_url: https://github.com/JeppeKlitgaard/CartpoleML
+
+plugins:
+  - search:
+      lang: en
+
+markdown_extensions:
+  - abbr
