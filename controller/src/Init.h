@@ -6,7 +6,7 @@
 #include <PacketSender.h>
 #include <Mode.h>
 
-#define DEBUG
+// #define DEBUG
 // #define SERIALUSB
 
 // Definitions
