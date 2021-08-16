@@ -5,12 +5,23 @@ Contains the networking logic for communication with the Controller.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from inspect import isabstract
 from typing import Any, Dict, Type
 
 from serial import Serial
+from typing_extensions import TypeGuard
 
 from commander.network.constants import CartID, SetOperation
-from commander.network.utils import CRLF, Format, byte, bytes_to_hexstr, pack, skip_crlf, unpack
+from commander.network.utils import (
+    CRLF,
+    Format,
+    _stringify_self,
+    byte,
+    bytes_to_hexstr,
+    pack,
+    skip_crlf,
+    unpack,
+)
 
 
 class Packet(ABC):
@@ -35,16 +46,31 @@ class Packet(ABC):
 
         return properties
 
-    def __repr__(self) -> str:
-        props = [f"{k}: {v}" for (k, v) in self._get_local_properties().items()]
-        prop_str = ", ".join(props)
 
-        return f"<{__name__}: {prop_str}>"
+class InboundPacket(Packet):
+    """
+    InboundOnlyPackets are packets that the commander will only ever receive.
+
+    Writing the serialisation method could be easily done,
+    but wouldn't ever be useful.
+    """
 
     @classmethod
     @abstractmethod
-    def read(cls, serial: Serial) -> Packet:
+    def read(cls, serial: Serial) -> InboundPacket:
         ...
+
+    def __repr__(self) -> str:
+        return _stringify_self(self)
+
+
+class OutboundPacket(Packet):
+    """
+    OutboundOnlyPackets are packets that the commander will only ever transmit.
+
+    Writing the deserialisation method could be easily done,
+    but wouldn't ever be useful.
+    """
 
     @abstractmethod
     def to_bytes(self) -> bytes:
@@ -53,39 +79,15 @@ class Packet(ABC):
     def to_hexstr(self) -> str:
         return bytes_to_hexstr(self.to_bytes())
 
-
-class InboundOnlyPacket(Packet):
-    """
-    InboundOnlyPackets are packets that the commander will only ever receive.
-
-    Writing the serialisation method could be easily done,
-    but wouldn't ever be useful.
-    """
-
-    def to_bytes(self) -> bytes:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} is an inbound only packet. "
-            "It does not have a serialisation method."
-        )
+    def __repr__(self) -> str:
+        return _stringify_self(self)
 
 
-class OutboundOnlyPacket(Packet):
-    """
-    OutboundOnlyPackets are packets that the commander will only ever transmit.
-
-    Writing the deserialisation method could be easily done,
-    but wouldn't ever be useful.
-    """
-
-    @classmethod
-    def read(cls, serial: Serial) -> OutboundOnlyPacket:
-        raise NotImplementedError(
-            f"{cls.__name__} is an outbound only packet. "
-            "It does not have a deserialisation method."
-        )
+class BidirectionalPacket(InboundPacket, OutboundPacket):
+    ...
 
 
-class OnlyIDPacket(Packet):
+class OnlyIDPacket(BidirectionalPacket):
     """
     A packet that has no attributes apart from its ID.
     """
@@ -105,7 +107,7 @@ class NullPacket(OnlyIDPacket):
     id_ = byte(0x00)  # NUL
 
 
-class UnknownPacket(Packet):
+class UnknownPacket(BidirectionalPacket):
     id_ = byte(0x3F)  # ?
 
     def __init__(self, observed_id: bytes) -> None:
@@ -119,14 +121,12 @@ class UnknownPacket(Packet):
         raise NotImplementedError("UnknownPacket does not have a to_bytes method.")
 
 
-class DebugPacket(Packet):
-    id_ = byte(0x7E)  # ~
-
+class MessagePacketBase(BidirectionalPacket):
     def __init__(self, msg: str) -> None:
         self.msg = msg
 
     @classmethod
-    def read(cls, serial: Serial) -> DebugPacket:
+    def read(cls, serial: Serial) -> MessagePacketBase:
         msg = unpack(Format.STRING, serial)
         skip_crlf(serial)
 
@@ -142,7 +142,15 @@ class DebugPacket(Packet):
         return bytes_
 
 
-class ErrorPacket(DebugPacket):
+class DebugPacket(MessagePacketBase):
+    id_ = byte(0x22)  # #
+
+
+class InfoPacket(MessagePacketBase):
+    id_ = byte(0x7E)  # ~
+
+
+class ErrorPacket(MessagePacketBase):
     id_ = byte(0x21)  # !
 
 
@@ -171,7 +179,7 @@ class PongPacket(PingPacket):
     id_ = byte(0x50)  # P
 
 
-class SetPositionPacket(OutboundOnlyPacket):
+class SetPositionPacket(OutboundPacket):
     id_ = byte(0x78)  # x
 
     def __init__(self, operation: SetOperation, cart_id: CartID, value: int) -> None:
@@ -190,8 +198,8 @@ class SetPositionPacket(OutboundOnlyPacket):
         return bytes_
 
 
-#! Currently unused
-class GetPositionPacket(InboundOnlyPacket):
+# ! Currently unused
+class GetPositionPacket(InboundPacket):
     id_ = byte(0x58)  # X
 
     def __init__(self, value_steps: int, value_mm: float) -> None:
@@ -210,7 +218,7 @@ class SetVelocityPacket(SetPositionPacket):
     id_ = byte(0x76)  # v
 
 
-#! Currently unused
+# ! Currently unused
 class GetVelocityPacket(GetPositionPacket):
     id_ = byte(0x76)  # V
 
@@ -223,7 +231,7 @@ class CheckLimitPacket(OnlyIDPacket):
     id_ = byte(0x2F)  # / (forward slash)
 
 
-class ObservationPacket(InboundOnlyPacket):
+class ObservationPacket(InboundPacket):
     id_ = byte(0x40)  # @
 
     def __init__(
@@ -250,7 +258,9 @@ class ObservationPacket(InboundOnlyPacket):
 
 
 # Construct PACKET_ID_MAP
-def __is_packet_subclass(cls: Any) -> bool:
+
+
+def is_valid_packet(cls: Type[object]) -> TypeGuard[Type[Packet]]:
     try:
         conditions = (
             issubclass(cls, Packet),
@@ -264,6 +274,25 @@ def __is_packet_subclass(cls: Any) -> bool:
         return False
 
 
+def is_valid_inbound_packet(cls: Type[object]) -> TypeGuard[Type[InboundPacket]]:
+    try:
+        conditions = (
+            issubclass(cls, InboundPacket),
+            cls is not InboundPacket,
+            not isabstract(cls),
+            hasattr(cls, "id_"),
+        )
+
+        return all(conditions)
+
+    except TypeError:
+        return False
+
+
 PACKET_ID_MAP: Dict[bytes, Type[Packet]] = {
-    cls.id_: cls for (clsname, cls) in globals().items() if __is_packet_subclass(cls)
+    cls.id_: cls for cls in globals().values() if is_valid_packet(cls)
+}
+
+INBOUND_PACKET_ID_MAP: Dict[bytes, Type[InboundPacket]] = {
+    cls.id_: cls for cls in globals().values() if is_valid_inbound_packet(cls)
 }

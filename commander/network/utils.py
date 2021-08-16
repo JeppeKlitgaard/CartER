@@ -6,9 +6,12 @@ Note: All types are little-endian when transferred.
 """
 import struct
 from enum import Enum
-from typing import Literal, Union, cast, overload
+from typing import TYPE_CHECKING, Literal, Union, cast, overload
 
 from serial import Serial
+
+if TYPE_CHECKING:
+    from commander.network.protocol import Packet
 
 ENDIANNESS = "<"  # Little endian
 
@@ -53,6 +56,25 @@ IntFormats = Literal[
 ]
 FloatFormats = Literal[Format.FLOAT_32, Format.FLOAT_64]
 ByteFormats = Literal[Format.CHAR]
+
+
+def _stringify_self(self: "Packet") -> str:
+    properties = {}
+    for key in dir(self):
+        value = getattr(self, key)
+
+        if key.startswith("_"):
+            continue
+
+        if callable(value):
+            continue
+
+        properties[key] = value
+
+    prop_strs = [f"{k}: {v}" for (k, v) in properties.items()]
+    prop_str = ", ".join(prop_strs)
+
+    return f"<{self.__class__.__name__}: {prop_str}>"
 
 
 @overload

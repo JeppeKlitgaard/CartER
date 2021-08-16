@@ -3,7 +3,7 @@ from typing import cast
 
 from serial import Serial
 
-from commander.network.protocol import PACKET_ID_MAP, Packet
+from commander.network.protocol import INBOUND_PACKET_ID_MAP, InboundPacket, OutboundPacket, Packet
 from commander.network.utils import bytes_to_hexes, bytes_to_hexstr
 
 logger = getLogger(__name__)
@@ -48,11 +48,11 @@ class NetworkManager:
 
         return output
 
-    def read_packet(self) -> Packet:
+    def read_packet(self) -> InboundPacket:
         id_ = self.serial.read(1)
 
         try:
-            packet_cls = PACKET_ID_MAP[id_]
+            packet_cls = INBOUND_PACKET_ID_MAP[id_]
         except KeyError:
             rest_of_data = self.serial.read_all()
             rest_of_data_str = rest_of_data.decode("ascii", "replace")
@@ -63,7 +63,7 @@ class NetworkManager:
             logger.warn("Rest of data (HEX)  : " + hex_str)
             logger.warn("Rest of data (ASCII): " + ascii_str)
 
-            err = f"Invalid packet ID: {id_}"
+            err = f"Invalid packet ID: {id_}."
 
             raise ConnectionError(err)
 
@@ -71,7 +71,7 @@ class NetworkManager:
         return packet
 
     def read_packets(self) -> list[Packet]:
-        packets = []
+        packets: list[Packet] = []
 
         while self.serial.in_waiting:
             packets.append(self.read_packet())
@@ -84,7 +84,7 @@ class NetworkManager:
         for packet in packets:
             print(packet)
 
-    def send_packet(self, packet: Packet) -> None:
+    def send_packet(self, packet: OutboundPacket) -> None:
         bytes_to_transfer = packet.to_bytes()
 
         self.serial.write(bytes_to_transfer)
