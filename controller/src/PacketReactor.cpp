@@ -97,6 +97,7 @@ void PacketReactor::tick()
     case FindLimitsPacket::id:
     {
         do_limit_finding();
+        break;
     }
     default:
         std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
