@@ -143,7 +143,7 @@ class MessagePacketBase(BidirectionalPacket):
 
 
 class DebugPacket(MessagePacketBase):
-    id_ = byte(0x22)  # #
+    id_ = byte(0x23)  # #
 
 
 class InfoPacket(MessagePacketBase):

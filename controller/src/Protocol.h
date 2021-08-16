@@ -56,7 +56,7 @@ public:
 class DebugPacket : public MessageBasePacket
 {
 public:
-    static const byte id = 0x22; // #
+    static const byte id = 0x23; // #
 
     DebugPacket();
     using MessageBasePacket::construct;
