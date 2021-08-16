@@ -38,7 +38,8 @@ void setup_buttons()
     b_mode.setPressedState(LOW);
 }
 
-void update_buttons() {
+void update_buttons()
+{
     b_left.update();
     b_right.update();
     b_speed.update();

@@ -182,12 +182,13 @@ public:
 };
 
 // ExperimentDone
-class ExperimentDonePacket : public BidirectionalPacket {
+class ExperimentDonePacket : public BidirectionalPacket
+{
 public:
     FailureMode _failure_mode;
     uint8_t _cart_id;
 
-    static const byte id = 0x2E;  // .
+    static const byte id = 0x2E; // .
 
     ExperimentDonePacket();
     using BidirectionalPacket::construct;

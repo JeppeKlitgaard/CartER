@@ -25,18 +25,20 @@ void set_mode(const Mode target_mode);
 void toggle_mode();
 
 // Configuration
-enum Configuration {
+enum Configuration
+{
     ONE_CARRIAGES,
     TWO_CARRIAGES,
 };
 
-const String ConfigurationStrings[] ={
+const String ConfigurationStrings[] = {
     "ONE_CARRIAGES",
     "TWO_CARRIAGES",
 };
 
 // Failure
-enum class FailureMode : int8_t {
+enum class FailureMode : int8_t
+{
     NUL = 0,
 
     POSITION_LEFT = -1,

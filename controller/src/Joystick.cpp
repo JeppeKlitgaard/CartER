@@ -34,10 +34,12 @@ void loop_joystick()
     asteppers_run();
 }
 
-void enter_joystick() {
+void enter_joystick()
+{
     asteppers_enable();
 }
 
-void exit_joystick() {
+void exit_joystick()
+{
     asteppers_disable();
 }

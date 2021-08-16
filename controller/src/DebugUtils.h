@@ -8,11 +8,11 @@ DebugUtils.h - Simple debugging utilities.
 #include <Init.h>
 
 #ifdef DEBUG
-  #define DP(...) S.print(__VA_ARGS__)
-  #define DPL(...) S.println(__VA_ARGS__)
+#define DP(...) S.print(__VA_ARGS__)
+#define DPL(...) S.println(__VA_ARGS__)
 #else
-  #define DP(...)
-  #define DPL(...)
+#define DP(...)
+#define DPL(...)
 #endif
 
 void print_debug_information();

@@ -8,7 +8,6 @@
 // Note this is my fork of TMC260XStepper.h, not CainZ's version
 // See: https://github.com/JeppeKlitgaard/TMC26XStepper
 
-
 // Stepper Driver
 extern TMC26XStepper stepper1;
 extern TMC26XStepper stepper2;
@@ -44,21 +43,22 @@ const float MAX_ACCELERATION = 5000.0;
 const float LEFT = -1.0;
 const float RIGHT = 1.0;
 
-struct Speed {
-    public:
-        static constexpr float SLOW = 10.0;
-        static constexpr float MEDIUM = 50.0;
-        static constexpr float FAST = 100.0;
-        static constexpr float VERY_FAST = 150.0;
-        static constexpr float SUPER_FAST = 300.0;
-        static constexpr float ULTRA_FAST = 1000.0;
+struct Speed
+{
+public:
+    static constexpr float SLOW = 10.0;
+    static constexpr float MEDIUM = 50.0;
+    static constexpr float FAST = 100.0;
+    static constexpr float VERY_FAST = 150.0;
+    static constexpr float SUPER_FAST = 300.0;
+    static constexpr float ULTRA_FAST = 1000.0;
 };
 
 void setup_steppers();
 void setup_stepper_drivers();
 void start_stepper_drivers();
 void setup_asteppers();
-CustomAccelStepper& get_astepper_by_id(uint8_t cart_id);
+CustomAccelStepper &get_astepper_by_id(uint8_t cart_id);
 void asteppers_run();
 // void asteppers_speed_run(CustomAccelStepper & astepper);
 void asteppers_enable();

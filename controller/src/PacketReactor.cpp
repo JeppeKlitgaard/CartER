@@ -70,13 +70,12 @@ void PacketReactor::tick()
 
         std::unique_ptr<SetPositionPacket> packet = _read_and_construct_packet<SetPositionPacket>();
 
-        packet_sender.send_debug("Received <SetPositionPacket| operation: "+
+        packet_sender.send_debug("Received <SetPositionPacket| operation: " +
                                  std::to_string(static_cast<char>(packet->operation)) +
                                  ", cart_id: " + std::to_string(packet->cart_id) +
                                  ", value: " + std::to_string(packet->value));
 
         CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
-
 
         switch (packet->operation)
         {
@@ -110,7 +109,8 @@ void PacketReactor::tick()
     }
 }
 
-void experiment_done_trigger() {
+void experiment_done_trigger()
+{
     experiment_done = true;
     asteppers_stop();
 

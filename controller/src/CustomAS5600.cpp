@@ -70,9 +70,10 @@ void CustomAMS_5600::start(uint8_t addr)
  * Returns the angle degree as a float
  * @return
  */
-float CustomAMS_5600::readAngleDeg() {
+float CustomAMS_5600::readAngleDeg()
+{
     _select();
-    float angleDeg =_rawAngleToDeg(getRawAngle());
+    float angleDeg = _rawAngleToDeg(getRawAngle());
     _unselect();
 
     return angleDeg;

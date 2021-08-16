@@ -155,7 +155,9 @@ int8_t CustomAccelStepper::runSafe()
     else if (currPos > _farLimit - _limitSafetyMargin)
     {
         return +1;
-    } else {
+    }
+    else
+    {
         return 0;
     }
 }

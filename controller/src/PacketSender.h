@@ -8,24 +8,26 @@
 
 #include <Packet.h>
 
-class PacketSender {
-    protected:
-        Stream &_s;
+class PacketSender
+{
+protected:
+    Stream &_s;
 
-    public:
-        explicit PacketSender(Stream &stream);
+public:
+    explicit PacketSender(Stream &stream);
 
-        void send(const OutboundPacket &packet);
+    void send(const OutboundPacket &packet);
 
-        template <class T>
-        void send(std::unique_ptr<T> packet) const {
-                RawPacket raw_packet = packet->to_raw_packet();
-                _s.write(raw_packet.data(), raw_packet.size());
-        }
+    template <class T>
+    void send(std::unique_ptr<T> packet) const
+    {
+        RawPacket raw_packet = packet->to_raw_packet();
+        _s.write(raw_packet.data(), raw_packet.size());
+    }
 
-        void send_debug(std::string msg) const;
-        void send_info(std::string msg) const;
-        void send_error(std::string msg) const;
+    void send_debug(std::string msg) const;
+    void send_info(std::string msg) const;
+    void send_error(std::string msg) const;
 };
 
 extern PacketSender packet_sender;

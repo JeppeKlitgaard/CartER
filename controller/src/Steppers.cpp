@@ -95,14 +95,16 @@ void setup_asteppers()
     }
 }
 
-CustomAccelStepper& get_astepper_by_id(uint8_t cart_id) {
-    switch (cart_id) {
-        case 1:
-            return astepper1;
-        case 2:
-            return astepper2;
-        default:
-            packet_sender.send_debug("Invalid cart_id: " + std::to_string(cart_id));
+CustomAccelStepper &get_astepper_by_id(uint8_t cart_id)
+{
+    switch (cart_id)
+    {
+    case 1:
+        return astepper1;
+    case 2:
+        return astepper2;
+    default:
+        packet_sender.send_debug("Invalid cart_id: " + std::to_string(cart_id));
     }
 }
 
@@ -166,16 +168,17 @@ void asteppers_toggle_enabled()
     }
 }
 
-void asteppers_stop() {
+void asteppers_stop()
+{
     astepper1.stop();
     if (configuration == TWO_CARRIAGES)
     {
         astepper2.stop();
     }
-
 }
 
-void asteppers_run_to_position() {
+void asteppers_run_to_position()
+{
     astepper1.runToPosition();
     if (configuration == TWO_CARRIAGES)
     {

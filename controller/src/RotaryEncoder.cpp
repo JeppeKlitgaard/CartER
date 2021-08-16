@@ -6,7 +6,6 @@
 CustomAMS_5600 rot_encoder1;
 CustomAMS_5600 rot_encoder2;
 
-
 void setup_rotary_encoders()
 {
     DPL("Setting up rotary encoders.");
@@ -18,6 +17,5 @@ void setup_rotary_encoders()
     {
         DPL("Setting up rotary encoder 2.");
         rot_encoder2.start(ROT_ENCODER_2_ADDR);
-
     }
 }

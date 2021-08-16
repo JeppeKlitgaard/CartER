@@ -113,7 +113,6 @@ void loop_limit_finding()
             packet_sender.send_debug("LimitFinder: LEFT LIMIT HIT [slow]");
             astepper1.stop();
 
-
             toggle_limit_finding_mode();
         }
         else if (configuration == ONE_CARRIAGES)
@@ -193,20 +192,24 @@ void loop_limit_finding()
     asteppers_run();
 }
 
-void enter_limit_finding() {
+void enter_limit_finding()
+{
     asteppers_enable();
 }
 
-void exit_limit_finding() {
+void exit_limit_finding()
+{
     asteppers_stop();
     asteppers_run_to_position();
     asteppers_disable();
 }
 
-void do_limit_finding() {
+void do_limit_finding()
+{
     limit_finding_mode = LimitFindingMode::INIT;
 
-    while (limit_finding_mode != LimitFindingMode::DONE) {
+    while (limit_finding_mode != LimitFindingMode::DONE)
+    {
         loop_limit_finding();
     }
 }
