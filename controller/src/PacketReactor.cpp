@@ -100,6 +100,35 @@ void PacketReactor::tick()
         break;
     }
 
+    case SetVelocityPacket::id:
+    {
+        std::unique_ptr<SetVelocityPacket> packet = _read_and_construct_packet<SetVelocityPacket>();
+
+        packet_sender.send_debug("Received <SetVelocityPacket| operation: " +
+                                 std::to_string(static_cast<char>(packet->operation)) +
+                                 ", cart_id: " + std::to_string(packet->cart_id) +
+                                 ", value: " + std::to_string(packet->value));
+
+        CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
+
+        switch (packet->operation)
+        {
+        case SetOperation::ADD:
+            astepper.setMaxSpeed(std::max(astepper.maxSpeed() + (float_t)packet->value, MAX_SETTABLE_SPEED));
+            break;
+        case SetOperation::EQUAL:
+            astepper.setMaxSpeed(static_cast<float_t>(packet->value));
+            break;
+        case SetOperation::SUBTRACT:
+            astepper.setMaxSpeed(std::max(astepper.maxSpeed() - (float_t)packet->value, (float_t)0.0));
+            break;
+        case SetOperation::NUL:
+            break;
+        }
+
+        break;
+    }
+
     case FindLimitsPacket::id:
     {
         do_limit_finding();

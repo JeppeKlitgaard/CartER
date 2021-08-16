@@ -106,6 +106,10 @@ void SetQuantityBasePacket::read(Stream &sbuf)
 SetPositionPacket::SetPositionPacket() {}
 byte SetPositionPacket::get_id() const { return SetPositionPacket::id; }
 
+// SetVelocity
+SetVelocityPacket::SetVelocityPacket() {}
+byte SetVelocityPacket::get_id() const { return SetVelocityPacket::id; }
+
 // FindLimits
 FindLimitsPacket::FindLimitsPacket() {}
 byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }

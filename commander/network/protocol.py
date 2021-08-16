@@ -182,9 +182,8 @@ class PongPacket(PingPacket):
 class RequestDebugInfoPacket(OnlyIDPacket):
     id_ = byte(0x24)  # $
 
-class SetPositionPacket(OutboundPacket):
-    id_ = byte(0x78)  # x
 
+class SetQuantityPacket(OutboundPacket):
     def __init__(self, operation: SetOperation, cart_id: CartID, value: int) -> None:
         self.operation = operation
         self.cart_id = cart_id
@@ -199,6 +198,10 @@ class SetPositionPacket(OutboundPacket):
         bytes_ += pack(Format.INT_16, self.value)
 
         return bytes_
+
+
+class SetPositionPacket(SetQuantityPacket):
+    id_ = byte(0x78)  # x
 
 
 # ! Currently unused
@@ -217,13 +220,13 @@ class GetPositionPacket(InboundPacket):
         return cls(value_steps=value_steps, value_mm=value_mm)
 
 
-class SetVelocityPacket(SetPositionPacket):
+class SetVelocityPacket(SetQuantityPacket):
     id_ = byte(0x76)  # v
 
 
 # ! Currently unused
 class GetVelocityPacket(GetPositionPacket):
-    id_ = byte(0x76)  # V
+    id_ = byte(0x56)  # V
 
 
 class FindLimitsPacket(OnlyIDPacket):

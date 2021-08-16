@@ -169,6 +169,18 @@ public:
     virtual byte get_id() const override;
 };
 
+// SetVelocity
+class SetVelocityPacket : public SetQuantityBasePacket
+{
+public:
+    static const byte id = 0x76; // v
+
+    SetVelocityPacket();
+    using SetQuantityBasePacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // FindLimits
 class FindLimitsPacket : public OnlyIDPacket
 {
