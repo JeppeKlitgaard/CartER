@@ -179,6 +179,9 @@ class PongPacket(PingPacket):
     id_ = byte(0x50)  # P
 
 
+class RequestDebugInfoPacket(OnlyIDPacket):
+    id_ = byte(0x24)  # $
+
 class SetPositionPacket(OutboundPacket):
     id_ = byte(0x78)  # x
 
