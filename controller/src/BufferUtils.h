@@ -2,7 +2,6 @@
 #define STREAM_WRAPPER_H
 
 #include <CustomArduino.h>
-#include <struct.h>
 #include <array>
 
 char read_char(Stream &sbuf);

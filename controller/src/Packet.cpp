@@ -23,6 +23,14 @@ void RawPacket::add(const char *msg, size_t size)
         add(msg[i]);
 }
 
+void RawPacket::add(std::string const &str) {
+    uint32_t bytes_len = static_cast<uint32_t>(str.size());
+    this->add(bytes_len);
+
+    auto bytes = reinterpret_cast<byte const*>(str.data());
+    this->insert(this->end(), bytes, bytes + str.size());
+}
+
 void RawPacket::add_newline()
 {
     add((byte)0x0D);

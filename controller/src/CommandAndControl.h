@@ -2,7 +2,6 @@
 #define COMMAND_AND_CONTROL_H
 
 #include <CustomArduino.h>
-#include <map>
 
 void loop_command_and_control();
 

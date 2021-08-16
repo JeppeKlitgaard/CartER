@@ -13,7 +13,8 @@ extern Bounce2::Button limit_sw_right;
 const int LEFT_LIMIT_SW_PIN = 22;
 const int RIGHT_LIMIT_SW_PIN = 23;
 
-const int LIMIT_SAFETY_DISTANCE_STEPS = 50;
+const float_t LIMIT_RETRACTION_DISTANCE = 20.0;
+const float_t LIMIT_SAFETY_DISTANCE = 50.0;
 
 void setup_limit_switches();
 void update_limit_switches();

@@ -1,4 +1,5 @@
 #include <BufferUtils.h>
+#include <struct.h>
 #include <Init.h>
 
 // char

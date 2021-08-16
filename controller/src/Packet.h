@@ -49,6 +49,7 @@ public:
     {
         this->insert(this->end(), b_array.begin(), b_array.end());
     }
+    void add(std::string const &msg);
 };
 
 /**
@@ -90,7 +91,16 @@ public:
     virtual RawPacket to_raw_packet() const = 0;
 };
 
-class OnlyIDPacket : public OutboundPacket, public InboundPacket {
+class BidirectionalPacket : public OutboundPacket, public InboundPacket
+{
+public:
+    explicit BidirectionalPacket() = default;
+    virtual ~BidirectionalPacket() = default;
+    using Packet::construct;
+};
+
+class OnlyIDPacket : public BidirectionalPacket
+{
 public:
     explicit OnlyIDPacket() = default;
     virtual ~OnlyIDPacket() = default;

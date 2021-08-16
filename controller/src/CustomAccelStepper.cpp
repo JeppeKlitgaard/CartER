@@ -2,24 +2,35 @@
 #include <DebugUtils.h>
 
 CustomAccelStepper::CustomAccelStepper(
-    uint8_t cart_id,
+    uint8_t cart_id_,
     uint8_t interface,
     uint8_t pin1,
     uint8_t pin2,
     uint8_t pin3,
     uint8_t pin4,
-    bool enable) : AccelStepper(interface, pin1, pin2, pin3, pin4, enable) {
-        cart_id = cart_id;
-    }
+    bool enable) : AccelStepper(interface, pin1, pin2, pin3, pin4, enable)
+{
+    cart_id = cart_id_;
+}
 
 /**
  * Converts a distance to an integer number of steps
  * @param distance
  * @return
  */
-int CustomAccelStepper::_distanceToSteps(float distance)
+int32_t CustomAccelStepper::_distanceToSteps(float distance)
 {
     return distance * _microsteps * _stepsPerRotation / _distancePerRotation;
+}
+
+/**
+ * Converts steps to a distance
+ * @param steps
+ * @return
+ */
+float_t CustomAccelStepper::_stepsToDistance(int32_t steps)
+{
+    return (steps / _microsteps) * _distancePerRotation / _stepsPerRotation;
 }
 
 /**
@@ -27,7 +38,7 @@ int CustomAccelStepper::_distanceToSteps(float distance)
  * @param angle
  * @return
  */
-int CustomAccelStepper::_angleToSteps(float angle)
+int32_t CustomAccelStepper::_angleToSteps(float angle)
 {
     return angle * _microsteps * _stepsPerRotation / _anglePerRotation;
 }
@@ -66,6 +77,87 @@ void CustomAccelStepper::setDistancePerRotation(float distance)
 void CustomAccelStepper::setAnglePerRotation(float angle)
 {
     _anglePerRotation = angle;
+}
+
+/**
+ * Set the far limit switch.
+ * We assume that the left limit is 0, this can be set using setCurrentPosition()
+ * @param farLimit
+ */
+void CustomAccelStepper::setFarLimit(int32_t farLimit)
+{
+    _farLimit = farLimit;
+}
+
+/**
+ * Get the far limit
+ * @return
+ */
+int32_t CustomAccelStepper::getFarLimit()
+{
+    return _farLimit;
+}
+
+/**
+ * Set the limit safety margin. This is used by runSafe()
+ * @param limitSafetyMargin
+ */
+void CustomAccelStepper::setLimitSafetyMargin(int32_t limitSafetyMargin)
+{
+    _limitSafetyMargin = limitSafetyMargin;
+}
+
+/**
+ * Set the limit safety margin. This is used by runSafe()
+ * @param limitSafetyMarginDistance
+ */
+void CustomAccelStepper::setLimitSafetyMarginDistance(float_t limitSafetyMarginDistance)
+{
+    _limitSafetyMargin = _distanceToSteps(limitSafetyMarginDistance);
+}
+
+/**
+ * Get the limit safety margin. This is used by runSafe()
+ * @return
+ */
+int32_t CustomAccelStepper::getLimitSafetyMargin()
+{
+    return _limitSafetyMargin;
+}
+
+/**
+ * Get the limit safety margin. This is used by runSafe()
+ * @return
+ */
+float_t CustomAccelStepper::getLimitSafetyMarginDistance()
+{
+    return _stepsToDistance(_limitSafetyMargin);
+}
+
+/**
+ * Does a step in a manner that allows for easy safety implementation.
+ * Returns 0 if the position is safe.
+ * Returns -1 if the position is unsafe (below 0 + limitSafetyMargin)
+ * Returns +1 if the position is unsafe (above farLimit + limitSafetyMargin)
+ * Calling stop() is then the responsibility of the developer.
+ * @return
+ */
+int8_t CustomAccelStepper::runSafe()
+{
+    run();
+
+    int32_t currPos = currentPosition();
+
+    if (currPos < _limitSafetyMargin)
+    {
+        return -1;
+    }
+    else if (currPos > _farLimit - _limitSafetyMargin)
+    {
+        return +1;
+    } else {
+        return 0;
+    }
 }
 
 /**
@@ -183,7 +275,8 @@ void CustomAccelStepper::setAccelerationDistance(float acceleration)
  * This also calls AccelStepper.setEnablePin()
  * @param enablePin
  */
-void CustomAccelStepper::setCustomEnablePin(uint8_t enablePin) {
+void CustomAccelStepper::setCustomEnablePin(uint8_t enablePin)
+{
     _customEnablePin = enablePin;
     setEnablePin(enablePin);
 }
@@ -209,7 +302,8 @@ void CustomAccelStepper::setEnabled(bool enabled)
  * Returns the enabled status as a bool.
  * @return
  */
-bool CustomAccelStepper::getEnabled() {
+bool CustomAccelStepper::getEnabled()
+{
     return digitalRead(_customEnablePin);
 }
 

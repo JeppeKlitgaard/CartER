@@ -4,9 +4,12 @@
 #include <CustomArduino.h>
 
 #include <vector>
+#include <string>
+
 #include <PString.h>
 #include <Packet.h>
 #include <Init.h>
+#include <Mode.h>
 
 /** Protocol is little-endian.
   */
@@ -35,46 +38,58 @@ public:
     virtual void read(Stream &sbuf) override;
 };
 
-class DebugErrorBasePacket : public OutboundPacket
+class MessageBasePacket : public BidirectionalPacket
 {
 public:
-    const char *_msg;
-    size_t _size;
+    std::string _msg;
 
-    DebugErrorBasePacket();
+    MessageBasePacket();
     using OutboundPacket::construct;
-    void construct(const char *message, size_t size);
+    void construct(std::string msg);
 
     virtual byte get_id() const override = 0;
     virtual RawPacket to_raw_packet() const override;
+    virtual void read(Stream &sbuf) override;
 };
 
 // Debug
-class DebugPacket : public DebugErrorBasePacket
+class DebugPacket : public MessageBasePacket
 {
 public:
-    static const byte id = 0x7E; // ~
+    static const byte id = 0x22; // #
 
     DebugPacket();
-    using DebugErrorBasePacket::construct;
+    using MessageBasePacket::construct;
+
+    virtual byte get_id() const override;
+};
+
+// Info
+class InfoPacket : public MessageBasePacket
+{
+public:
+    static const byte id = 0x22; // #
+
+    InfoPacket();
+    using MessageBasePacket::construct;
 
     virtual byte get_id() const override;
 };
 
 // Error
-class ErrorPacket : public DebugErrorBasePacket
+class ErrorPacket : public MessageBasePacket
 {
 public:
     static const byte id = 0x21; // !
 
     ErrorPacket();
-    using DebugErrorBasePacket::construct;
+    using MessageBasePacket::construct;
 
     virtual byte get_id() const override;
 };
 
 // PingPongBase
-class PingPongBasePacket : public InboundPacket, public OutboundPacket
+class PingPongBasePacket : public BidirectionalPacket
 {
 public:
     unsigned long ping_timestamp;
@@ -134,7 +149,7 @@ public:
 class SetPositionPacket : public SetQuantityBasePacket
 {
 public:
-    static const byte id = 0x78;
+    static const byte id = 0x78; // x
 
     SetPositionPacket();
     using SetQuantityBasePacket::construct;
@@ -146,12 +161,30 @@ public:
 class FindLimitsPacket : public OnlyIDPacket
 {
 public:
-    static const byte id = 0x7C;
+    static const byte id = 0x7C; // |
 
     FindLimitsPacket();
     using OnlyIDPacket::construct;
 
     virtual byte get_id() const override;
+};
+
+// ExperimentDone
+class ExperimentDonePacket : public BidirectionalPacket {
+public:
+    FailureMode _failure_mode;
+    uint8_t _cart_id;
+
+    static const byte id = 0x2E;  // .
+
+    ExperimentDonePacket();
+    using BidirectionalPacket::construct;
+
+    virtual byte get_id() const override;
+
+    virtual void construct(FailureMode failure_mode, uint8_t cart_id);
+    virtual RawPacket to_raw_packet() const override;
+    virtual void read(Stream &sbuf) override;
 };
 
 #endif

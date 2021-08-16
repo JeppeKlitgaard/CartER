@@ -87,8 +87,6 @@ void PacketReactor::tick()
             break;
         }
 
-        astepper1.runToPosition();
-
         break;
     }
     case FindLimitsPacket::id:
@@ -100,12 +98,16 @@ void PacketReactor::tick()
         packet->construct(id);
 
         // Reaction
-        std::unique_ptr<DebugPacket> debug_pkg = std::make_unique<DebugPacket>();
-
         packet_sender.send_debug("Received unknown packet with ID: " + std::to_string(packet->observed_id));
 
         break;
     }
 }
 
-void experiment_done_trigger(){};
+void experiment_done_trigger() {
+    experiment_done = true;
+    asteppers_stop();
+
+    std::unique_ptr<ExperimentDonePacket> packet = std::make_unique<ExperimentDonePacket>();
+    packet_sender.send(std::move(packet));
+};

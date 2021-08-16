@@ -13,14 +13,18 @@ protected:
     float _distancePerRotation = 1;
     float _anglePerRotation = 360;
 
-    int _distanceToSteps(float distance);
-    int _angleToSteps(float angle);
+    int32_t _distanceToSteps(float distance);
+    float_t _stepsToDistance(int32_t steps);
+    int32_t _angleToSteps(float angle);
+
+    int32_t _farLimit = 0;
+    int32_t _limitSafetyMargin = 0;
 
 public:
     uint8_t cart_id;
 
-    CustomAccelStepper(
-        uint8_t cart_id,
+    explicit CustomAccelStepper(
+        uint8_t cart_id_,
         uint8_t interface = AccelStepper::FULL4WIRE,
         uint8_t pin1 = 2,
         uint8_t pin2 = 3,
@@ -32,6 +36,16 @@ public:
     void setStepsPerRotation(int steps);
     void setDistancePerRotation(float distance);
     void setAnglePerRotation(float angle);
+
+    void setFarLimit(int32_t farLimit);
+    int32_t getFarLimit();
+
+    void setLimitSafetyMargin(int32_t limitSafetyMargin);
+    void setLimitSafetyMarginDistance(float_t limitSafetyMargin);
+    int32_t getLimitSafetyMargin();
+    float_t getLimitSafetyMarginDistance();
+
+    int8_t runSafe();
 
     float getCurrentPositionDistance();
     void setCurrentPositionDistance(float absolute);

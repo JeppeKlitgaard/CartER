@@ -23,8 +23,9 @@ class PacketSender {
                 _s.write(raw_packet.data(), raw_packet.size());
         }
 
-        void send_debug(const std::string msg) const;
-        void send_error(const std::string msg) const;
+        void send_debug(std::string msg) const;
+        void send_info(std::string msg) const;
+        void send_error(std::string msg) const;
 };
 
 extern PacketSender packet_sender;

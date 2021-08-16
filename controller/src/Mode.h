@@ -36,14 +36,16 @@ const String ConfigurationStrings[] ={
 };
 
 // Failure
-enum class FailureMode {
-    POSITION_RIGHT,
-    POSITION_LEFT,
+enum class FailureMode : int8_t {
+    NUL = 0,
 
-    ANGLE_RIGHT,
-    ANGLE_LEFT,
+    POSITION_LEFT = -1,
+    POSITION_RIGHT = 1,
 
-    OTHER,
+    ANGLE_LEFT = -2,
+    ANGLE_RIGHT = 2,
+
+    OTHER = 127,
 };
 
 const String FailureModeStrings[] = {

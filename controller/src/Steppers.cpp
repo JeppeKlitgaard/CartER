@@ -117,34 +117,24 @@ void asteppers_run()
     }
 }
 
-int8_t position_within_limits(int32_t position) {
-    if (LIMIT_SAFETY_DISTANCE_STEPS > position) {
-        return -1;
-    } else if (position > (track_length_steps - LIMIT_SAFETY_DISTANCE_STEPS)) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
+// void astepper_speed_run(CustomAccelStepper &astepper) {
+//     int8_t limit_check = position_within_limits(astepper.currentPosition());
 
-void astepper_speed_run(CustomAccelStepper &astepper) {
-    int8_t limit_check = position_within_limits(astepper.currentPosition());
+//     if (limit_check != 0) {
+//         experiment_done = true;
+//         if (limit_check == -1) {
+//             failure_mode = FailureMode::POSITION_LEFT;
+//         } else {
+//             failure_mode = FailureMode::POSITION_RIGHT;
+//         }
 
-    if (limit_check != 0) {
-        experiment_done = true;
-        if (limit_check == -1) {
-            failure_mode = FailureMode::POSITION_LEFT;
-        } else {
-            failure_mode = FailureMode::POSITION_RIGHT;
-        }
+//         experiment_done_trigger();
+//     }
 
-        experiment_done_trigger();
-    }
-
-    int direction = sgn(astepper.speed());
-    astepper.move(direction * STEPPER_STEP_DISTANCE);
-    astepper.run();
-}
+//     int direction = sgn(astepper.speed());
+//     astepper.move(direction * STEPPER_STEP_DISTANCE);
+//     astepper.run();
+// }
 
 void asteppers_enable()
 {

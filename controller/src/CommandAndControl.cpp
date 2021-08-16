@@ -2,6 +2,7 @@
 
 #include <Init.h>
 #include <Steppers.h>
+#include <LimitFinding.h>
 
 
 void loop_command_and_control() {
@@ -9,5 +10,14 @@ void loop_command_and_control() {
         packet_reactor.tick();
     }
 
-    asteppers_run();
+    bool currently_limit_finding = limit_finding_mode != LimitFindingMode::DONE;
+
+    int8_t safety = astepper1.runSafe();
+
+    if (!currently_limit_finding && (safety != 0)) {
+        // We did unsafe step while not limit finding!
+        experiment_done = true;
+        experiment_done_trigger();
+    }
+
 }

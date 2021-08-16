@@ -79,14 +79,15 @@ void loop_limit_finding()
         toggle_limit_finding_mode();
 
         break;
+
     case LimitFindingMode::LEFT_FAST:
         if (limit_sw_left.pressed())
         {
-            packet_sender.send_debug("LEFT LIMIT HIT!");
+            packet_sender.send_debug("LimitFinder: LEFT LIMIT HIT [fast]");
             astepper1.stop();
 
             toggle_limit_finding_mode();
-            astepper1.moveDistance(20 * RIGHT);
+            astepper1.moveDistance(LIMIT_RETRACTION_DISTANCE * RIGHT);
         }
         else if (configuration == ONE_CARRIAGES)
         {
@@ -98,7 +99,7 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_RETRACT:
         if (astepper1.distanceToGo() == 0)
         {
-            packet_sender.send_debug("Done left retracting.");
+            packet_sender.send_debug("LimitFinder: LEFT LIMIT RETRACTED");
             toggle_limit_finding_mode();
 
             astepper1.setMaxSpeedDistance(Speed::SLOW);
@@ -109,11 +110,9 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_SLOW:
         if (limit_sw_left.pressed())
         {
-            packet_sender.send_debug("LEFT LIMIT HIT!");
+            packet_sender.send_debug("LimitFinder: LEFT LIMIT HIT [slow]");
             astepper1.stop();
 
-            astepper1.setMaxSpeedDistance(Speed::FAST);
-            astepper1.moveDistance(50 * RIGHT);
 
             toggle_limit_finding_mode();
         }
@@ -126,9 +125,10 @@ void loop_limit_finding()
     case LimitFindingMode::LEFT_POSITION_SET:
         if (astepper1.distanceToGo() == 0)
         {
-            packet_sender.send_debug("Setting left position");
+            packet_sender.send_debug("LimitFinder: LEFT LIMIT SET");
 
-            astepper1.setCurrentPositionDistance(0.0);
+            astepper1.setCurrentPosition(0);
+            astepper1.setMaxSpeedDistance(Speed::FAST);
 
             toggle_limit_finding_mode();
         }
@@ -136,11 +136,11 @@ void loop_limit_finding()
     case LimitFindingMode::RIGHT_FAST:
         if (limit_sw_right.pressed())
         {
-            packet_sender.send_debug("RIGHT LIMIT HIT!");
+            packet_sender.send_debug("LimitFinder: RIGHT LIMIT HIT [fast]");
             astepper1.stop();
 
             toggle_limit_finding_mode();
-            astepper1.moveDistance(20 * LEFT);
+            astepper1.moveDistance(LIMIT_RETRACTION_DISTANCE * LEFT);
         }
         else if (configuration == ONE_CARRIAGES)
         {
@@ -151,7 +151,7 @@ void loop_limit_finding()
     case LimitFindingMode::RIGHT_RETRACT:
         if (astepper1.distanceToGo() == 0)
         {
-            packet_sender.send_debug("Done right retracting.");
+            packet_sender.send_debug("LimitFinder: RIGHT LIMIT RETRACTED");
             toggle_limit_finding_mode();
 
             astepper1.setMaxSpeedDistance(Speed::SLOW);
@@ -160,10 +160,10 @@ void loop_limit_finding()
     case LimitFindingMode::RIGHT_SLOW:
         if (limit_sw_right.pressed())
         {
-            packet_sender.send_debug("RIGHT LIMIT HIT!");
+            packet_sender.send_debug("LimitFinder: RIGHT LIMIT HIT [slow]");
             astepper1.stop();
 
-            astepper1.setMaxSpeedDistance(Speed::FAST);
+            astepper1.setFarLimit(astepper1.currentPosition());
             track_length_distance = astepper1.getCurrentPositionDistance();
             track_length_steps = astepper1.currentPosition();
 
@@ -181,13 +181,13 @@ void loop_limit_finding()
     case LimitFindingMode::REPOSITION:
         if (astepper1.distanceToGo() == 0)
         {
-            packet_sender.send_debug("Done repositioning.");
+            packet_sender.send_debug("LimitFinder: NOW DONE");
             toggle_limit_finding_mode();
         }
         break;
 
     case LimitFindingMode::DONE:
-        packet_sender.send_debug("Already done.");
+        packet_sender.send_debug("LimitFinder: ALREADY DONE");
         break;
     }
     asteppers_run();
