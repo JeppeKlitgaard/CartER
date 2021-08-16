@@ -129,6 +129,18 @@ public:
     virtual byte get_id() const override;
 };
 
+// RequestDebugInfo
+class RequestDebugInfoPacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0x24; // |
+
+    RequestDebugInfoPacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // SetQuantityBase
 class SetQuantityBasePacket : public InboundPacket
 {

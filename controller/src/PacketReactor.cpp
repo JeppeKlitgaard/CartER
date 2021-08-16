@@ -59,6 +59,12 @@ void PacketReactor::tick()
         std::unique_ptr<PongPacket> packet = _read_and_construct_packet<PongPacket>();
         break;
     }
+    case RequestDebugInfoPacket::id:
+    {
+        send_debug_information();
+        break;
+    }
+
     case SetPositionPacket::id:
     {
 

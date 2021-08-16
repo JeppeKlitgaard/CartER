@@ -16,5 +16,6 @@ DebugUtils.h - Simple debugging utilities.
 #endif
 
 void print_debug_information();
+void send_debug_information();
 
 #endif

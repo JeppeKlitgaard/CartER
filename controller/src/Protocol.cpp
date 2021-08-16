@@ -86,6 +86,10 @@ byte PingPacket::get_id() const { return PingPacket::id; }
 PongPacket::PongPacket() {}
 byte PongPacket::get_id() const { return PongPacket::id; }
 
+// RequestDebugInfo
+RequestDebugInfoPacket::RequestDebugInfoPacket() {}
+byte RequestDebugInfoPacket::get_id() const { return RequestDebugInfoPacket::id; }
+
 // SetQuantityBase
 SetQuantityBasePacket::SetQuantityBasePacket() : operation{SetOperation::NUL}, cart_id{0}, value{0} {}
 
