@@ -2,7 +2,7 @@
 
 #include <Init.h>
 #include <Steppers.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 
 void loop_command_and_control()
 {

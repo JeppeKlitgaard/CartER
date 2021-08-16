@@ -1,7 +1,7 @@
 #include <Init.h>
 
 #include <Mode.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 
 Mode mode = JOYSTICK;
 

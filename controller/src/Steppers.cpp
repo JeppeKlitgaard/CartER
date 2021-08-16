@@ -4,7 +4,7 @@
 #include <Init.h>
 #include <Mode.h>
 #include <Utils.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 
 /*
  ! Stepper information:

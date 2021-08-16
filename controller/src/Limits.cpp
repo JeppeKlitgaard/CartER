@@ -1,4 +1,4 @@
-#include <LimitFinding.h>
+#include <Limits.h>
 
 #include <Mode.h>
 #include <Steppers.h>
@@ -8,6 +8,8 @@
 
 Bounce2::Button limit_sw_left = Bounce2::Button();
 Bounce2::Button limit_sw_right = Bounce2::Button();
+
+LimitCheckMode limit_check_mode = LimitCheckMode::INIT;
 
 void setup_limit_switches()
 {
@@ -212,4 +214,129 @@ void do_limit_finding()
     {
         loop_limit_finding();
     }
+}
+
+void toggle_limit_check_mode()
+{
+    switch (limit_check_mode)
+    {
+    case LimitCheckMode::INIT:
+        limit_check_mode = LimitCheckMode::LEFT_FAST;
+        break;
+    case LimitCheckMode::LEFT_FAST:
+        limit_check_mode = LimitCheckMode::LEFT_RETRACT;
+        break;
+    case LimitCheckMode::LEFT_RETRACT:
+        limit_check_mode = LimitCheckMode::LEFT_SLOW;
+        break;
+    case LimitCheckMode::LEFT_SLOW:
+        limit_check_mode = LimitCheckMode::LEFT_POSITION_GET;
+        break;
+    case LimitCheckMode::LEFT_POSITION_GET:
+        limit_check_mode = LimitCheckMode::REPOSITION;
+        break;
+    case LimitCheckMode::REPOSITION:
+        limit_check_mode = LimitCheckMode::DONE;
+        break;
+    case LimitCheckMode::DONE:
+        limit_check_mode = LimitCheckMode::DONE; // Stay done forever
+        break;
+    }
+}
+
+void loop_limit_check()
+{
+    update_limit_switches();
+
+    switch (limit_check_mode)
+    {
+    case LimitCheckMode::INIT:
+        astepper1.setMaxSpeedDistance(Speed::FAST);
+
+        toggle_limit_check_mode();
+
+        break;
+
+    case LimitCheckMode::LEFT_FAST:
+        if (limit_sw_left.pressed())
+        {
+            packet_sender.send_debug("LimitChecker: LEFT LIMIT HIT [fast]");
+            astepper1.stop();
+
+            toggle_limit_check_mode();
+            astepper1.moveDistance(LIMIT_RETRACTION_DISTANCE * RIGHT);
+        }
+        else if (configuration == ONE_CARRIAGES)
+        {
+            astepper1.moveDistanceCond(STEPPER_BIG_DISTANCE * LEFT);
+        }
+
+        break;
+
+    case LimitCheckMode::LEFT_RETRACT:
+        if (astepper1.distanceToGo() == 0)
+        {
+            packet_sender.send_debug("LimitChecker: LEFT LIMIT RETRACTED");
+            toggle_limit_check_mode();
+
+            astepper1.setMaxSpeedDistance(Speed::SLOW);
+
+            break;
+        }
+
+    case LimitCheckMode::LEFT_SLOW:
+        if (limit_sw_left.pressed())
+        {
+            packet_sender.send_debug("LimitChecker: LEFT LIMIT HIT [slow]");
+            astepper1.stop();
+
+            toggle_limit_check_mode();
+        }
+        else if (configuration == ONE_CARRIAGES)
+        {
+            astepper1.moveDistanceCond(STEPPER_BIG_DISTANCE * LEFT);
+        }
+
+        break;
+    case LimitCheckMode::LEFT_POSITION_GET:
+        if (astepper1.distanceToGo() == 0)
+        {
+            packet_sender.send_debug("LimitChecker: LEFT LIMIT GET");
+
+            react_limit_check(astepper1.currentPosition());
+            astepper1.setCurrentPosition(0);
+            astepper1.setMaxSpeedDistance(Speed::ULTRA_FAST);
+            astepper1.moveToDistance(track_length_distance / 2.0);
+
+            toggle_limit_check_mode();
+        }
+        break;
+
+    case LimitCheckMode::REPOSITION:
+        if (astepper1.distanceToGo() == 0)
+        {
+            packet_sender.send_debug("LimitChecker: NOW DONE");
+            toggle_limit_check_mode();
+        }
+        break;
+
+    case LimitCheckMode::DONE:
+        packet_sender.send_debug("LimitChecker: ALREADY DONE");
+        break;
+    }
+    asteppers_run();
+}
+
+void do_limit_check()
+{
+    limit_check_mode = LimitCheckMode::INIT;
+
+    while (limit_check_mode != LimitCheckMode::DONE)
+    {
+        loop_limit_check();
+    }
+}
+
+void react_limit_check(int32_t left_limit_new_position) {
+    packet_sender.send_info("LimitChecker: New limit was " + std::to_string(left_limit_new_position));
 }

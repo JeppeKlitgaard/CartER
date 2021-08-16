@@ -110,6 +110,10 @@ byte SetPositionPacket::get_id() const { return SetPositionPacket::id; }
 FindLimitsPacket::FindLimitsPacket() {}
 byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }
 
+// CheckLimit
+CheckLimitPacket::CheckLimitPacket() {}
+byte CheckLimitPacket::get_id() const { return CheckLimitPacket::id; }
+
 // ExperimentDone
 ExperimentDonePacket::ExperimentDonePacket() : _failure_mode{FailureMode::NUL}, _cart_id{0} {}
 byte ExperimentDonePacket::get_id() const { return ExperimentDonePacket::id; }

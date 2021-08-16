@@ -181,6 +181,18 @@ public:
     virtual byte get_id() const override;
 };
 
+// CheckLimit
+class CheckLimitPacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0x2F; // /
+
+    CheckLimitPacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // ExperimentDone
 class ExperimentDonePacket : public BidirectionalPacket
 {

@@ -1,7 +1,7 @@
 #include <DebugUtils.h>
 
 #include <Init.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 #include <Steppers.h>
 
 void print_debug_information()

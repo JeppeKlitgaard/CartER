@@ -1,7 +1,7 @@
 #include <Mode.h>
 
 #include <Joystick.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 
 void set_mode(const Mode target_mode)
 {

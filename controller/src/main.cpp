@@ -11,7 +11,7 @@
 #include <Steppers.h>
 #include <I2CMultiplexer.h>
 #include <RotaryEncoder.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 #include <CommandAndControl.h>
 #include <Joystick.h>
 

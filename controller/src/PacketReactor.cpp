@@ -10,7 +10,7 @@
 #include <PString.h>
 #include <Steppers.h>
 #include <CustomAccelStepper.h>
-#include <LimitFinding.h>
+#include <Limits.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
@@ -30,6 +30,7 @@ void PacketReactor::tick()
     //
     switch (id)
     {
+
     case NullPacket::id:
     {
         std::unique_ptr<NullInboundPacket> packet = _read_and_construct_packet<NullInboundPacket>();
@@ -37,11 +38,13 @@ void PacketReactor::tick()
 
         packet_sender.send_debug("NUL");
     }
+
     case UnknownPacket::id:
     {
         std::unique_ptr<UnknownPacket> packet = _read_and_construct_packet<UnknownPacket>();
         break;
     }
+
     case PingPacket::id:
     {
         std::unique_ptr<PingPacket> packet = _read_and_construct_packet<PingPacket>();
@@ -54,11 +57,13 @@ void PacketReactor::tick()
         packet_sender.send(std::move(pong_pkt));
         break;
     }
+
     case PongPacket::id:
     {
         std::unique_ptr<PongPacket> packet = _read_and_construct_packet<PongPacket>();
         break;
     }
+
     case RequestDebugInfoPacket::id:
     {
         send_debug_information();
@@ -94,11 +99,19 @@ void PacketReactor::tick()
 
         break;
     }
+
     case FindLimitsPacket::id:
     {
         do_limit_finding();
         break;
     }
+
+    case CheckLimitPacket::id:
+    {
+        do_limit_check();
+        break;
+    }
+
     default:
         std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
         packet->construct(id);
