@@ -68,7 +68,7 @@ public:
 class InfoPacket : public MessageBasePacket
 {
 public:
-    static const byte id = 0x22; // #
+    static const byte id = 0x7E; // #
 
     InfoPacket();
     using MessageBasePacket::construct;
