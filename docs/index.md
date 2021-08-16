@@ -11,7 +11,7 @@ reinforcement-learning libraries for greater reproducibility.
 
 The CartpoleML project is an undergraduate research project undertaken by Jeppe Klitgaard
 at the Biological and Soft Systems group at Cavendish Laboratory, University of Cambridge 
-under supervision of Dr Pietro Cicuta and Dr Pietro Lio.
+under supervision of Professor Pietro Cicuta and Professor Pietro Lio.
 
 Queries can be made to [jk782@cam.ac.uk](mailto:jk782@cam.ac.uk) or through the GitHub
 repository located at [JeppeKlitgaard/CartpoleML](https://github.com/JeppeKlitgaard/CartpoleML)
