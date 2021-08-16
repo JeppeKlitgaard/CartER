@@ -154,7 +154,7 @@ class ErrorPacket(MessagePacketBase):
     id_ = byte(0x21)  # !
 
 
-class PingPacket(Packet):
+class PingPacket(BidirectionalPacket):
     id_ = byte(0x70)  # p
 
     def __init__(self, timestamp: int) -> None:
