@@ -22,3 +22,6 @@ build/
 *.avi
 *.zip
 output_data/
+
+# Documentation
+site/
