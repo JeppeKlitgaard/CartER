@@ -20,3 +20,23 @@ in packet lengths will lead to future misalignment that cannot easily be correct
 
 A `struct`-like library is also used on the controller to allow for easy matching between the
 controller and commander protocol implementations.
+
+## Packet overview
+
+| ID (byte) | ID (ASCII) | Packet                   | Direction (Controller ↔ Commander) | Comment                                                |
+| :-------: | :--------: | ------------------------ | :--------------------------------: | ------------------------------------------------------ |
+|  `0x00`   |   `NUL`    | `NullPacket`             |                N/A                 | Does nothing                                           |
+|  `0x70`   |    `p`     | `PingPacket`             |                 ⟷                  | Other end should respond with a pong                   |
+|  `0x50`   |    `P`     | `PongPacket`             |                 ⟷                  | Response to ping                                       |
+|  `0x23`   |    `#`     | `DebugPacket`            |                 ⟶                  | Debug messages                                         |
+|  `0x7E`   |    `~`     | `InfoPacket`             |                 ⟶                  | Info messages                                          |
+|  `0x21`   |    `!`     | `ErrorPacket`            |                 ⟶                  | Error messages                                         |
+|  ` 0x24`  |    `$`     | `RequestDebugInfoPacket` |                 ⟵                  | Requests debug information from controller             |
+|  `0x3F`   |    `?`     | `UnknownPacket`          |                N/A                 | An unknown packet was found                            |
+|  `0x78`   |    `x`     | `SetPositionPacket`      |                 ⟵                  | Sets relative or absolute position                     |
+|  `0x58`   |    `X`     | `GetPositionPacket`      |                 ⟶                  | __UNUSED__. Gets position                              |
+|  `0x76`   |    `v`     | `SetVelocityPacket`      |                 ⟵                  | Sets relative or absolute maximum velocity             |
+|  `0x56`   |    `V`     | `GetVelocityPacket`      |                 ⟶                  | __UNUSED__. Gets maximum velocity                      |
+|  `0x7C`   |    `|`     | `FindLimitsPacket`       |                 ⟵                  | Instructs controller to perform limit finding routine  |
+|  `0x2F`   |    `/`     | `CheckLimitPacket`       |                 ⟵                  | Instructs controller to perform limit checking routine |
+|  `0x40`   |    `@`     | `ObservationPacket`      |                 ⟶                  | Observed state                                         |
