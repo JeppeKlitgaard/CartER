@@ -33,14 +33,12 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
     def __init__(
         self,
         agents: Sequence[CartpoleAgent],
-        start_time: float = 0.0,  # s
-        timestep: float = 0.02,  # s
-        world_size: tuple[float, float] = (-2.5, 2.5),
     ):
+        self.agents = [agent.name for agent in agents]
+        self.possible_agents = self.agents[:]
         self._agents = list(agents)
-        self.start_time = start_time
-        self.timestep = timestep
-        self.world_size = world_size
+
+        self.agent_name_mapping = dict(zip(self.possible_agents, self._agents))
 
         self.action_spaces: Mapping[str, spaces.Space] = {
             agent.name: agent.action_space for agent in self._agents
@@ -81,10 +79,7 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
         self.world_time: float = 0.0
 
         # This needs to be agent names/ids
-        self.agents = [agent.name for agent in self._agents]
-        self.possible_agents = self.agents[:]
-
-        self.agent_name_mapping = dict(zip(self.possible_agents, self._agents))
+        self.agents = self.possible_agents[:]
 
         # Return observations from agent reset
         return observations
@@ -104,6 +99,18 @@ class SimulatedCartpoleEnv(CartpoleEnv):
     An environment that represents the Cartpole Environment and
     implements simulated physics.
     """
+    def __init__(
+        self,
+        agents: Sequence[CartpoleAgent],
+        start_time: float = 0.0,  # s
+        timestep: float = 0.02,  # s
+        world_size: tuple[float, float] = (-2.5, 2.5),
+    ) -> None:
+        self.start_time = start_time
+        self.timestep = timestep
+        self.world_size = world_size
+
+        super().__init__(agents=agents)
 
     def setup(self) -> None:
         super().setup()
