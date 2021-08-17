@@ -15,11 +15,14 @@ from commander.ml.agent import (
     SimulatedCartpoleAgent,
     make_agent,
 )
-
-from commander.ml.agent.state_specification import AgentTotalKnowledgeStateSpecification, AgentPositionalKnowledgeStateSpecification
+from commander.ml.agent.state_specification import (
+    AgentPositionalKnowledgeStateSpecification,
+    AgentTotalKnowledgeStateSpecification,
+)
 from commander.ml.configurations import DeepPILCOConfiguration
-from commander.ml.environment import make_env, make_sb3_env
+from commander.ml.environment import SimulatedCartpoleEnv, get_sb3_env_root_env, make_sb3_env
 from commander.ml.tensorboard import FailureModeCallback, SimulatedTimeCallback
+from commander.ml.utils import restore_step, vectorise_observations
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -171,7 +174,7 @@ def simulate(
         policy_params["clip_range"] = lambda x: 0.2 * x
 
     # Callbacks
-    eval_env = make_sb3_env(**env_params)
+    eval_env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
     eval_callback = EvalCallback(
         eval_env, best_model_save_path=str(best_model_path), eval_freq=int(total_timesteps / 25)
     )
@@ -181,10 +184,10 @@ def simulate(
     callbacks = [eval_callback, simulated_time_callback, failure_mode_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
-    env = make_sb3_env(**env_params)
+    env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
     logger.info(
         f"Observation spaces: env={env.observation_space.shape}, "
-        f"agent={env.unwrapped.par_env.unwrapped._agents[0].observation_space.shape}"
+        f"agent={get_sb3_env_root_env(env)._agents[0].observation_space.shape}"
     )
     if train:
         _kwargs = {
@@ -210,8 +213,10 @@ def simulate(
         model.save(model_path)
 
     if render:
-        env = make_env(**env_params)
+        env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
         env.reset()
+
+        root_env = get_sb3_env_root_env(env)
 
         if render_with_best:
             render_model_path = best_model_path / "best_model"
@@ -225,12 +230,21 @@ def simulate(
             images = []
 
         obs = env.reset()
-        for agent in env.agent_iter():
-            obs, reward, done, info = env.last()
+        done = False
+        total_rewards = {agent: 0.0 for agent in root_env.agents}
 
-            action, state = model.predict(obs) if not done else (None, None)
+        while not done:
+            actions, states = model.predict(obs)
 
-            env.step(action)
+            step_return = env.step(actions)
+            observations, rewards, dones, infos = restore_step(env, step_return)
+            obs = vectorise_observations(observations)
+
+            for (agent, reward) in rewards.items():
+                total_rewards[agent] += reward
+
+            done = any(dones.values())
+
             if record:
                 image = plt.imshow(env.render(mode="rgb_array"), animated=True)
                 plt.axis("off")
@@ -242,16 +256,15 @@ def simulate(
                 env.render()
 
             if done:
-                logger.info(f"Reward: {reward}")
+                logger.info(f"Rewards: {total_rewards}")
                 env.close()
-                obs = env.reset()
 
                 if record:
                     print("Saving animation...")
                     ani = animation.ArtistAnimation(
                         fig,
                         images,
-                        interval=env.unwrapped.timestep * 1000,
+                        interval=root_env.timestep * 1000,
                         blit=True,
                         repeat_delay=1000,
                     )
@@ -260,5 +273,3 @@ def simulate(
 
                     ani.save(f"{animation_path}", dpi=200, writer=writer)
                     print(f"Animation saved as {animation_path}")
-
-                break

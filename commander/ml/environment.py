@@ -1,24 +1,26 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 import gym
 import supersuit as ss
 from gym import spaces
 from gym.envs.classic_control import rendering
-from pettingzoo import AECEnv
-from pettingzoo.utils import agent_selector, wrappers
-from pettingzoo.utils.conversions import to_parallel
+from pettingzoo.utils.env import ParallelEnv
 
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import CartpoleAgent
+from commander.ml.agent.agent import SimulatedCartpoleAgent
 from commander.ml.constants import Action
+from commander.ml.type_aliases import AgentNameT, StepReturn
 from commander.type_aliases import ExternalState
 
+EnvT = TypeVar("EnvT", bound="CartpoleEnv")
 
-class CartpoleEnv(AECEnv):  # type: ignore [misc]
+
+class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
     """
     Base Class for all Cartpole environments.
     """
@@ -54,9 +56,6 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
         # Note some key attributes are only set after calling reset!
         self.reset()
 
-    def is_done(self) -> bool:
-        return any(self.dones.values())
-
     def seed(self, seed: Optional[int] = None) -> list[Any]:
         seeds = [agent.seed() for agent in self._agents]
 
@@ -87,27 +86,6 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
 
         self.agent_name_mapping = dict(zip(self.possible_agents, self._agents))
 
-        # Initialise agents
-        for agent_name in self.agents:
-            agent = self.agent_name_mapping[agent_name]
-
-            agent.tau = self.timestep
-
-        # Agent selector
-        self._agent_selector = agent_selector(self.agents)
-        self.agent_selection = self._agent_selector.next()
-
-        # Agent -> done status mapping
-        self.observations: dict[str, ExternalState] = {
-            agent.name: agent.observe() for agent in self._agents
-        }
-        self.rewards: dict[str, float] = {agent.name: 0 for agent in self._agents}
-        self._cumulative_rewards: dict[str, float] = {agent.name: 0 for agent in self._agents}
-        self.dones: dict[str, bool] = {agent.name: False for agent in self._agents}
-        self.infos: dict[str, Mapping[str, Any]] = {
-            agent.name: agent.info for agent in self._agents
-        }
-
         # Return observations from agent reset
         return observations
 
@@ -117,7 +95,7 @@ class CartpoleEnv(AECEnv):  # type: ignore [misc]
     def close(self) -> None:
         raise NotImplementedError("This should be overridden")
 
-    def step(self, actions: Action) -> None:
+    def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         raise NotImplementedError("This should be overriden")
 
 
@@ -127,7 +105,17 @@ class SimulatedCartpoleEnv(CartpoleEnv):
     implements simulated physics.
     """
 
-    def step(self, action: Action) -> None:
+    def setup(self) -> None:
+        super().setup()
+
+        for agent_name in self.agents:
+            agent = self.agent_name_mapping[agent_name]
+
+            assert isinstance(agent, SimulatedCartpoleAgent)
+
+            agent.tau = self.timestep
+
+    def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         """
         Performs a single step in the environment using the currently selector agent
         to perform the given action.
@@ -145,41 +133,31 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         based on the action.
         """
 
-        agent_name = self.agent_selection
-        agent = self.agent_name_mapping[agent_name]
+        observations = {}
+        rewards = {}
+        dones = {}
+        infos = {}
 
-        if self.dones[agent_name]:
-            # We thus remove all agents in within one cycle
+        for (agent_name, action) in actions.items():
+            agent = self.agent_name_mapping[agent_name]
 
-            self._was_done_step(action)
-            return
+            observation, reward, done, info = agent.step(action)
 
-        # First agent in reward cycle, reset previous rewards
-        if self._agent_selector.is_first():
-            # Clear old rewards
-            self._clear_rewards()
-            self.steps += 1
+            observations[agent_name] = observation
+            rewards[agent_name] = reward
+            dones[agent_name] = done
+            infos[agent_name] = info
 
-        observation, reward, done, info = agent.step(action)
+        # Patch dones such that when any agent is done, all agents are done
+        if any(dones.values()):
+            dones = {agent_name: True for agent_name in actions.keys()}
 
-        self.observations[agent_name] = observation
+        self.world_time += self.timestep
+        self.total_world_time += self.timestep
+        self.steps += 1
 
-        # ## Update environment-level data
-        self.rewards[agent_name] += reward
+        return observations, rewards, dones, infos
 
-        self.dones[agent_name] = done or self.is_done()
-
-        self.infos[agent_name] = info
-
-        # Put rewards into cumulative_rewards
-        self._accumulate_rewards()
-
-        # Last agent step in reward cycle
-        if self._agent_selector.is_last():
-            self.world_time += self.timestep
-            self.total_world_time += self.timestep
-
-        self.agent_selection = self._agent_selector.next()
 
     def render(self, mode: str = "human") -> rendering.Viewer:
         screen_width = 600
@@ -216,7 +194,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
                 carttrans = rendering.Transform()
 
                 # Pole
-                polelen = scale * (2 * agent.length)
+                polelen = scale * (2 * agent.pole_length)
                 l, r, t, b = -polewidth / 2, polewidth / 2, polelen - polewidth / 2, -polewidth / 2
                 pole = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
                 poletrans = rendering.Transform(translation=(0, axleoffset))
@@ -289,32 +267,34 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
     """
 
 
-def make_env(*args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> SimulatedCartpoleEnv:
-    env = SimulatedCartpoleEnv(*args, **kwargs)
 
-    env = wrappers.AssertOutOfBoundsWrapper(env)
-    env = wrappers.OrderEnforcingWrapper(env)
-    env = ss.frame_stack_v1(env, num_frames=num_frame_stacking)
+def make_env(base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> EnvT:
+    env = base_env(*args, **kwargs)
 
-    return env
-
-
-def make_parallel_env(
-    *args: Any, num_frame_stacking: int = 1, **kwargs: Any
-) -> SimulatedCartpoleEnv:
-    env = make_env(*args, num_frame_stacking=num_frame_stacking, **kwargs)
-
-    env = to_parallel(env)
-    env = ss.black_death_v1(env)
+    env = ss.frame_stack_v1(env, stack_size=num_frame_stacking)
+    env = ss.black_death_v2(env)
 
     return env
 
 
-def make_sb3_env(*args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> gym.vector.VectorEnv:
+# def make_parallel_env(
+#     *args: Any, num_frame_stacking: int = 1, **kwargs: Any
+# ) -> SimulatedCartpoleEnv:
+#     env = make_env(*args, num_frame_stacking=num_frame_stacking, **kwargs)
+
+#     env = to_parallel(env)
+#     env = ss.black_death_v1(env)
+
+#     return env
+
+
+def make_sb3_env(
+    base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kwargs: Any
+) -> gym.vector.VectorEnv:
     """
     Wrappers all the way down...
     """
-    env = make_parallel_env(*args, num_frame_stacking=num_frame_stacking, **kwargs)
+    env = make_env(base_env, *args, num_frame_stacking=num_frame_stacking, **kwargs)
 
     env = ss.pettingzoo_env_to_vec_env_v0(env)
 
@@ -327,6 +307,6 @@ def make_sb3_env(*args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> gym.
 
 
 def get_sb3_env_root_env(env: VecMonitor) -> CartpoleEnv:
-    root_env = cast(Any, env).unwrapped.par_env.unwrapped
+    root_env = cast(Any, env).unwrapped.par_env.unwrapped.env
 
     return cast(CartpoleEnv, root_env)
