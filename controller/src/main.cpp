@@ -14,6 +14,7 @@
 #include <Limits.h>
 #include <CommandAndControl.h>
 #include <Joystick.h>
+#include <TimerInterrupt.h>
 
 void setup()
 {
@@ -52,6 +53,9 @@ void setup()
 
     // Limit Switches
     setup_limit_switches();
+
+    // Timer interrupt
+    setup_timer_interrupt();
 
     // Finish up
     S.println("Config finished.");

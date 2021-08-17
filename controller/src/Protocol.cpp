@@ -118,6 +118,61 @@ byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }
 CheckLimitPacket::CheckLimitPacket() {}
 byte CheckLimitPacket::get_id() const { return CheckLimitPacket::id; }
 
+// Observation
+ObservationPacket::ObservationPacket() : _timestamp_micros{0}, _cart_id{0}, _position_steps{0}, _angle_degs{0.0} {}
+byte ObservationPacket::get_id() const { return ObservationPacket::id; }
+
+void ObservationPacket::construct(uint32_t timestamp_micros, uint8_t cart_id, int32_t position_steps, float_t angle_degs)
+{
+    _timestamp_micros = timestamp_micros;
+    _cart_id = cart_id;
+    _position_steps = position_steps;
+    _angle_degs = angle_degs;
+}
+
+RawPacket ObservationPacket::to_raw_packet() const
+{
+    RawPacket raw_packet;
+
+    raw_packet.add(this->get_id());
+
+    raw_packet.add(this->_timestamp_micros);
+    raw_packet.add(this->_cart_id);
+    raw_packet.add(this->_position_steps);
+    raw_packet.add(this->_angle_degs);
+
+    return raw_packet;
+}
+
+// ExperimentStart
+ExperimentStartPacket::ExperimentStartPacket() : _timestamp_micros{0} {}
+byte ExperimentStartPacket::get_id() const { return ExperimentStartPacket::id; }
+
+void ExperimentStartPacket::construct(uint32_t timestamp_micros)
+{
+    _timestamp_micros = timestamp_micros;
+}
+
+RawPacket ExperimentStartPacket::to_raw_packet() const
+{
+    RawPacket raw_packet;
+
+    raw_packet.add(this->get_id());
+
+    raw_packet.add(this->_timestamp_micros);
+
+    return raw_packet;
+}
+
+void ExperimentStartPacket::read(Stream &sbuf)
+{
+    _timestamp_micros = read_uint32(sbuf);
+}
+
+// ExperimentStop
+ExperimentStopPacket::ExperimentStopPacket() {}
+byte ExperimentStopPacket::get_id() const { return ExperimentStopPacket::id; }
+
 // ExperimentDone
 ExperimentDonePacket::ExperimentDonePacket() : _failure_mode{FailureMode::NUL}, _cart_id{0} {}
 byte ExperimentDonePacket::get_id() const { return ExperimentDonePacket::id; }

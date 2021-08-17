@@ -12,10 +12,10 @@
 extern TMC26XStepper stepper1;
 extern TMC26XStepper stepper2;
 
-const unsigned int STEPPER_CURRENT = 700; // mA
+const unsigned int STEPPER_CURRENT = 1000; // mA
 const int STEPPER_STEPS_PER_ROTATION = 200;
 const float STEPPER_DRIVE_GEAR_OD_MM = 13.0;
-const unsigned int STEPPER_MICROSTEPS = 4;
+const unsigned int STEPPER_MICROSTEPS = 8;
 const unsigned int STEPPER_RANDOM_OFFTIME = 0;
 const float STEPPER_STEP_DISTANCE = 200.0;
 const float STEPPER_BIG_DISTANCE = 5000.0; // Must be bigger than max length movable in mm
@@ -46,15 +46,15 @@ const float_t RIGHT = 1.0;
 struct Speed
 {
 public:
-    static constexpr float_t SLOW = 10.0;
-    static constexpr float_t MEDIUM = 50.0;
-    static constexpr float_t FAST = 100.0;
-    static constexpr float_t VERY_FAST = 150.0;
-    static constexpr float_t SUPER_FAST = 300.0;
-    static constexpr float_t ULTRA_FAST = 1000.0;
+    static constexpr float_t SLOW = 5.0;
+    static constexpr float_t MEDIUM = 25.0;
+    static constexpr float_t FAST = 50.0;
+    static constexpr float_t VERY_FAST = 75.0;
+    static constexpr float_t SUPER_FAST = 150.0;
+    static constexpr float_t ULTRA_FAST = 300.0;
 };
 
-const float_t MAX_SETTABLE_SPEED = Speed::ULTRA_FAST;
+const float_t MAX_SETTABLE_SPEED = Speed::ULTRA_FAST * 40.0;
 
 void setup_steppers();
 void setup_stepper_drivers();

@@ -11,6 +11,7 @@
 #include <Steppers.h>
 #include <CustomAccelStepper.h>
 #include <Limits.h>
+#include <Experiment.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
@@ -114,13 +115,13 @@ void PacketReactor::tick()
         switch (packet->operation)
         {
         case SetOperation::ADD:
-            astepper.setMaxSpeed(std::max(astepper.maxSpeed() + (float_t)packet->value, MAX_SETTABLE_SPEED));
+            astepper.setMaxSpeed(std::max(astepper.maxSpeed() + static_cast<float_t>(packet->value), MAX_SETTABLE_SPEED));
             break;
         case SetOperation::EQUAL:
             astepper.setMaxSpeed(static_cast<float_t>(packet->value));
             break;
         case SetOperation::SUBTRACT:
-            astepper.setMaxSpeed(std::max(astepper.maxSpeed() - (float_t)packet->value, (float_t)0.0));
+            astepper.setMaxSpeed(std::max(astepper.maxSpeed() - static_cast<float_t>(packet->value), (float_t)0.0));
             break;
         case SetOperation::NUL:
             break;
@@ -138,6 +139,18 @@ void PacketReactor::tick()
     case CheckLimitPacket::id:
     {
         do_limit_check();
+        break;
+    }
+
+    case ExperimentStartPacket::id:
+    {
+        experiment_start();
+        break;
+    }
+
+    case ExperimentStopPacket::id:
+    {
+        experiment_stop();
         break;
     }
 

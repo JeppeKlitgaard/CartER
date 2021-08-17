@@ -60,8 +60,14 @@ const String FailureModeStrings[] = {
     "other/other",
 };
 
+enum class ExperimentMode {
+    RUNNING,
+    DONE,
+};
+
 extern const Configuration configuration;
 extern FailureMode failure_mode;
 extern uint8_t failure_cart_id;
+extern ExperimentMode experiment_mode;
 
 #endif

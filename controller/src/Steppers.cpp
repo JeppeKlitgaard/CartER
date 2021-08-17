@@ -105,6 +105,7 @@ CustomAccelStepper &get_astepper_by_id(uint8_t cart_id)
         return astepper2;
     default:
         packet_sender.send_debug("Invalid cart_id: " + std::to_string(cart_id));
+        throw std::out_of_range("Invalid cart_id");
     }
 }
 

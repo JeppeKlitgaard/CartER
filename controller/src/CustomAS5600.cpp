@@ -45,23 +45,33 @@ void CustomAMS_5600::start(uint8_t addr)
 
     _select();
 
-    if (detectMagnet() == 0)
+    while (1)
     {
-        while (1)
+        if (detectMagnet() == 1)
         {
-            if (detectMagnet() == 1)
-            {
-                DP("Current Magnitude: ");
-                DPL(getMagnitude());
-                break;
-            }
-            else
-            {
-                DPL("Can not detect magnet");
-            }
-            delay(100); // ms
+            DP("Current Magnitude: ");
+            DPL(getMagnitude());
+            break;
         }
+        else
+        {
+            DPL("Can not detect magnet");
+        }
+        delay(100); // ms
     }
+
+    DP("Rotary Encoder @");
+    DP(_addr);
+    DPL(" has following:");
+
+    DP("Magnitude: ");
+    DPL(getMagnitude());
+
+    DP("Strength (1=too weak, 2=good, 3=too strong): ");
+    DPL(getMagnetStrength());
+
+    DP("Detected: ");
+    DPL(detectMagnet());
 
     _unselect();
 }

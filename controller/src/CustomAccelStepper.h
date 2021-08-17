@@ -13,9 +13,6 @@ protected:
     float _distancePerRotation = 1;
     float _anglePerRotation = 360;
 
-    int32_t _distanceToSteps(float distance);
-    float_t _stepsToDistance(int32_t steps);
-    int32_t _angleToSteps(float angle);
 
     int32_t _farLimit = 0;
     int32_t _limitSafetyMargin = 0;
@@ -31,6 +28,10 @@ public:
         uint8_t pin3 = 4,
         uint8_t pin4 = 5,
         bool enable = true);
+
+    int32_t distanceToSteps(float distance);
+    float_t stepsToDistance(int32_t steps);
+    int32_t angleToSteps(float angle);
 
     void setMicrosteps(int microsteps);
     void setStepsPerRotation(int steps);

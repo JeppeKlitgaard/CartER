@@ -18,7 +18,7 @@ CustomAccelStepper::CustomAccelStepper(
  * @param distance
  * @return
  */
-int32_t CustomAccelStepper::_distanceToSteps(float distance)
+int32_t CustomAccelStepper::distanceToSteps(float distance)
 {
     return distance * _microsteps * _stepsPerRotation / _distancePerRotation;
 }
@@ -28,7 +28,7 @@ int32_t CustomAccelStepper::_distanceToSteps(float distance)
  * @param steps
  * @return
  */
-float_t CustomAccelStepper::_stepsToDistance(int32_t steps)
+float_t CustomAccelStepper::stepsToDistance(int32_t steps)
 {
     return (steps / _microsteps) * _distancePerRotation / _stepsPerRotation;
 }
@@ -38,7 +38,7 @@ float_t CustomAccelStepper::_stepsToDistance(int32_t steps)
  * @param angle
  * @return
  */
-int32_t CustomAccelStepper::_angleToSteps(float angle)
+int32_t CustomAccelStepper::angleToSteps(float angle)
 {
     return angle * _microsteps * _stepsPerRotation / _anglePerRotation;
 }
@@ -113,7 +113,7 @@ void CustomAccelStepper::setLimitSafetyMargin(int32_t limitSafetyMargin)
  */
 void CustomAccelStepper::setLimitSafetyMarginDistance(float_t limitSafetyMarginDistance)
 {
-    _limitSafetyMargin = _distanceToSteps(limitSafetyMarginDistance);
+    _limitSafetyMargin = distanceToSteps(limitSafetyMarginDistance);
 }
 
 /**
@@ -131,7 +131,7 @@ int32_t CustomAccelStepper::getLimitSafetyMargin()
  */
 float_t CustomAccelStepper::getLimitSafetyMarginDistance()
 {
-    return _stepsToDistance(_limitSafetyMargin);
+    return stepsToDistance(_limitSafetyMargin);
 }
 
 /**
@@ -177,7 +177,7 @@ float CustomAccelStepper::getCurrentPositionDistance()
  */
 void CustomAccelStepper::setCurrentPositionDistance(float absolute)
 {
-    setCurrentPosition(_distanceToSteps(absolute));
+    setCurrentPosition(distanceToSteps(absolute));
 }
 
 /**
@@ -186,7 +186,7 @@ void CustomAccelStepper::setCurrentPositionDistance(float absolute)
  */
 void CustomAccelStepper::moveDistance(float distance)
 {
-    move(_distanceToSteps(distance));
+    move(distanceToSteps(distance));
 }
 
 /**
@@ -195,7 +195,7 @@ void CustomAccelStepper::moveDistance(float distance)
  */
 void CustomAccelStepper::moveToDistance(float distance)
 {
-    moveTo(_distanceToSteps(distance));
+    moveTo(distanceToSteps(distance));
 }
 
 /**
@@ -204,7 +204,7 @@ void CustomAccelStepper::moveToDistance(float distance)
  */
 void CustomAccelStepper::runDistance(float distance)
 {
-    move(_distanceToSteps(distance));
+    move(distanceToSteps(distance));
     runToPosition();
 }
 
@@ -224,7 +224,7 @@ void CustomAccelStepper::runToDistance(float distance)
  */
 void CustomAccelStepper::moveToAngle(float angle)
 {
-    moveTo(_angleToSteps(angle));
+    moveTo(angleToSteps(angle));
 }
 
 /**
@@ -259,7 +259,7 @@ void CustomAccelStepper::moveDistanceCond(float relative)
  */
 void CustomAccelStepper::setMaxSpeedDistance(float speed)
 {
-    setMaxSpeed(_distanceToSteps(speed));
+    setMaxSpeed(distanceToSteps(speed));
 }
 
 /**
@@ -268,7 +268,7 @@ void CustomAccelStepper::setMaxSpeedDistance(float speed)
  */
 void CustomAccelStepper::setAccelerationDistance(float acceleration)
 {
-    setAcceleration(_distanceToSteps(acceleration));
+    setAcceleration(distanceToSteps(acceleration));
 }
 
 /**

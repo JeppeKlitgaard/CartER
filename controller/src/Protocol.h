@@ -205,6 +205,57 @@ public:
     virtual byte get_id() const override;
 };
 
+// Observation
+class ObservationPacket : public OutboundPacket
+{
+public:
+    uint32_t _timestamp_micros;
+    uint8_t _cart_id;
+    int32_t _position_steps;
+    float_t _angle_degs;
+
+    static const byte id = 0x40; // @
+
+    ObservationPacket();
+    using OutboundPacket::construct;
+
+    virtual byte get_id() const override;
+
+    virtual void construct(uint32_t timestamp_micros, uint8_t cart_id, int32_t position_steps, float_t angle_degs);
+    virtual RawPacket to_raw_packet() const override;
+};
+
+// ExperimentStart
+class ExperimentStartPacket : public BidirectionalPacket
+{
+public:
+    uint32_t _timestamp_micros;
+
+    static const byte id = 0x02; // STX
+
+    ExperimentStartPacket();
+    using OutboundPacket::construct;
+
+    virtual byte get_id() const override;
+
+    virtual void construct(uint32_t timestamp_micros);
+    virtual RawPacket to_raw_packet() const override;
+
+    virtual void read(Stream &sbuf) override;
+};
+
+// ExperimentStop
+class ExperimentStopPacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0x03; // ETX
+
+    ExperimentStopPacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // ExperimentDone
 class ExperimentDonePacket : public BidirectionalPacket
 {

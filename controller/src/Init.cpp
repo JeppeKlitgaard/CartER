@@ -16,6 +16,7 @@ PacketSender packet_sender = PacketSender(S);
 
 bool experiment_done = false;
 uint8_t failure_cart_id = 0;
+ExperimentMode experiment_mode = ExperimentMode::DONE;
 
 void initialise()
 {
