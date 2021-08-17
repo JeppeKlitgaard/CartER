@@ -284,16 +284,6 @@ def make_env(base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kw
     return env
 
 
-# def make_parallel_env(
-#     *args: Any, num_frame_stacking: int = 1, **kwargs: Any
-# ) -> SimulatedCartpoleEnv:
-#     env = make_env(*args, num_frame_stacking=num_frame_stacking, **kwargs)
-
-#     env = to_parallel(env)
-#     env = ss.black_death_v1(env)
-
-#     return env
-
 
 def make_sb3_env(
     base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kwargs: Any
