@@ -1561,17 +1561,24 @@ extra = ["opencv-python", "atari-py (>=0.2.0,<0.3.0)", "pillow", "tensorboard (>
 tests = ["pytest", "pytest-cov", "pytest-env", "pytest-xdist", "pytype", "flake8 (>=3.8)", "flake8-bugbear", "isort (>=5.0)", "black"]
 
 [[package]]
-name = "supersuit"
-version = "2.6.6"
+name = "SuperSuit"
+version = "3.0.1"
 description = "Wrappers for Gym and PettingZoo"
 category = "main"
 optional = false
 python-versions = ">=3.6"
+develop = false
 
 [package.dependencies]
 cloudpickle = "*"
 opencv-python = ">=3.4.0,<3.5.0"
 pettingzoo = ">=1.6.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/PettingZoo-Team/SuperSuit.git"
+reference = "master"
+resolved_reference = "b3a22086fa207ea2b07c364b104f580fc4c5ac57"
 
 [[package]]
 name = "tensorboard"
@@ -1819,7 +1826,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <3.10"
-content-hash = "5850b8f8c40286c1d8d105fb21d102c5b95065cd2557ea7110c23a3834ff2cf7"
+content-hash = "b8f4053b4b37043c8204aa90f83d89809e18d8fd3b8213f0d360480e59f4da8f"
 
 [metadata.files]
 absl-py = [
@@ -3062,9 +3069,7 @@ stable-baselines3 = [
     {file = "stable_baselines3-1.1.0-py3-none-any.whl", hash = "sha256:4ded63f79e6995e7f389143a60756031d49884b907a0ee7c9ab948c4ed566ada"},
     {file = "stable_baselines3-1.1.0.tar.gz", hash = "sha256:62c1f959623cd2bb9eb75451bbf9af2b3e5cd4b42ae6987adf9c8fd0a2eb4969"},
 ]
-supersuit = [
-    {file = "SuperSuit-2.6.6.tar.gz", hash = "sha256:abfe2f86008fec1570ecb152c175c87b6fc792658dbb8990e6c11e095505e6a3"},
-]
+SuperSuit = []
 tensorboard = [
     {file = "tensorboard-2.5.0-py3-none-any.whl", hash = "sha256:e167460085b6528956b33bab1c970c989cdce47a6616273880733f5e7bde452e"},
 ]
