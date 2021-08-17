@@ -30,10 +30,24 @@ class NetworkManager:
         pass
 
     def read_initial_output(self) -> str:
-        raw = self.serial.read_until(self.INITIAL_OUTPUT_STOP_MARKER)
-        output = raw.decode("ascii")
+        self.serial.timeout = 0.1
 
-        return cast(str, output)
+        read_bytes = b""
+
+        while not read_bytes.endswith(self.INITIAL_OUTPUT_STOP_MARKER):
+            new_bytes = self.serial.read_until(self.INITIAL_OUTPUT_STOP_MARKER)
+            read_bytes += new_bytes
+
+            print(new_bytes.decode("ascii", errors="ignore"), end="")
+
+        self.serial.timeout = None
+
+        # sleep 25ms and then flush buffers
+        sleep(0.025)
+        self.serial.reset_input_buffer()
+        self.serial.reset_output_buffer()
+
+        return cast(str, read_bytes.decode("ascii", errors="ignore"))
 
     def _cpp_initial_output_decl(self) -> str:
         hexes = bytes_to_hexes(self.INITIAL_OUTPUT_STOP_MARKER)
@@ -78,11 +92,15 @@ class NetworkManager:
 
         return packets
 
-    def dump_packets(self) -> None:
-        packets = self.read_packets()
+    def dump_packets(self, continuous: bool = False) -> None:
+        while True:
+            packets = self.read_packets()
 
-        for packet in packets:
-            print(packet)
+            for packet in packets:
+                print(packet)
+
+            if not continuous:
+                break
 
     def send_packet(self, packet: OutboundPacket) -> None:
         bytes_to_transfer = packet.to_bytes()

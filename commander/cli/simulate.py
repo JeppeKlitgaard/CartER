@@ -10,13 +10,13 @@ from matplotlib.animation import FFMpegWriter
 from stable_baselines3.common.callbacks import EvalCallback
 
 from commander.ml.agent import (
-    AgentPositionalKnowledgeStateSpecification,
     AgentSwingupGoalMixin,
     AgentTimeGoalMixin,
     SimulatedCartpoleAgent,
     make_agent,
 )
-from commander.ml.agent.state_specification import AgentTotalKnowledgeStateSpecification
+
+from commander.ml.agent.state_specification import AgentTotalKnowledgeStateSpecification, AgentPositionalKnowledgeStateSpecification
 from commander.ml.configurations import DeepPILCOConfiguration
 from commander.ml.environment import make_env, make_sb3_env
 from commander.ml.tensorboard import FailureModeCallback, SimulatedTimeCallback
@@ -114,6 +114,7 @@ def simulate(
         num_frame_stacking = 1 if state_spec == ConfigurationStateSpec.TOTAL_KNOWLEDGE else 4
 
     _experiment_name_partials = [
+        "simulation",
         algorithm.upper(),
         str(carts) + "carts",
         goal.lower(),

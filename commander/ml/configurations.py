@@ -14,11 +14,11 @@ from commander.ml.agent.state_specification import AgentStateSpecificationBase
 from commander.ml.agent.type_aliases import GoalParams
 
 
-class ExperimentConfiguration(TypedDict):
-    agent: ExperimentAgentConfiguration
+class SimulatedConfiguration(TypedDict):
+    agent: SimulatedAgentConfiguration
 
 
-class ExperimentAgentConfiguration(TypedDict, total=False):
+class SimulatedAgentConfiguration(TypedDict, total=False):
     name: str
     integration_resolution: int
     max_steps: int
@@ -43,7 +43,7 @@ class ExperimentAgentConfiguration(TypedDict, total=False):
     ...
 
 
-DefaultConfiguration: ExperimentConfiguration = {
+DefaultSimulatedConfiguration: SimulatedConfiguration = {
     "agent": {
         "integration_resolution": 2,
         "max_steps": 5000,
@@ -53,7 +53,7 @@ DefaultConfiguration: ExperimentConfiguration = {
 # DeepPILCO
 # See: http://mlg.eng.cam.ac.uk/yarin/PDFs/DeepPILCO.pdf
 # See: https://github.com/zuoxingdong/DeepPILCO/blob/master/cartpole_swingup.py
-DeepPILCOConfiguration = DefaultConfiguration.copy()
+DeepPILCOConfiguration = DefaultSimulatedConfiguration.copy()
 DeepPILCOConfiguration["agent"].update(
     {
         "start_pos": 0.0,
@@ -67,7 +67,6 @@ DeepPILCOConfiguration["agent"].update(
         "friction_pole": 0.0,  # coeff
         "length": 0.6,  # m
         "force_mag": 10.0,  # N,
-        "integration_resolution": 2,
         "tau": 0.02,  # s
         "goal_params": {
             "failure_position": (-2.4, 2.4),

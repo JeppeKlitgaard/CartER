@@ -41,53 +41,10 @@ class CartpoleAgent(ABC):
     def __init__(
         self,
         name: str = "Cartpole_1",
-        grav_acc: float = 9.8,  # m/s^2
-        mass_cart: float = 5.0,  # kg
-        mass_pole: float = 0.1,  # kg
-        friction_cart: float = 0.01,  # coefficient
-        friction_pole: float = 0.001,  # coefficient
-        length: float = 1,  # m
-        start_pos: float = 0.0,
-        start_pos_spread: float = 0.05,
-        start_pos_velo: float = 0.0,
-        start_pos_velo_spread: float = 0.05,
-        start_angle: float = 0.0,
-        start_angle_spread: float = 0.05,
-        start_angle_velo: float = 0.0,
-        start_angle_velo_spread: float = 0.05,
-        force_mag: float = 100.0,  # N
-        tau: float = 0.02,  # s, seconds between state updates
-        integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
-        integration_resolution: int = 100,  # number of steps to subdivide tau into
         max_steps: int = 2500,
         goal_params: Optional[GoalParams] = None,
     ):
         self.name = name
-
-        self.grav_acc = grav_acc
-
-        self.mass_cart = mass_cart
-        self.mass_pole = mass_pole
-
-        self.friction_cart = friction_cart
-        self.friction_pole = friction_pole
-
-        self.length = length
-
-        self.start_pos = start_pos
-        self.start_pos_spread = start_pos_spread
-        self.start_pos_velo = start_pos_velo
-        self.start_pos_velo_spread = start_pos_velo_spread
-        self.start_angle = start_angle
-        self.start_angle_spread = start_angle_spread
-        self.start_angle_velo = start_angle_velo
-        self.start_angle_velo_spread = start_angle_velo_spread
-
-        self.force_mag = force_mag
-        self.tau = tau
-
-        self.integrator = integrator
-        self.integration_resolution = integration_resolution
 
         self.max_steps = max_steps
 
@@ -292,6 +249,57 @@ class SimulatedCartpoleAgent(CartpoleAgent):
     """
     Class for a simulated cartpole agent.
     """
+    def __init__(
+        self,
+        name: str = "Cartpole_1",
+        grav_acc: float = 9.8,  # m/s^2
+        mass_cart: float = 5.0,  # kg
+        mass_pole: float = 0.1,  # kg
+        friction_cart: float = 0.01,  # coefficient
+        friction_pole: float = 0.001,  # coefficient
+        length: float = 1,  # m
+        start_pos: float = 0.0,
+        start_pos_spread: float = 0.05,
+        start_pos_velo: float = 0.0,
+        start_pos_velo_spread: float = 0.05,
+        start_angle: float = 0.0,
+        start_angle_spread: float = 0.05,
+        start_angle_velo: float = 0.0,
+        start_angle_velo_spread: float = 0.05,
+        force_mag: float = 100.0,  # N
+        tau: float = 0.02,  # s, seconds between state updates
+        integrator: IntegratorOptions = IntegratorOptions.RK45,  # integration method
+        integration_resolution: int = 100,  # number of steps to subdivide tau into
+        max_steps: int = 2500,
+        goal_params: Optional[GoalParams] = None,
+    ) -> None:
+
+        self.grav_acc = grav_acc
+
+        self.mass_cart = mass_cart
+        self.mass_pole = mass_pole
+
+        self.friction_cart = friction_cart
+        self.friction_pole = friction_pole
+
+        self.length = length
+
+        self.start_pos = start_pos
+        self.start_pos_spread = start_pos_spread
+        self.start_pos_velo = start_pos_velo
+        self.start_pos_velo_spread = start_pos_velo_spread
+        self.start_angle = start_angle
+        self.start_angle_spread = start_angle_spread
+        self.start_angle_velo = start_angle_velo
+        self.start_angle_velo_spread = start_angle_velo_spread
+
+        self.force_mag = force_mag
+        self.tau = tau
+
+        self.integrator = integrator
+        self.integration_resolution = integration_resolution
+
+        super().__init__(name=name, max_steps=max_steps, goal_params=goal_params)
 
     def _make_random_symmetrical(
         self, mean: float, spread: float, minimum: float, maximum: float

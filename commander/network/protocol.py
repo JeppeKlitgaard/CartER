@@ -49,7 +49,7 @@ class Packet(ABC):
 
 class InboundPacket(Packet):
     """
-    InboundOnlyPackets are packets that the commander will only ever receive.
+    InboundPackets are packets that the commander will only ever receive.
 
     Writing the serialisation method could be easily done,
     but wouldn't ever be useful.
@@ -66,7 +66,7 @@ class InboundPacket(Packet):
 
 class OutboundPacket(Packet):
     """
-    OutboundOnlyPackets are packets that the commander will only ever transmit.
+    OutboundPackets are packets that the commander will only ever transmit.
 
     Writing the deserialisation method could be easily done,
     but wouldn't ever be useful.
@@ -84,13 +84,22 @@ class OutboundPacket(Packet):
 
 
 class BidirectionalPacket(InboundPacket, OutboundPacket):
-    ...
+    """
+    BidirectionalPackets are packets that both the controller and commander
+    should be able to send and receive.
+    """
+
+    def __repr__(self) -> str:
+        return _stringify_self(self)
 
 
 class OnlyIDPacket(BidirectionalPacket):
     """
     A packet that has no attributes apart from its ID.
     """
+
+    def __repr__(self) -> str:
+        return _stringify_self(self)
 
     def __init__(self) -> None:
         ...
@@ -122,6 +131,9 @@ class UnknownPacket(BidirectionalPacket):
 
 
 class MessagePacketBase(BidirectionalPacket):
+    def __repr__(self) -> str:
+        return _stringify_self(self)
+
     def __init__(self, msg: str) -> None:
         self.msg = msg
 
@@ -154,8 +166,9 @@ class ErrorPacket(MessagePacketBase):
     id_ = byte(0x21)  # !
 
 
-class PingPacket(BidirectionalPacket):
-    id_ = byte(0x70)  # p
+class PingPongBasePacket(BidirectionalPacket):
+    def __repr__(self) -> str:
+        return _stringify_self(self)
 
     def __init__(self, timestamp: int) -> None:
         self.timestamp = timestamp
@@ -174,8 +187,11 @@ class PingPacket(BidirectionalPacket):
 
         return bytes_
 
+class PingPacket(PingPongBasePacket):
+    id_ = byte(0x70)  # p
 
-class PongPacket(PingPacket):
+
+class PongPacket(PingPongBasePacket):
     id_ = byte(0x50)  # P
 
 
@@ -184,6 +200,9 @@ class RequestDebugInfoPacket(OnlyIDPacket):
 
 
 class SetQuantityPacket(OutboundPacket):
+    def __repr__(self) -> str:
+        return _stringify_self(self)
+
     def __init__(self, operation: SetOperation, cart_id: CartID, value: int) -> None:
         self.operation = operation
         self.cart_id = cart_id
@@ -251,7 +270,7 @@ class ObservationPacket(InboundPacket):
     @classmethod
     def read(cls, serial: Serial) -> ObservationPacket:
         timestamp_micros = unpack(Format.UINT_32, serial)
-        cart_id = CartID(unpack(Format.UINT_32, serial))
+        cart_id = CartID(unpack(Format.UINT_8, serial))
         position_steps = unpack(Format.INT_32, serial)
         angle = unpack(Format.FLOAT_32, serial)
 
@@ -263,7 +282,36 @@ class ObservationPacket(InboundPacket):
         )
 
 
-# Construct PACKET_ID_MAP
+class ExperimentStartPacket(BidirectionalPacket):
+    id_ = byte(0x02)  # STX
+
+    def __init__(self, timestamp_micros: int):
+        self.timestamp_micros = timestamp_micros
+
+    @classmethod
+    def read(cls, serial: Serial) -> ExperimentStartPacket:
+        timestamp_micros = unpack(Format.UINT_32, serial)
+
+        return cls(timestamp_micros=timestamp_micros)
+
+    def to_bytes(self) -> bytes:
+        bytes = b""
+
+        bytes += self.id_
+        bytes += pack(Format.UINT_32, self.timestamp_micros)
+
+        return bytes
+
+
+class ExperimentStopPacket(OnlyIDPacket):
+    id_ = byte(0x03)  # ETX
+
+
+class ExperimentDonePacket(BidirectionalPacket):
+    ...
+
+class ExperimentInfoPacket(InboundPacket):
+    ...
 
 
 def is_valid_packet(cls: Type[object]) -> TypeGuard[Type[Packet]]:
