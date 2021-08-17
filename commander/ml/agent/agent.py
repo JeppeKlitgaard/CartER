@@ -41,11 +41,12 @@ class CartpoleAgent(ABC):
     def __init__(
         self,
         name: str = "Cartpole_1",
+        pole_length: float = 1.0,
         max_steps: int = 2500,
         goal_params: Optional[GoalParams] = None,
     ):
         self.name = name
-
+        self.pole_length = pole_length
         self.max_steps = max_steps
 
         self.info: Mapping[str, Any] = {}
@@ -249,6 +250,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
     """
     Class for a simulated cartpole agent.
     """
+
     def __init__(
         self,
         name: str = "Cartpole_1",
@@ -257,7 +259,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         mass_pole: float = 0.1,  # kg
         friction_cart: float = 0.01,  # coefficient
         friction_pole: float = 0.001,  # coefficient
-        length: float = 1,  # m
+        pole_length: float = 1.0,  # m
         start_pos: float = 0.0,
         start_pos_spread: float = 0.05,
         start_pos_velo: float = 0.0,
@@ -282,8 +284,6 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         self.friction_cart = friction_cart
         self.friction_pole = friction_pole
 
-        self.length = length
-
         self.start_pos = start_pos
         self.start_pos_spread = start_pos_spread
         self.start_pos_velo = start_pos_velo
@@ -299,7 +299,9 @@ class SimulatedCartpoleAgent(CartpoleAgent):
         self.integrator = integrator
         self.integration_resolution = integration_resolution
 
-        super().__init__(name=name, max_steps=max_steps, goal_params=goal_params)
+        super().__init__(
+            name=name, pole_length=pole_length, max_steps=max_steps, goal_params=goal_params
+        )
 
     def _make_random_symmetrical(
         self, mean: float, spread: float, minimum: float, maximum: float
@@ -414,7 +416,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
                 self.grav_acc,
                 self.friction_cart,
                 self.friction_pole,
-                self.length,
+                self.pole_length,
                 self.mass_pole,
                 self.mass_length,
                 self.mass,
@@ -431,7 +433,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
     @property
     def mass_length(self) -> float:
-        return self.mass_pole * self.length
+        return self.mass_pole * self.pole_length
 
 
 class ExperimentalCartpoleAgent(CartpoleAgent):

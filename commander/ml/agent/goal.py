@@ -102,6 +102,8 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
         "punishment_positional_failure": 10000,
     }
 
+    tau: float
+
     def initialise_goal(
         self,
         goal_params: GoalParams,

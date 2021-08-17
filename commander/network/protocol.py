@@ -174,7 +174,7 @@ class PingPongBasePacket(BidirectionalPacket):
         self.timestamp = timestamp
 
     @classmethod
-    def read(cls, serial: Serial) -> PingPacket:
+    def read(cls, serial: Serial) -> PingPongBasePacket:
         timestamp = unpack(Format.UINT_32, serial)
 
         return cls(timestamp=timestamp)
@@ -186,6 +186,7 @@ class PingPongBasePacket(BidirectionalPacket):
         bytes_ += pack(Format.UINT_32, self.timestamp)
 
         return bytes_
+
 
 class PingPacket(PingPongBasePacket):
     id_ = byte(0x70)  # p
@@ -309,6 +310,7 @@ class ExperimentStopPacket(OnlyIDPacket):
 
 class ExperimentDonePacket(BidirectionalPacket):
     ...
+
 
 class ExperimentInfoPacket(InboundPacket):
     ...

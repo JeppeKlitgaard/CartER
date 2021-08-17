@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import cast
+from time import sleep
 
 from serial import Serial
 
@@ -47,7 +47,7 @@ class NetworkManager:
         self.serial.reset_input_buffer()
         self.serial.reset_output_buffer()
 
-        return cast(str, read_bytes.decode("ascii", errors="ignore"))
+        return read_bytes.decode("ascii", errors="ignore")
 
     def _cpp_initial_output_decl(self) -> str:
         hexes = bytes_to_hexes(self.INITIAL_OUTPUT_STOP_MARKER)

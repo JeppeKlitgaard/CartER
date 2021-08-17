@@ -31,7 +31,7 @@ class SimulatedAgentConfiguration(TypedDict, total=False):
     mass_pole: float
     friction_cart: float
     friction_pole: float
-    length: float
+    pole_length: float
     force_mag: float
     tau: float
     goal_params: GoalParams
@@ -65,7 +65,7 @@ DeepPILCOConfiguration["agent"].update(
         "mass_pole": 0.5,  # kg
         "friction_cart": 0.1,  # coeff
         "friction_pole": 0.0,  # coeff
-        "length": 0.6,  # m
+        "pole_length": 0.6,  # m
         "force_mag": 10.0,  # N,
         "tau": 0.02,  # s
         "goal_params": {
