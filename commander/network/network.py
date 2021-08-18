@@ -49,7 +49,7 @@ class NetworkManager:
     def in_queue(self) -> int:
         return cast(int, self.serial.in_waiting)
 
-    def read_initial_output(self) -> str:
+    def read_initial_output(self, print_: bool = True) -> str:
         self.serial.timeout = 0.1
 
         read_bytes = b""
@@ -58,7 +58,8 @@ class NetworkManager:
             new_bytes = self.serial.read_until(self.INITIAL_OUTPUT_STOP_MARKER)
             read_bytes += new_bytes
 
-            print(new_bytes.decode("ascii", errors="ignore"), end="")
+            if print_:
+                print(new_bytes.decode("ascii", errors="ignore"), end="")
 
         self.serial.timeout = None
 
