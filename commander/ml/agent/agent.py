@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Optional, Type, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 import numpy as np
 
@@ -489,3 +491,6 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         info: StepInfo = {}
 
         return info
+
+
+CartpoleAgentT = TypeVar("CartpoleAgentT", bound=CartpoleAgent)

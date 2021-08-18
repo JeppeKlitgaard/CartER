@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any, Generic, Optional, Type, TypeVar, cast
 
 import gym
 import supersuit as ss
@@ -13,7 +13,11 @@ from pettingzoo.utils.env import ParallelEnv
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import CartpoleAgent
-from commander.ml.agent.agent import ExperimentalCartpoleAgent, SimulatedCartpoleAgent
+from commander.ml.agent.agent import (
+    CartpoleAgentT,
+    ExperimentalCartpoleAgent,
+    SimulatedCartpoleAgent,
+)
 from commander.ml.constants import Action
 from commander.network import NetworkManager
 from commander.network.constants import CartID, SetOperation
@@ -34,10 +38,8 @@ from commander.utils import raises
 
 logger = logging.getLogger(__name__)
 
-EnvT = TypeVar("EnvT", bound="CartpoleEnv")
 
-
-class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
+class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
     """
     Base Class for all Cartpole environments.
     """
@@ -49,22 +51,22 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
 
     def __init__(
         self,
-        agents: Sequence[CartpoleAgent],
+        agents: Sequence[CartpoleAgentT],
         defer_reset: bool = True,
     ):
         self.agents = [agent.name for agent in agents]
         self.possible_agents = self.agents[:]
         self._agents = list(agents)
 
-        self.name_to_agent: Mapping[AgentNameT, CartpoleAgent] = dict(
+        self.name_to_agent: Mapping[AgentNameT, CartpoleAgentT] = dict(
             zip(self.possible_agents, self._agents)
         )
 
         self.action_spaces: Mapping[str, spaces.Space] = {
-            agent.name: agent.action_space for agent in self._agents
+            agent.name: agent.action_space for agent in self.get_agents()
         }
         self.observation_spaces: Mapping[str, spaces.Space] = {
-            agent.name: agent.observation_space for agent in self._agents
+            agent.name: agent.observation_space for agent in self.get_agents()
         }
 
         self.seed()
@@ -76,7 +78,7 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
             self.reset()
 
     def seed(self, seed: Optional[int] = None) -> list[Any]:
-        seeds = [agent.seed() for agent in self._agents]
+        seeds = [agent.seed() for agent in self.get_agents()]
 
         return seeds
 
@@ -91,16 +93,16 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
     def reset(self) -> Mapping[str, ExternalState]:
         observations = {}
 
-        for agent in self._agents:
+        # This needs to be agent names/ids
+        self.agents = self.possible_agents[:]
+
+        for agent in self.get_agents():
             observations[agent.name] = agent.reset()
 
         # ## Environment-level resets
         self.steps: int = 0
         self.viewer: Optional[rendering.Viewer] = None
         self.world_time: float = 0.0
-
-        # This needs to be agent names/ids
-        self.agents = self.possible_agents[:]
 
         # Return observations from agent reset
         return observations
@@ -114,8 +116,22 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         raise NotImplementedError("This should be overriden")
 
+    def get_agents(self, all_: bool = False) -> list[CartpoleAgentT]:
+        """
+        Returns a list of the current agents as agent objects.
 
-class SimulatedCartpoleEnv(CartpoleEnv):
+        Use the `agents` attribute to get agent names.
+        """
+        agent_names = self.possible_agents if all_ else self.agents
+        agents = [self.name_to_agent[name] for name in agent_names]
+
+        return agents
+
+
+EnvT = CartpoleEnv[CartpoleAgent]
+
+
+class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
     """
     An environment that represents the Cartpole Environment and
     implements simulated physics.
@@ -137,9 +153,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
     def setup(self) -> None:
         super().setup()
 
-        for agent_name in self.agents:
-            agent = self.name_to_agent[agent_name]
-
+        for agent in self.get_agents():
             assert isinstance(agent, SimulatedCartpoleAgent)
 
             agent.tau = self.timestep
@@ -224,10 +238,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             self.poletrans = {}
             self.polelens = {}
             self.axles = {}
-            for agent_name in self.agents:
-
-                agent = self.name_to_agent[agent_name]
-
+            for agent in self.get_agents():
                 # Cart
                 l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
                 cart = rendering.FilledPolygon([(l, b), (l, t), (r, t), (r, b)])
@@ -260,12 +271,12 @@ class SimulatedCartpoleEnv(CartpoleEnv):
                 self.viewer.add_geom(pole)
                 self.viewer.add_geom(axle)
 
-                self.carts[agent_name] = cart
-                self.carttrans[agent_name] = carttrans
-                self.poles[agent_name] = pole
-                self.poletrans[agent_name] = poletrans
-                self.polelens[agent_name] = polelen
-                self.axles[agent_name] = axle
+                self.carts[agent.name] = cart
+                self.carttrans[agent.name] = carttrans
+                self.poles[agent.name] = pole
+                self.poletrans[agent.name] = poletrans
+                self.polelens[agent.name] = polelen
+                self.axles[agent.name] = axle
 
             track = rendering.Line((0, carty), (screen_width, carty))
             track.set_color(0, 0, 0)
@@ -300,7 +311,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             self.viewer = None
 
 
-class ExperimentalCartpoleEnv(CartpoleEnv):
+class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     """
     An environment that represents the Cartpole Environment and
     implements networking with the physical experiment.
@@ -346,18 +357,20 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
             logger.error("CONTROLLER| %s", err_pkt.msg)
 
     def setup(self) -> None:
+        logger.info("Running experimental environment setup")
         super().setup()
 
         self.cart_id_to_agent: dict[CartID, ExperimentalCartpoleAgent] = {}
 
-        for agent_name in self.possible_agents:
-            agent = self.name_to_agent[agent_name]
-
+        for agent in self.get_agents(all_=True):
             agent.network_manager = self.network_manager
             self.cart_id_to_agent[agent.cart_id] = agent
 
+        logger.info("Opening serial connection to controller")
         self.network_manager.open()
-        self.network_manager.read_initial_output()
+        logger.info("Reading inital output")
+        initial_output = self.network_manager.read_initial_output(print_=False)
+        logger.debug("Initial output: %s", initial_output)
 
         assert not self.network_manager.in_queue
 
@@ -365,13 +378,12 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         self.network_manager.assert_ping_pong()
 
         # Find limits
+        logger.info("Finding limits")
         find_limits_pkt = FindLimitsPacket()
         self.network_manager.send_packet(find_limits_pkt)
 
         # Wait for limit finding
-        self.network_manager.get_packet(
-            FindLimitsPacket, digest=True, block=True
-        )
+        self.network_manager.get_packet(FindLimitsPacket, digest=True, block=True)
 
         # Flush InfoPackets
         self.network_manager.get_packets(
@@ -379,16 +391,22 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         )
         assert not len(self.network_manager.packet_buffer)
         assert not self.network_manager.in_queue
+        logger.info("Limits found")
 
         # Set velocity
+        logger.info("Setting velocity")
         velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
         self.network_manager.send_packet(velo_pkt)
 
+        logger.info("Experimental environment setup done")
+
     def reset(self) -> Mapping[str, ExternalState]:
+        logger.info("Resetting experimental environment")
+
         self.network_manager.serial.reset_input_buffer()
 
         self.agents = self.possible_agents[:]
-        for agent in [self.name_to_agent[name] for name in self.agents]:
+        for agent in self.get_agents():
             agent._pre_reset()
 
         self.network_manager.assert_ping_pong()
@@ -402,7 +420,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         experiment_start_pkt = ExperimentStartPacket(0)
         self.network_manager.send_packet(experiment_start_pkt)
 
-        while any([raises(self.name_to_agent[name].observe, IOError) for name in self.agents]):
+        while any([raises(agent.observe, IOError) for agent in self.get_agents()]):
             obs_pkts = self.network_manager.get_packets(
                 ObservationPacket, digest=True, callback=self._process_buffer
             )
@@ -429,7 +447,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
 
         # TODO Logic to wait for new observations here
 
-        for agent in [self.name_to_agent[name] for name in self.agents]:
+        for agent in self.get_agents():
             observation = agent.observe()
 
             checks = agent.check_state(observation)
@@ -485,7 +503,7 @@ def make_sb3_env(
     return venv
 
 
-def get_sb3_env_root_env(env: VecMonitor) -> CartpoleEnv:
+def get_sb3_env_root_env(env: VecMonitor) -> EnvT:
     root_env = cast(Any, env).unwrapped.par_env.unwrapped.env
 
-    return cast(CartpoleEnv, root_env)
+    return cast(EnvT, root_env)
