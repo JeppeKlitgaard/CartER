@@ -2,29 +2,30 @@ import logging
 from enum import Enum
 from typing import Any
 
+import numpy as np
+
 import click
 import matplotlib.pyplot as plt
 import stable_baselines3
 from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
-from stable_baselines3.common.callbacks import EvalCallback
 
-from commander.ml.agent import (
-    AgentSwingupGoalMixin,
-    AgentTimeGoalMixin,
-    SimulatedCartpoleAgent,
-    make_agent,
-)
-from commander.ml.agent.constants import SimulatedInternalStateIdx
+from commander.ml.agent import AgentSwingupGoalMixin, AgentTimeGoalMixin, make_agent
+from commander.ml.agent.agent import ExperimentalCartpoleAgent
+from commander.ml.agent.constants import ExperimentalInternalStateIdx
 from commander.ml.agent.state_specification import (
     AgentPositionalKnowledgeStateSpecification,
     AgentTotalKnowledgeStateSpecification,
     make_state_spec,
 )
-from commander.ml.configurations import DeepPILCOConfiguration
-from commander.ml.environment import SimulatedCartpoleEnv, get_sb3_env_root_env, make_sb3_env
-from commander.ml.tensorboard import FailureModeCallback, SimulatedTimeCallback
-from commander.ml.utils import restore_step, vectorise_observations
+from commander.ml.configurations import CartpoleMLExperimentConfiguration
+from commander.ml.environment import (
+    ExperimentalCartpoleEnv,
+    get_sb3_env_root_env,
+    make_env,
+    make_sb3_env,
+)
+from commander.ml.tensorboard import FailureModeCallback
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -99,7 +100,7 @@ CONFIGURATION_STATE_SPEC_MAP = {
     default=Algorithm.PPO,
 )
 @click.option("-n", "--num-frame-stacking", type=int, default=-1)
-def simulate(
+def experiment(
     ctx: click.Context,
     train: bool,
     load: bool,
@@ -119,7 +120,7 @@ def simulate(
         num_frame_stacking = 1 if state_spec == ConfigurationStateSpec.TOTAL_KNOWLEDGE else 4
 
     _experiment_name_partials = [
-        "simulation",
+        "experiment",
         algorithm.upper(),
         str(carts) + "carts",
         goal.lower(),
@@ -145,12 +146,16 @@ def simulate(
     with open(output_dir / "latest", "w") as f:
         f.write(experiment_name)
 
-    agent_params = DeepPILCOConfiguration["agent"].copy()
-    agent_params["agent"] = SimulatedCartpoleAgent  # type: ignore [misc]
+    agent_params = CartpoleMLExperimentConfiguration["agent"].copy()
+
+    agent_params["goal_params"] = {
+        "failure_angle": (-np.inf, np.inf),
+        "failure_position": (-np.inf, np.inf),
+    }
+
+    agent_params["agent"] = ExperimentalCartpoleAgent  # type: ignore [misc]
     agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]  # type: ignore [misc]
-    agent_params["state_spec"] = make_state_spec(
-        CONFIGURATION_STATE_SPEC_MAP[state_spec], SimulatedInternalStateIdx  # type: ignore [misc]
-    )
+    agent_params["state_spec"] = make_state_spec(CONFIGURATION_STATE_SPEC_MAP[state_spec], ExperimentalInternalStateIdx)  # type: ignore [misc]
 
     agents = []
     for i in range(carts):
@@ -162,7 +167,6 @@ def simulate(
     env_params: dict[str, Any] = {
         "num_frame_stacking": num_frame_stacking,
         "agents": agents,
-        "world_size": (-5, 5),
     }
 
     # Algorithm-dependent hyperparameters
@@ -178,17 +182,12 @@ def simulate(
         policy_params["clip_range"] = lambda x: 0.2 * x
 
     # Callbacks
-    eval_env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
-    eval_callback = EvalCallback(
-        eval_env, best_model_save_path=str(best_model_path), eval_freq=int(total_timesteps / 25)
-    )
-    simulated_time_callback = SimulatedTimeCallback()
     failure_mode_callback = FailureModeCallback()
 
-    callbacks = [eval_callback, simulated_time_callback, failure_mode_callback]
+    callbacks = [failure_mode_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
-    env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
+    env = make_sb3_env(ExperimentalCartpoleEnv, **env_params)
     logger.info(
         f"Observation spaces: env={env.observation_space.shape}, "
         f"agent={get_sb3_env_root_env(env)._agents[0].observation_space.shape}"
@@ -216,64 +215,56 @@ def simulate(
 
         model.save(model_path)
 
-    if render:
-        env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
-        env.reset()
+    # if render:
+    #     env = make_env(**env_params)
+    #     env.reset()
 
-        root_env = get_sb3_env_root_env(env)
+    #     if render_with_best:
+    #         render_model_path = best_model_path / "best_model"
+    #     else:
+    #         render_model_path = model_path
 
-        if render_with_best:
-            render_model_path = best_model_path / "best_model"
-        else:
-            render_model_path = model_path
+    #     model = algorithm_obj.load(render_model_path)
 
-        model = algorithm_obj.load(render_model_path)
+    #     if record:
+    #         fig = plt.figure()
+    #         images = []
 
-        if record:
-            fig = plt.figure()
-            images = []
+    #     obs = env.reset()
+    #     for agent in env.agent_iter():
+    #         obs, reward, done, info = env.last()
 
-        obs = env.reset()
-        done = False
-        total_rewards = {agent: 0.0 for agent in root_env.agents}
+    #         action, state = model.predict(obs) if not done else (None, None)
 
-        while not done:
-            actions, states = model.predict(obs)
+    #         env.step(action)
+    #         if record:
+    #             image = plt.imshow(env.render(mode="rgb_array"), animated=True)
+    #             plt.axis("off")
+    #             plt.title("CartpoleML Simulation")
 
-            step_return = env.step(actions)
-            observations, rewards, dones, infos = restore_step(env, step_return)
-            obs = vectorise_observations(observations)
+    #             images.append([image])
 
-            for (agent, reward) in rewards.items():
-                total_rewards[agent] += reward
+    #         else:
+    #             env.render()
 
-            done = any(dones.values())
+    #         if done:
+    #             logger.info(f"Reward: {reward}")
+    #             env.close()
+    #             obs = env.reset()
 
-            if record:
-                image = plt.imshow(env.render(mode="rgb_array"), animated=True)
-                plt.axis("off")
-                plt.title("CartpoleML Simulation")
+    #             if record:
+    #                 print("Saving animation...")
+    #                 ani = animation.ArtistAnimation(
+    #                     fig,
+    #                     images,
+    #                     interval=env.unwrapped.timestep * 1000,
+    #                     blit=True,
+    #                     repeat_delay=1000,
+    #                 )
 
-                images.append([image])
+    #                 writer = FFMpegWriter(fps=30)
 
-            else:
-                env.render()
+    #                 ani.save(f"{animation_path}", dpi=200, writer=writer)
+    #                 print(f"Animation saved as {animation_path}")
 
-            if done:
-                logger.info(f"Rewards: {total_rewards}")
-                env.close()
-
-                if record:
-                    print("Saving animation...")
-                    ani = animation.ArtistAnimation(
-                        fig,
-                        images,
-                        interval=root_env.timestep * 1000,
-                        blit=True,
-                        repeat_delay=1000,
-                    )
-
-                    writer = FFMpegWriter(fps=30)
-
-                    ani.save(f"{animation_path}", dpi=200, writer=writer)
-                    print(f"Animation saved as {animation_path}")
+    #             break

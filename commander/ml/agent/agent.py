@@ -16,6 +16,9 @@ from commander.integration import DerivativesWrapper, IntegratorOptions
 from commander.ml.agent.constants import ExternalStateIdx, ExternalStateMap, InternalStateIdx
 from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
+from commander.network import NetworkManager
+from commander.network.constants import CartID, SetOperation
+from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetPositionPacket
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
 
 logger = logging.getLogger(__name__)
@@ -64,14 +67,14 @@ class CartpoleAgent(ABC):
         self.viewer: Optional[rendering.Viewer] = None
 
         # This is private for a reason
-        self._state: InternalState
+        self._state: Optional[InternalState] = None
 
         self.setup()
 
         self.initialise_goal(self.goal_params)
         self.initialise_state_spec()
 
-        self.reset()
+        self.initialise()
 
     def seed(self, seed: Optional[int] = None) -> list[Any]:
         self.np_random, seed = seeding.np_random(seed)
@@ -148,7 +151,10 @@ class CartpoleAgent(ABC):
         """
         Returns the current external state of the environment as seen by the agent.
         """
-        return self.externalise_state(self._state)
+        if self._state is None:
+            raise IOError("State not yet available.")
+        else:
+            return self.externalise_state(self._state)
 
     def observe_as_dict(self) -> ExternalStateMap:
         """
@@ -172,9 +178,15 @@ class CartpoleAgent(ABC):
         """
         ...
 
+    def initialise(self) -> None:
+        """
+        Called when the agent is initialised.
+        """
+        self.reset()
+
     def reset(self) -> ExternalState:
         """
-        Called when the agent is initialised or reset.
+        Called when the agent is reset.
 
         This should not generally be overridden. Rather, the `_reset_` method
         is appropriate for that.
@@ -376,30 +388,9 @@ class SimulatedCartpoleAgent(CartpoleAgent):
             IntegratorOptions.RK45, (0, self.tau), self.tau / self.integration_resolution, force
         )
 
-        checks = self.check_state(self.observe())
-        done = any(checks.values())
+        info: StepInfo = {}
 
-        failure_modes = []
-        if not done:
-            reward = self.reward(self.observe())
-
-        elif not self.steps_beyond_done:
-            # First call after being done
-            reward = self.reward(self.observe())
-
-            self.steps_beyond_done += 1
-
-            failure_modes = [k.value for (k, v) in checks.items() if v]
-            logger.info(f"Failure modes: {failure_modes}")
-
-        else:
-            logger.warn(
-                "We are already done. Stop calling `step()`. You may want to call `reset()`."
-            )
-            self.steps_beyond_done += 1
-            reward = 0.0
-
-        return self.observe(), reward, done, {"failure_modes": failure_modes}
+        return info
 
     def _integrate(
         self, method: IntegratorOptions, t_span: tuple[float, float], t_step: float, force: float
@@ -437,4 +428,64 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
 
 class ExperimentalCartpoleAgent(CartpoleAgent):
-    ...
+    network_manager: NetworkManager
+
+    def __init__(
+        self,
+        name: str = "Cartpole_1",
+        cart_id: CartID = CartID.ONE,
+        port: str = "COM3",
+        baudrate: int = 74880,
+        max_steps: int = 2500,
+        goal_params: Optional[GoalParams] = None,
+    ):
+
+        self.cart_id = cart_id
+
+        self.port = port
+        self.baudrate = baudrate
+
+        super().__init__(name=name, max_steps=max_steps, goal_params=goal_params)
+
+    def setup(self) -> None:
+        pass
+
+    def initialise(self) -> None:
+        self._pre_reset()
+
+    def _pre_reset(self) -> None:
+        """
+        Specific to ExperimentAgent.
+
+        Called by environment prior to the reset that needs to return
+        observations.
+        """
+        self.last_observation_time: int = 0
+        self._state: Optional[InternalState] = None
+
+    def _reset(self) -> ExternalState:
+        return self.observe()
+
+    def absorb_packet(self, packet: CartSpecificPacket) -> None:
+        if isinstance(packet, ObservationPacket):
+            if packet.timestamp_micros > self.last_observation_time:
+                self.last_observation_time = packet.timestamp_micros
+                self._state = np.array((packet.position_steps, packet.angle))
+
+        else:
+            raise TypeError(f"Agent does not handle {type(packet)}")
+
+    def _step(self, action: Action) -> StepInfo:
+        value = 200
+        import random
+
+        dir = random.choice([-1, 1])
+        value *= dir
+        # value *= 1 if action is Action.FORWARDS else -1
+
+        pos_pkt = SetPositionPacket(SetOperation.ADD, cart_id=self.cart_id, value=value)
+        self.network_manager.send_packet(pos_pkt)
+
+        info: StepInfo = {}
+
+        return info

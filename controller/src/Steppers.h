@@ -46,12 +46,12 @@ const float_t RIGHT = 1.0;
 struct Speed
 {
 public:
-    static constexpr float_t SLOW = 5.0;
-    static constexpr float_t MEDIUM = 25.0;
-    static constexpr float_t FAST = 50.0;
-    static constexpr float_t VERY_FAST = 75.0;
-    static constexpr float_t SUPER_FAST = 150.0;
-    static constexpr float_t ULTRA_FAST = 300.0;
+    static constexpr float_t SLOW = 10.0;
+    static constexpr float_t MEDIUM = 50.0;
+    static constexpr float_t FAST = 100.0;
+    static constexpr float_t VERY_FAST = 200.0;
+    static constexpr float_t SUPER_FAST = 300.0;
+    static constexpr float_t ULTRA_FAST = 500.0;
 };
 
 const float_t MAX_SETTABLE_SPEED = Speed::ULTRA_FAST * 40.0;

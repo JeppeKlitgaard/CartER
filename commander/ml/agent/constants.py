@@ -2,14 +2,21 @@ from enum import IntEnum
 from typing import TypedDict, Union
 
 
-class InternalStateIdx(IntEnum):
+class SimulatedInternalStateIdx(IntEnum):
     X = 0
     DX = 1
     THETA = 2
     DTHETA = 3
 
 
-ExternalTotalKnowledgeStateIdx = InternalStateIdx
+class ExperimentalInternalStateIdx(IntEnum):
+    X = 0
+    THETA = 1
+
+
+InternalStateIdx = Union[SimulatedInternalStateIdx, ExperimentalInternalStateIdx]
+
+ExternalTotalKnowledgeStateIdx = SimulatedInternalStateIdx
 
 
 class ExternalPositionalKnowlegeStateIdx(IntEnum):

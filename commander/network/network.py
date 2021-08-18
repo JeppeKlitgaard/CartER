@@ -1,15 +1,21 @@
+from collections.abc import Callable
 from logging import getLogger
 from time import sleep
+from typing import Literal, Optional, Type, Union, cast, overload
 
 from serial import Serial
 
 from commander.network.protocol import INBOUND_PACKET_ID_MAP, InboundPacket, OutboundPacket, Packet
+from commander.network.types import PacketSelector, PacketT
 from commander.network.utils import bytes_to_hexes, bytes_to_hexstr
+from commander.utils import noop
 
 logger = getLogger(__name__)
 
 PORT: str = "COM3"
 BAUDRATE: int = 74880
+
+DigestCallback = Callable[..., None]
 
 
 class NetworkManager:
@@ -20,6 +26,8 @@ class NetworkManager:
         self.serial.port = port
         self.serial.baudrate = baudrate
 
+        self.packet_buffer: list[Packet] = []
+
     def open(self) -> None:
         self.serial.open()
 
@@ -28,6 +36,10 @@ class NetworkManager:
 
     def tick(self) -> None:
         pass
+
+    @property
+    def in_queue(self) -> int:
+        return cast(int, self.serial.in_waiting)
 
     def read_initial_output(self) -> str:
         self.serial.timeout = 0.1
@@ -84,10 +96,10 @@ class NetworkManager:
         packet = packet_cls.read(self.serial)
         return packet
 
-    def read_packets(self) -> list[Packet]:
+    def read_packets(self, block: bool = False) -> list[Packet]:
         packets: list[Packet] = []
 
-        while self.serial.in_waiting:
+        while self.serial.in_waiting or (block and not packets):
             packets.append(self.read_packet())
 
         return packets
@@ -101,6 +113,180 @@ class NetworkManager:
 
             if not continuous:
                 break
+
+    def digest(self, block: bool = False) -> None:
+        """
+        Digests all the packets currently waiting to be read and stores them
+        in the internal packet buffer.
+        """
+        packets = self.read_packets(block=block)
+
+        self.packet_buffer.extend(packets)
+
+    def wait_for_packet_type(self, packet_type: Type[PacketT]) -> tuple[PacketT, list[Packet]]:
+        """
+        Blocks until a packet of the wanted type comes along.
+
+        Returns a tuple of shape (WantedPacket, list[OtherPackets])
+        """
+        packets: list[Packet] = []
+
+        while True:
+            packet = self.read_packet()
+
+            if isinstance(packet, packet_type):
+                return packet, packets
+
+            packets.append(packet)
+
+    @overload
+    def wait_for_packet(
+        self, packet_type: Literal[None], selector: Literal[None]
+    ) -> tuple[InboundPacket, list[Packet]]:
+        ...
+
+    @overload
+    def wait_for_packet(
+        self, packet_type: Optional[Type[PacketT]], selector: Optional[PacketSelector[PacketT]]
+    ) -> tuple[PacketT, list[Packet]]:
+        ...
+
+    def wait_for_packet(
+        self, packet_type: Optional[Type[PacketT]], selector: Optional[PacketSelector[PacketT]]
+    ) -> tuple[Union[InboundPacket, PacketT], list[Packet]]:
+        """
+        Blocks until a packet of the wanted type and selection comes along.
+
+        Returns a tuple of shape (WantedPacket, list[OtherPackets])
+        """
+        if packet_type is None and selector is not None:
+            raise ValueError(
+                "Invalid combination of arguments. Must specify packet_type to use selector"
+            )
+
+        if selector is None:
+            if packet_type is None:
+                return self.read_packet(), []
+            else:
+                return self.wait_for_packet_type(packet_type)
+
+        else:
+            assert packet_type is not None
+
+            packets = []
+
+            while True:
+                packet, opackets = self.wait_for_packet_type(packet_type)
+                packets.extend(opackets)
+
+                if selector(packet):
+                    return packet, packets
+
+                packets.append(packet)
+
+    @overload
+    def pop_packet(
+        self,
+        packet_type: Optional[Type[PacketT]] = None,
+        selector: Optional[PacketSelector[PacketT]] = None,
+        digest: Literal[True] = True,
+        block: Literal[True] = True,
+        callback: Callable[..., None] = noop,
+    ) -> PacketT:
+        ...
+
+    @overload
+    def pop_packet(
+        self,
+        packet_type: Optional[Type[PacketT]] = None,
+        selector: Optional[PacketSelector[PacketT]] = None,
+        digest: bool = True,
+        block: Literal[False] = False,
+        callback: Callable[..., None] = noop,
+    ) -> Optional[PacketT]:
+        ...
+
+    @overload
+    def pop_packet(
+        self,
+        packet_type: Optional[Type[PacketT]] = None,
+        selector: Optional[PacketSelector[PacketT]] = None,
+        digest: bool = True,
+        block: bool = False,
+        callback: Callable[..., None] = noop,
+    ) -> Optional[PacketT]:
+        ...
+
+    def pop_packet(
+        self,
+        packet_type: Optional[Type[PacketT]] = None,
+        selector: Optional[PacketSelector[PacketT]] = None,
+        digest: bool = True,
+        block: bool = False,
+        callback: Callable[..., None] = noop,
+    ) -> Optional[PacketT]:
+        """
+        Pops a packet from the internel buffer.
+
+        Can be selective in which packet to pop, and block until the packet arrives.
+
+        If defined, `callback` is called after every digest.
+        """
+
+        if block and not digest:
+            raise ValueError("Invalid combination of arguments. If blocking, must digest")
+
+        if digest:
+            self.digest()
+            callback()
+
+        # Try to look for packet in buffer
+        packet: Optional[PacketT] = None
+        for trial in self.packet_buffer:
+
+            # Skip if not right type
+            if packet_type is not None and not isinstance(trial, packet_type):
+                continue
+
+            trial = cast(PacketT, trial)
+
+            # Skip if not right attributes
+            if selector is not None and not selector(trial):
+                continue
+
+            # We have a match
+            packet = trial
+
+            self.packet_buffer.remove(packet)
+            break
+
+        # Wait for packet if blocking
+        if packet is None and block:
+            packet, opackets = self.wait_for_packet(packet_type=packet_type, selector=selector)
+
+            self.packet_buffer.extend(opackets)
+
+        return packet
+
+    def pop_packets(
+        self,
+        packet_type: Optional[Type[PacketT]] = None,
+        selector: Optional[PacketSelector[PacketT]] = None,
+        digest: bool = True,
+        block: bool = False,
+    ) -> list[PacketT]:
+
+        packets: list[PacketT] = []
+
+        while True:
+            packet = self.pop_packet(
+                packet_type=packet_type, selector=selector, digest=digest, block=block
+            )
+
+            if packet is None:
+                return packets
+
+            packets.append(packet)
 
     def send_packet(self, packet: OutboundPacket) -> None:
         bytes_to_transfer = packet.to_bytes()

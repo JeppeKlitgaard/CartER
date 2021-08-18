@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import random
 from collections.abc import Mapping, Sequence
 from typing import Any, Optional, Type, TypeVar, cast
 
@@ -12,10 +14,28 @@ from pettingzoo.utils.env import ParallelEnv
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import CartpoleAgent
-from commander.ml.agent.agent import SimulatedCartpoleAgent
+from commander.ml.agent.agent import ExperimentalCartpoleAgent, SimulatedCartpoleAgent
 from commander.ml.constants import Action
-from commander.ml.type_aliases import AgentNameT, StepReturn
-from commander.type_aliases import ExternalState
+from commander.network import NetworkManager
+from commander.network.constants import CartID, SetOperation
+from commander.network.protocol import (
+    CartSpecificPacket,
+    DebugPacket,
+    DoJigglePacket,
+    ErrorPacket,
+    ExperimentStartPacket,
+    FindLimitsPacket,
+    InfoPacket,
+    ObservationPacket,
+    PingPacket,
+    PongPacket,
+    SetVelocityPacket,
+)
+from commander.network.selectors import limit_finding_done, message_startswith
+from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepReturn
+from commander.utils import raises
+
+logger = logging.getLogger(__name__)
 
 EnvT = TypeVar("EnvT", bound="CartpoleEnv")
 
@@ -33,12 +53,15 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
     def __init__(
         self,
         agents: Sequence[CartpoleAgent],
+        defer_reset: bool = True,
     ):
         self.agents = [agent.name for agent in agents]
         self.possible_agents = self.agents[:]
         self._agents = list(agents)
 
-        self.agent_name_mapping = dict(zip(self.possible_agents, self._agents))
+        self.name_to_agent: Mapping[AgentNameT, CartpoleAgent] = dict(
+            zip(self.possible_agents, self._agents)
+        )
 
         self.action_spaces: Mapping[str, spaces.Space] = {
             agent.name: agent.action_space for agent in self._agents
@@ -52,7 +75,8 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
         self.setup()
 
         # Note some key attributes are only set after calling reset!
-        self.reset()
+        if not defer_reset:
+            self.reset()
 
     def seed(self, seed: Optional[int] = None) -> list[Any]:
         seeds = [agent.seed() for agent in self._agents]
@@ -85,7 +109,7 @@ class CartpoleEnv(ParallelEnv):  # type: ignore [misc]
         return observations
 
     def observe(self, agent: str) -> ExternalState:
-        return self.agent_name_mapping[agent].observe()
+        return self.name_to_agent[agent].observe()
 
     def close(self) -> None:
         raise NotImplementedError("This should be overridden")
@@ -99,9 +123,10 @@ class SimulatedCartpoleEnv(CartpoleEnv):
     An environment that represents the Cartpole Environment and
     implements simulated physics.
     """
+
     def __init__(
         self,
-        agents: Sequence[CartpoleAgent],
+        agents: Sequence[SimulatedCartpoleAgent],
         start_time: float = 0.0,  # s
         timestep: float = 0.02,  # s
         world_size: tuple[float, float] = (-2.5, 2.5),
@@ -116,7 +141,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         super().setup()
 
         for agent_name in self.agents:
-            agent = self.agent_name_mapping[agent_name]
+            agent = self.name_to_agent[agent_name]
 
             assert isinstance(agent, SimulatedCartpoleAgent)
 
@@ -145,10 +170,22 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         dones = {}
         infos = {}
 
-        for (agent_name, action) in actions.items():
-            agent = self.agent_name_mapping[agent_name]
+        for agent_name, action in actions.items():
+            agent = self.name_to_agent[agent_name]
 
-            observation, reward, done, info = agent.step(action)
+            info = agent.step(action)
+            observation = agent.observe()
+
+            checks = agent.check_state(observation)
+            done = any(checks.values())
+
+            reward = agent.reward(observation) if not done else 0.0
+
+            if done:
+                failure_modes = [k.value for k, v in checks.items() if v]
+                logger.info(f"Failure modes: {failure_modes}")
+
+                info["failure_modes"] = failure_modes
 
             observations[agent_name] = observation
             rewards[agent_name] = reward
@@ -164,7 +201,6 @@ class SimulatedCartpoleEnv(CartpoleEnv):
         self.steps += 1
 
         return observations, rewards, dones, infos
-
 
     def render(self, mode: str = "human") -> rendering.Viewer:
         screen_width = 600
@@ -193,7 +229,7 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             self.axles = {}
             for agent_name in self.agents:
 
-                agent = self.agent_name_mapping[agent_name]
+                agent = self.name_to_agent[agent_name]
 
                 # Cart
                 l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
@@ -247,14 +283,14 @@ class SimulatedCartpoleEnv(CartpoleEnv):
             pole.v = [(l, b), (l, t), (r, t), (r, b)]
 
         for agent_name, cart in self.carts.items():
-            agent = self.agent_name_mapping[agent_name]
+            agent = self.name_to_agent[agent_name]
             state = agent.observe_as_dict()
 
             cartx = state["x"] * scale + screen_width / 2.0  # MIDDLE OF CART
             self.carttrans[agent_name].set_translation(cartx, carty)
 
         for agent_name, pole in self.poles.items():
-            agent = self.agent_name_mapping[agent_name]
+            agent = self.name_to_agent[agent_name]
             state = agent.observe_as_dict()
 
             self.poletrans[agent_name].set_rotation(-state["theta"])
@@ -273,6 +309,168 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
     implements networking with the physical experiment.
     """
 
+    name_to_agent: Mapping[AgentNameT, ExperimentalCartpoleAgent]
+
+    def __init__(
+        self, agents: Sequence[ExperimentalCartpoleAgent], port: str = "COM3", baudrate: int = 74880
+    ) -> None:
+        self.port = port
+        self.baudrate = baudrate
+
+        self.network_manager = NetworkManager(port=self.port, baudrate=self.baudrate)
+
+        super().__init__(agents=agents)
+
+    def _assert_ping_pong(self) -> None:
+        # Send ping to ensure we have good connection
+        checksum = random.randint(0, 2 ** 32 - 1)
+        ping_pkt = PingPacket(timestamp=checksum)
+        self.network_manager.send_packet(ping_pkt)
+
+        # Verify pong
+        return_pkts = self.network_manager.read_packets(block=True)
+        print(return_pkts)
+        assert len(return_pkts) == 1
+        assert isinstance(return_pkts[0], PongPacket)
+        assert return_pkts[0].timestamp == checksum
+
+    def _distribute_packet(self, packet: CartSpecificPacket) -> None:
+        agent = self.cart_id_to_agent[packet.cart_id]
+
+        agent.absorb_packet(packet)
+
+    def _distribute_packets(self, packets: Sequence[CartSpecificPacket]) -> None:
+        for packet in packets:
+            self._distribute_packet(packet)
+
+    def _process_buffer(self) -> None:
+        """
+        Call often to process packets in buffer of network manager.
+        """
+        # ObservationPackets
+        obs_pkts = self.network_manager.pop_packets(ObservationPacket, digest=False)
+        self._distribute_packets(obs_pkts)
+
+        # DebugPackets
+        dbg_pkts = self.network_manager.pop_packets(DebugPacket, digest=False)
+        for dbg_pkt in dbg_pkts:
+            logger.debug("CONTROLLER| %s", dbg_pkt.msg)
+
+        # ErrorPackets
+        err_pkts = self.network_manager.pop_packets(ErrorPacket, digest=False)
+        for err_pkt in err_pkts:
+            logger.error("CONTROLLER| %s", err_pkt.msg)
+
+    def setup(self) -> None:
+        super().setup()
+
+        self.cart_id_to_agent: dict[CartID, ExperimentalCartpoleAgent] = {}
+
+        for agent_name in self.possible_agents:
+            agent = self.name_to_agent[agent_name]
+
+            agent.network_manager = self.network_manager
+            self.cart_id_to_agent[agent.cart_id] = agent
+
+        self.network_manager.open()
+        self.network_manager.read_initial_output()
+
+        assert not self.network_manager.in_queue
+
+        # Check connection
+        self._assert_ping_pong()
+
+        # Find limits
+        find_limits_pkt = FindLimitsPacket()
+        self.network_manager.send_packet(find_limits_pkt)
+
+        # Wait for limit finding
+        find_limits_response = self.network_manager.pop_packet(
+            FindLimitsPacket, digest=True, block=True
+        )
+
+        # Flush InfoPackets
+        limit_finding_info_pkts = self.network_manager.pop_packets(
+            InfoPacket, selector=message_startswith("LimitFinder: "), digest=False
+        )
+        assert not len(self.network_manager.packet_buffer)
+        assert not self.network_manager.in_queue
+
+        # Set velocity
+        velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
+        self.network_manager.send_packet(velo_pkt)
+
+    def reset(self) -> Mapping[str, ExternalState]:
+        self.network_manager.serial.reset_input_buffer()
+
+        self.agents = self.possible_agents[:]
+        for agent in [self.name_to_agent[name] for name in self.agents]:
+            agent._pre_reset()
+
+        self._assert_ping_pong()
+
+        # Jiggle
+        jiggle_pkt = DoJigglePacket()
+        self.network_manager.send_packet(jiggle_pkt)
+        self.network_manager.pop_packet(DoJigglePacket, digest=True, block=True)
+
+        # Ask controller to start experiment
+        experiment_start_pkt = ExperimentStartPacket(0)
+        self.network_manager.send_packet(experiment_start_pkt)
+
+        while any([raises(self.name_to_agent[name].observe, IOError) for name in self.agents]):
+            obs_pkt, opkts = self.network_manager.wait_for_packet_type(ObservationPacket)
+
+            self._distribute_packet(obs_pkt)
+
+        return super().reset()
+
+    def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
+        # ! For now assume single cart. Change later
+        # Very ugly temporary code - I'd like it to work today
+
+        observations = {}
+        rewards = {}
+        dones = {}
+        infos = {}
+
+        for agent_name, action in actions.items():
+            agent = self.name_to_agent[agent_name]
+
+            infos[agent_name] = agent.step(action)
+
+        self.network_manager.digest()
+        self._process_buffer()
+
+        # TODO Logic to wait for new observations here
+
+        for agent in [self.name_to_agent[name] for name in self.agents]:
+            observation = agent.observe()
+
+            checks = agent.check_state(observation)
+            done = any(checks.values())
+
+            reward = agent.reward(observation) if not done else 0.0
+
+            if done:
+                failure_modes = [k.value for k, v in checks.items() if v]
+                logger.info(f"Failure modes: {failure_modes}")
+
+                infos[agent.name]["failure_modes"] = failure_modes
+
+            info: StepInfo = {}
+
+            observations[agent_name] = observation
+            rewards[agent_name] = reward
+            dones[agent_name] = done
+            infos[agent_name] |= info
+
+        # Flush packets for now
+        self.network_manager.read_packets()
+
+        self.steps += 1
+
+        return observations, rewards, dones, infos
 
 
 def make_env(base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kwargs: Any) -> EnvT:
@@ -282,7 +480,6 @@ def make_env(base_env: Type[EnvT], *args: Any, num_frame_stacking: int = 1, **kw
     env = ss.black_death_v2(env)
 
     return env
-
 
 
 def make_sb3_env(

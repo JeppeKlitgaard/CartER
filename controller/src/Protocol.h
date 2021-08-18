@@ -205,6 +205,18 @@ public:
     virtual byte get_id() const override;
 };
 
+// DoJiggle
+class DoJigglePacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0xA7; // §
+
+    DoJigglePacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // Observation
 class ObservationPacket : public OutboundPacket
 {

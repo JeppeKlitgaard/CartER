@@ -112,7 +112,6 @@ class AgentTotalKnowledgeStateSpecification(AgentStateSpecificationBase):
 
         self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
 
-    internal_state_idx = InternalStateIdx
     external_state_idx = ExternalTotalKnowledgeStateIdx
 
     def externalise_state(self, internal_state: InternalState) -> ExternalState:
@@ -150,7 +149,6 @@ class AgentPositionalKnowledgeStateSpecification(AgentStateSpecificationBase):
 
         self.observation_space = spaces.Box(low, high, dtype=FLOAT_TYPE)
 
-    internal_state_idx = InternalStateIdx
     external_state_idx = ExternalPositionalKnowlegeStateIdx
 
     def externalise_state(self, _state: InternalState) -> ExternalState:
@@ -159,3 +157,11 @@ class AgentPositionalKnowledgeStateSpecification(AgentStateSpecificationBase):
         )
 
         return cast(ExternalState, external_state)
+
+
+def make_state_spec(
+    state_spec: Type[AgentStateSpecificationBase], internal_state_idx: Type[InternalStateIdx]
+) -> Type[AgentStateSpecificationBase]:
+    state_spec.internal_state_idx = internal_state_idx  # type: ignore[assignment]
+
+    return state_spec

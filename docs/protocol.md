@@ -23,20 +23,23 @@ controller and commander protocol implementations.
 
 ## Packet overview
 
-| ID (byte) | ID (ASCII) | Packet                   | Direction (Controller ↔ Commander) | Comment                                                |
-| :-------: | :--------: | ------------------------ | :--------------------------------: | ------------------------------------------------------ |
-|  `0x00`   |   `NUL`    | `NullPacket`             |                N/A                 | Does nothing                                           |
-|  `0x70`   |    `p`     | `PingPacket`             |                 ⟷                  | Other end should respond with a pong                   |
-|  `0x50`   |    `P`     | `PongPacket`             |                 ⟷                  | Response to ping                                       |
-|  `0x23`   |    `#`     | `DebugPacket`            |                 ⟶                  | Debug messages                                         |
-|  `0x7E`   |    `~`     | `InfoPacket`             |                 ⟶                  | Info messages                                          |
-|  `0x21`   |    `!`     | `ErrorPacket`            |                 ⟶                  | Error messages                                         |
-|  ` 0x24`  |    `$`     | `RequestDebugInfoPacket` |                 ⟵                  | Requests debug information from controller             |
-|  `0x3F`   |    `?`     | `UnknownPacket`          |                N/A                 | An unknown packet was found                            |
-|  `0x78`   |    `x`     | `SetPositionPacket`      |                 ⟵                  | Sets relative or absolute position                     |
-|  `0x58`   |    `X`     | `GetPositionPacket`      |                 ⟶                  | __UNUSED__. Gets position                              |
-|  `0x76`   |    `v`     | `SetVelocityPacket`      |                 ⟵                  | Sets relative or absolute maximum velocity             |
-|  `0x56`   |    `V`     | `GetVelocityPacket`      |                 ⟶                  | __UNUSED__. Gets maximum velocity                      |
-|  `0x7C`   |    `|`     | `FindLimitsPacket`       |                 ⟵                  | Instructs controller to perform limit finding routine  |
-|  `0x2F`   |    `/`     | `CheckLimitPacket`       |                 ⟵                  | Instructs controller to perform limit checking routine |
-|  `0x40`   |    `@`     | `ObservationPacket`      |                 ⟶                  | Observed state                                         |
+| ID (byte) | ID (ASCII) | Packet                   | Direction (Controller ↔ Commander) | Fields                                                         | Comment                                                |
+| :-------: | :--------: | ------------------------ | :--------------------------------: | -------------------------------------------------------------- | ------------------------------------------------------ |
+|  `0x00`   |   `NUL`    | `NullPacket`             |                N/A                 | `id`                                                           | Does nothing                                           |
+|  `0x3F`   |    `?`     | `UnknownPacket`          |                N/A                 | `id`                                                           | An unknown packet was found                            |
+|  `0x23`   |    `#`     | `DebugPacket`            |                 ⟶                  | `id`, `msg`                                                    | Debug messages                                         |
+|  `0x7E`   |    `~`     | `InfoPacket`             |                 ⟶                  | `id`, `msg`                                                    | Info messages                                          |
+|  `0x21`   |    `!`     | `ErrorPacket`            |                 ⟶                  | `id`, `msg`                                                    | Error messages                                         |
+|  `0x70`   |    `p`     | `PingPacket`             |                 ⟷                  | `id`, `timestamp`                                              | Other end should respond with a pong                   |
+|  `0x50`   |    `P`     | `PongPacket`             |                 ⟷                  | `id`, `timestamp`                                              | Response to ping                                       |
+|  ` 0x24`  |    `$`     | `RequestDebugInfoPacket` |                 ⟵                  | `id`                                                           | Requests debug information from controller             |
+|  `0x78`   |    `x`     | `SetPositionPacket`      |                 ⟵                  | `id`, `operation`, `cart_id`, `value`                          | Sets relative or absolute position                     |
+|  `0x58`   |    `X`     | `GetPositionPacket`      |                 ⟶                  | `id`                                                           | __UNUSED__. Gets position                              |
+|  `0x76`   |    `v`     | `SetVelocityPacket`      |                 ⟵                  | `id`, `operation`, `cart_id`, `value`                          | Sets relative or absolute maximum velocity             |
+|  `0x56`   |    `V`     | `GetVelocityPacket`      |                 ⟶                  | `id`                                                           | __UNUSED__. Gets maximum velocity                      |
+|  `0x7C`   |    `|`     | `FindLimitsPacket`       |                 ⟷                  | `id`                                                           | Instructs controller to perform limit finding routine  |
+|  `0x2F`   |    `/`     | `CheckLimitPacket`       |                 ⟷                  | `id`                                                           | Instructs controller to perform limit checking routine |
+|  `0xA7`   |    `§`     | `DoJigglePacket`         |                 ⟷                  | `id`                                                           | Instructs controller to perform a jiggle routine       |
+|  `0x40`   |    `@`     | `ObservationPacket`      |                 ⟶                  | `id`, `timestamp_micros`, `cart_id`, `position_steps`, `angle` | Observed state                                         |
+|  `0x02`   |   `STX`    | `ExperimentStartPacket`  |                 ⟷                  | `id`, `timestamp_micros`                                       | Observed state                                         |
+|  `0x03`   |   `ETX`    | `ExperimentEndPacket`    |                 ⟷                  | `id`                                                           | Observed state                                         |

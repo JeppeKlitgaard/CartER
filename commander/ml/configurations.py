@@ -14,12 +14,24 @@ from commander.ml.agent.state_specification import AgentStateSpecificationBase
 from commander.ml.agent.type_aliases import GoalParams
 
 
-class SimulatedConfiguration(TypedDict):
-    agent: SimulatedAgentConfiguration
+class Configuration(TypedDict, total=False):
+    agent: AgentConfiguration
 
 
-class SimulatedAgentConfiguration(TypedDict, total=False):
+class AgentConfiguration(TypedDict, total=False):
     name: str
+    goal_params: GoalParams
+
+    agent: Type[CartpoleAgent]
+    goal: Type[AgentGoalMixinBase]
+    state_spec: Type[AgentStateSpecificationBase]
+
+
+class SimulatedConfiguration(Configuration):
+    agent: SimulatedAgentConfiguration  # type: ignore[misc]
+
+
+class SimulatedAgentConfiguration(AgentConfiguration, total=False):
     integration_resolution: int
     max_steps: int
     start_pos: float
@@ -34,13 +46,6 @@ class SimulatedAgentConfiguration(TypedDict, total=False):
     pole_length: float
     force_mag: float
     tau: float
-    goal_params: GoalParams
-
-    agent: Type[CartpoleAgent]
-    goal: Type[AgentGoalMixinBase]
-    state_spec: Type[AgentStateSpecificationBase]
-
-    ...
 
 
 DefaultSimulatedConfiguration: SimulatedConfiguration = {
@@ -76,3 +81,22 @@ DeepPILCOConfiguration["agent"].update(
         },
     }
 )
+
+
+class ExperimentConfiguration(Configuration):
+    agent: ExperimentAgentConfiguration  # type: ignore[misc]
+
+
+class ExperimentAgentConfiguration(AgentConfiguration, total=False):
+    port: str
+    baudrate: int
+
+
+DefaultExperimentConfiguration: ExperimentConfiguration = {
+    "agent": {
+        "port": "COM3",
+        "baudrate": 74880,
+    }
+}
+
+CartpoleMLExperimentConfiguration = DefaultExperimentConfiguration.copy()

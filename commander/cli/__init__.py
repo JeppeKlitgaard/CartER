@@ -2,6 +2,7 @@ from pathlib import Path
 
 import click
 
+from commander.cli.experiment import experiment
 from commander.cli.simulate import simulate
 from commander.cli.tensorboard import tensorboard
 from commander.log import setup_logging
@@ -29,6 +30,7 @@ def ping() -> None:
 cli.add_command(ping)
 cli.add_command(simulate)
 cli.add_command(tensorboard)
+cli.add_command(experiment)
 
 
 def run() -> None:

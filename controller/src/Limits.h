@@ -62,20 +62,27 @@ enum class LimitCheckMode
 
 extern LimitCheckMode limit_check_mode;
 
+const uint16_t JIGGLE_COUNT = 1000;
+const uint16_t JIGGLE_DELAY = 1;  // ms
+
 extern float_t track_length_distance;
 extern int32_t track_length_steps;
 
 
-
+// Limit finding
 void toggle_limit_finding_mode();
 void loop_limit_finding();
 void enter_limit_finding();
 void exit_limit_finding();
 void do_limit_finding();
 
+// Limit check
 void toggle_limit_check_mode();
 void loop_limit_check();
 void do_limit_check();
 void react_limit_check(int32_t left_limit_new_position);
+
+// Jiggle
+void do_jiggle();
 
 #endif

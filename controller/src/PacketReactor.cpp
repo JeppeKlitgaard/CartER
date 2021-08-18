@@ -76,11 +76,6 @@ void PacketReactor::tick()
 
         std::unique_ptr<SetPositionPacket> packet = _read_and_construct_packet<SetPositionPacket>();
 
-        packet_sender.send_debug("Received <SetPositionPacket| operation: " +
-                                 std::to_string(static_cast<char>(packet->operation)) +
-                                 ", cart_id: " + std::to_string(packet->cart_id) +
-                                 ", value: " + std::to_string(packet->value));
-
         CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
 
         switch (packet->operation)
@@ -104,11 +99,6 @@ void PacketReactor::tick()
     case SetVelocityPacket::id:
     {
         std::unique_ptr<SetVelocityPacket> packet = _read_and_construct_packet<SetVelocityPacket>();
-
-        packet_sender.send_debug("Received <SetVelocityPacket| operation: " +
-                                 std::to_string(static_cast<char>(packet->operation)) +
-                                 ", cart_id: " + std::to_string(packet->cart_id) +
-                                 ", value: " + std::to_string(packet->value));
 
         CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
 
@@ -139,6 +129,12 @@ void PacketReactor::tick()
     case CheckLimitPacket::id:
     {
         do_limit_check();
+        break;
+    }
+
+    case DoJigglePacket::id:
+    {
+        do_jiggle();
         break;
     }
 

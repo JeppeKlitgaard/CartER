@@ -4,9 +4,10 @@ Contains the networking logic for communication with the Controller.
 
 from __future__ import annotations
 
+import datetime as dt
 from abc import ABC, abstractmethod
 from inspect import isabstract
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional, Type, Union
 
 from serial import Serial
 from typing_extensions import TypeGuard
@@ -55,9 +56,20 @@ class InboundPacket(Packet):
     but wouldn't ever be useful.
     """
 
+    read_time: Optional[dt.datetime] = None
+
+    @classmethod
+    def read(cls, serial: Serial) -> InboundPacket:
+        read_time = dt.datetime.now()
+
+        packet = cls._read(serial=serial)
+        packet.read_time = read_time
+
+        return packet
+
     @classmethod
     @abstractmethod
-    def read(cls, serial: Serial) -> InboundPacket:
+    def _read(cls, serial: Serial) -> InboundPacket:
         ...
 
     def __repr__(self) -> str:
@@ -105,7 +117,7 @@ class OnlyIDPacket(BidirectionalPacket):
         ...
 
     @classmethod
-    def read(cls, serial: Serial) -> OnlyIDPacket:
+    def _read(cls, serial: Serial) -> OnlyIDPacket:
         return cls()
 
     def to_bytes(self) -> bytes:
@@ -123,7 +135,7 @@ class UnknownPacket(BidirectionalPacket):
         self.observed_id = observed_id
 
     @classmethod
-    def read(self, serial: Serial) -> UnknownPacket:
+    def _read(self, serial: Serial) -> UnknownPacket:
         raise NotImplementedError("UnknownPacket does not have a read method.")
 
     def to_bytes(self) -> bytes:
@@ -138,7 +150,7 @@ class MessagePacketBase(BidirectionalPacket):
         self.msg = msg
 
     @classmethod
-    def read(cls, serial: Serial) -> MessagePacketBase:
+    def _read(cls, serial: Serial) -> MessagePacketBase:
         msg = unpack(Format.STRING, serial)
         skip_crlf(serial)
 
@@ -174,7 +186,7 @@ class PingPongBasePacket(BidirectionalPacket):
         self.timestamp = timestamp
 
     @classmethod
-    def read(cls, serial: Serial) -> PingPongBasePacket:
+    def _read(cls, serial: Serial) -> PingPongBasePacket:
         timestamp = unpack(Format.UINT_32, serial)
 
         return cls(timestamp=timestamp)
@@ -233,7 +245,7 @@ class GetPositionPacket(InboundPacket):
         self.value_mm = value_mm
 
     @classmethod
-    def read(cls, serial: Serial) -> GetPositionPacket:
+    def _read(cls, serial: Serial) -> GetPositionPacket:
         value_steps = unpack(Format.INT_32, serial)
         value_mm = unpack(Format.FLOAT_32, serial)
 
@@ -250,11 +262,33 @@ class GetVelocityPacket(GetPositionPacket):
 
 
 class FindLimitsPacket(OnlyIDPacket):
+    """
+    Instructs the controller to do a limit finding routine.
+
+    Controller will return a `FindLimitsPacket` when limit finding is done.
+    """
+
     id_ = byte(0x7C)  # | (vertical bar)
 
 
 class CheckLimitPacket(OnlyIDPacket):
+    """
+    Instructs the controller to do a limit checking routine.
+
+    Controller will return a `CheckLimitPacket` when the limit checking is done."""
+
     id_ = byte(0x2F)  # / (forward slash)
+
+
+class DoJigglePacket(OnlyIDPacket):
+    """
+    Instructs the controller to do a jiggle in order to get pendulum arm
+    to point straight down, at which point an angle offset can be calculated.
+
+    Controller will return a `DoJigglePacket` when the jiggling is done.
+    """
+
+    id_ = byte(0xA7)  # § (section)
 
 
 class ObservationPacket(InboundPacket):
@@ -269,7 +303,7 @@ class ObservationPacket(InboundPacket):
         self.angle = angle
 
     @classmethod
-    def read(cls, serial: Serial) -> ObservationPacket:
+    def _read(cls, serial: Serial) -> ObservationPacket:
         timestamp_micros = unpack(Format.UINT_32, serial)
         cart_id = CartID(unpack(Format.UINT_8, serial))
         position_steps = unpack(Format.INT_32, serial)
@@ -290,7 +324,7 @@ class ExperimentStartPacket(BidirectionalPacket):
         self.timestamp_micros = timestamp_micros
 
     @classmethod
-    def read(cls, serial: Serial) -> ExperimentStartPacket:
+    def _read(cls, serial: Serial) -> ExperimentStartPacket:
         timestamp_micros = unpack(Format.UINT_32, serial)
 
         return cls(timestamp_micros=timestamp_micros)
@@ -314,6 +348,9 @@ class ExperimentDonePacket(BidirectionalPacket):
 
 class ExperimentInfoPacket(InboundPacket):
     ...
+
+
+CartSpecificPacket = Union[ObservationPacket]
 
 
 def is_valid_packet(cls: Type[object]) -> TypeGuard[Type[Packet]]:

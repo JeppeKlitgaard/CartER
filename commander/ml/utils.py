@@ -1,12 +1,11 @@
 from collections.abc import Iterable
-from typing import Any, Mapping, cast
+from typing import cast
 
 from gym.vector import VectorEnv
 
 from stable_baselines3.common.vec_env.base_vec_env import VecEnvStepReturn
 
-from commander.ml.type_aliases import AgentNameT, StepReturn
-from commander.type_aliases import ExternalState
+from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepReturn
 
 
 def restore_step(env: VectorEnv, step_return: VecEnvStepReturn) -> StepReturn:
@@ -25,7 +24,7 @@ def restore_step(env: VectorEnv, step_return: VecEnvStepReturn) -> StepReturn:
         agent: reward for (agent, reward) in zip(agents, step_return[1])
     }
     dones = {agent: bool(done) for (agent, done) in zip(agents, step_return[2])}
-    infos: dict[AgentNameT, Mapping[AgentNameT, Any]] = {
+    infos: dict[AgentNameT, StepInfo] = {
         agent: info for (agent, info) in zip(agents, step_return[3])
     }
 

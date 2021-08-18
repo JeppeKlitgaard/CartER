@@ -118,6 +118,10 @@ byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }
 CheckLimitPacket::CheckLimitPacket() {}
 byte CheckLimitPacket::get_id() const { return CheckLimitPacket::id; }
 
+// DoJiggle
+DoJigglePacket::DoJigglePacket() {}
+byte DoJigglePacket::get_id() const { return DoJigglePacket::id; }
+
 // Observation
 ObservationPacket::ObservationPacket() : _timestamp_micros{0}, _cart_id{0}, _position_steps{0}, _angle_degs{0.0} {}
 byte ObservationPacket::get_id() const { return ObservationPacket::id; }
