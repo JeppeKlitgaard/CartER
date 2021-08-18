@@ -63,7 +63,7 @@ enum class LimitCheckMode
 extern LimitCheckMode limit_check_mode;
 
 const uint16_t JIGGLE_COUNT = 1000;
-const uint16_t JIGGLE_DELAY = 1;  // ms
+const uint16_t JIGGLE_DELAY = 2;  // ms
 
 extern float_t track_length_distance;
 extern int32_t track_length_steps;
