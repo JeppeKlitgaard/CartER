@@ -1,11 +1,19 @@
+import random
 from collections.abc import Callable
 from logging import getLogger
 from time import sleep
-from typing import Literal, Optional, Type, Union, cast, overload
+from typing import Literal, Optional, Sequence, Type, Union, cast, overload
 
 from serial import Serial
 
-from commander.network.protocol import INBOUND_PACKET_ID_MAP, InboundPacket, OutboundPacket, Packet
+from commander.network.protocol import (
+    INBOUND_PACKET_ID_MAP,
+    InboundPacket,
+    OutboundPacket,
+    Packet,
+    PingPacket,
+    PongPacket,
+)
 from commander.network.types import PacketSelector, PacketT
 from commander.network.utils import bytes_to_hexes, bytes_to_hexstr
 from commander.utils import noop
@@ -74,6 +82,21 @@ class NetworkManager:
 
         return output
 
+    def assert_ping_pong(self) -> None:
+        """
+        Does a Ping ⟷ Pong connection check.
+
+        Raises assertion error if something is wrong.
+        """
+        # Send ping to ensure we have good connection
+        checksum = random.randint(0, 2 ** 32 - 1)
+        ping_pkt = PingPacket(timestamp=checksum)
+        self.send_packet(ping_pkt)
+
+        # Verify pong
+        pong_pkt = self.get_packet(PongPacket, block=True)
+        assert pong_pkt.timestamp == checksum
+
     def read_packet(self) -> InboundPacket:
         id_ = self.serial.read(1)
 
@@ -104,9 +127,12 @@ class NetworkManager:
 
         return packets
 
-    def dump_packets(self, continuous: bool = False) -> None:
+    def dump_packets(self, *, digest: bool = True, continuous: bool = False) -> None:
+        if continuous and not digest:
+            raise ValueError("Invalid combination of arguments. Must digest to be continuous")
+
         while True:
-            packets = self.read_packets()
+            packets = self.get_packets(digest=digest)
 
             for packet in packets:
                 print(packet)
@@ -123,47 +149,75 @@ class NetworkManager:
 
         self.packet_buffer.extend(packets)
 
+    def printer_callback(
+        self, *, pop: bool = True, excepts: Union[Type[Packet], tuple[Type[Packet]]]
+    ) -> DigestCallback:
+        """
+        Can be used as a callback to pop and print all digested packets.
+        """
+
+        def inner() -> None:
+            for packet in self.get_packets(digest=False):
+                if isinstance(packet, excepts):
+                    self.packet_buffer.append(packet)
+                    continue
+
+                print(packet)
+
+        return inner
 
     @overload
-    def pop_packet(
+    def get_packet(
         self,
         packet_type: Optional[Type[PacketT]] = None,
         selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
         digest: Literal[True] = True,
         block: Literal[True] = True,
         callback: Callable[..., None] = noop,
+        _excludes: Optional[Sequence[PacketT]] = None,
     ) -> PacketT:
         ...
 
     @overload
-    def pop_packet(
+    def get_packet(
         self,
         packet_type: Optional[Type[PacketT]] = None,
         selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
         digest: bool = True,
         block: Literal[False] = False,
         callback: Callable[..., None] = noop,
+        _excludes: Optional[Sequence[PacketT]] = None,
     ) -> Optional[PacketT]:
         ...
 
     @overload
-    def pop_packet(
+    def get_packet(
         self,
         packet_type: Optional[Type[PacketT]] = None,
         selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
         digest: bool = True,
         block: bool = False,
         callback: Callable[..., None] = noop,
+        _excludes: Optional[Sequence[PacketT]] = None,
     ) -> Optional[PacketT]:
         ...
 
-    def pop_packet(
+    def get_packet(
         self,
         packet_type: Optional[Type[PacketT]] = None,
         selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
         digest: bool = True,
         block: bool = False,
         callback: DigestCallback = noop,
+        _excludes: Optional[Sequence[PacketT]] = None,
     ) -> Optional[PacketT]:
         """
         Pops a packet from the internel buffer.
@@ -175,6 +229,9 @@ class NetworkManager:
 
         if block and not digest:
             raise ValueError("Invalid combination of arguments. If blocking, must digest")
+
+        if _excludes is None:
+            _excludes = []
 
         if digest:
             self.digest()
@@ -195,10 +252,15 @@ class NetworkManager:
                 if selector is not None and not selector(trial):
                     continue
 
+                if packet in _excludes:
+                    continue
+
                 # We have a match
                 packet = trial
 
-                self.packet_buffer.remove(packet)
+                if pop:
+                    self.packet_buffer.remove(packet)
+
                 break
 
             # Wait for packet if blocking
@@ -210,20 +272,54 @@ class NetworkManager:
 
         return packet
 
-    def pop_packets(
+    @overload
+    def get_packets(
         self,
-        packet_type: Optional[Type[PacketT]] = None,
+        packet_type: Literal[None] = None,
         selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
+        digest: bool = True,
+        block: bool = False,
+        callback: DigestCallback = noop,
+    ) -> list[Packet]:
+        ...
+
+    @overload
+    def get_packets(
+        self,
+        packet_type: Type[PacketT],
+        selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
         digest: bool = True,
         block: bool = False,
         callback: DigestCallback = noop,
     ) -> list[PacketT]:
+        ...
+
+    def get_packets(
+        self,
+        packet_type: Optional[Type[PacketT]] = None,
+        selector: Optional[PacketSelector[PacketT]] = None,
+        *,
+        pop: bool = True,
+        digest: bool = True,
+        block: bool = False,
+        callback: DigestCallback = noop,
+    ) -> Union[list[PacketT], list[Packet]]:
 
         packets: list[PacketT] = []
 
         while True:
-            packet = self.pop_packet(
-                packet_type=packet_type, selector=selector, digest=digest, block=block, callback=callback
+            packet = self.get_packet(
+                packet_type=packet_type,
+                selector=selector,
+                pop=pop,
+                digest=digest,
+                block=block,
+                callback=callback,
+                _excludes=packets,
             )
 
             if packet is None:

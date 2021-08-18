@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import random
 from collections.abc import Mapping, Sequence
 from typing import Any, Optional, Type, TypeVar, cast
 
@@ -27,11 +26,9 @@ from commander.network.protocol import (
     FindLimitsPacket,
     InfoPacket,
     ObservationPacket,
-    PingPacket,
-    PongPacket,
     SetVelocityPacket,
 )
-from commander.network.selectors import limit_finding_done, message_startswith
+from commander.network.selectors import message_startswith
 from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepReturn
 from commander.utils import raises
 
@@ -321,19 +318,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
 
         super().__init__(agents=agents)
 
-    def _assert_ping_pong(self) -> None:
-        # Send ping to ensure we have good connection
-        checksum = random.randint(0, 2 ** 32 - 1)
-        ping_pkt = PingPacket(timestamp=checksum)
-        self.network_manager.send_packet(ping_pkt)
-
-        # Verify pong
-        return_pkts = self.network_manager.read_packets(block=True)
-        print(return_pkts)
-        assert len(return_pkts) == 1
-        assert isinstance(return_pkts[0], PongPacket)
-        assert return_pkts[0].timestamp == checksum
-
     def _distribute_packet(self, packet: CartSpecificPacket) -> None:
         agent = self.cart_id_to_agent[packet.cart_id]
 
@@ -348,16 +332,16 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         Call often to process packets in buffer of network manager.
         """
         # ObservationPackets
-        obs_pkts = self.network_manager.pop_packets(ObservationPacket, digest=False)
+        obs_pkts = self.network_manager.get_packets(ObservationPacket, digest=False)
         self._distribute_packets(obs_pkts)
 
         # DebugPackets
-        dbg_pkts = self.network_manager.pop_packets(DebugPacket, digest=False)
+        dbg_pkts = self.network_manager.get_packets(DebugPacket, digest=False)
         for dbg_pkt in dbg_pkts:
             logger.debug("CONTROLLER| %s", dbg_pkt.msg)
 
         # ErrorPackets
-        err_pkts = self.network_manager.pop_packets(ErrorPacket, digest=False)
+        err_pkts = self.network_manager.get_packets(ErrorPacket, digest=False)
         for err_pkt in err_pkts:
             logger.error("CONTROLLER| %s", err_pkt.msg)
 
@@ -378,19 +362,19 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         assert not self.network_manager.in_queue
 
         # Check connection
-        self._assert_ping_pong()
+        self.network_manager.assert_ping_pong()
 
         # Find limits
         find_limits_pkt = FindLimitsPacket()
         self.network_manager.send_packet(find_limits_pkt)
 
         # Wait for limit finding
-        find_limits_response = self.network_manager.pop_packet(
+        self.network_manager.get_packet(
             FindLimitsPacket, digest=True, block=True
         )
 
         # Flush InfoPackets
-        limit_finding_info_pkts = self.network_manager.pop_packets(
+        self.network_manager.get_packets(
             InfoPacket, selector=message_startswith("LimitFinder: "), digest=False
         )
         assert not len(self.network_manager.packet_buffer)
@@ -407,19 +391,21 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         for agent in [self.name_to_agent[name] for name in self.agents]:
             agent._pre_reset()
 
-        self._assert_ping_pong()
+        self.network_manager.assert_ping_pong()
 
         # Jiggle
         jiggle_pkt = DoJigglePacket()
         self.network_manager.send_packet(jiggle_pkt)
-        self.network_manager.pop_packet(DoJigglePacket, digest=True, block=True)
+        self.network_manager.get_packet(DoJigglePacket, digest=True, block=True)
 
         # Ask controller to start experiment
         experiment_start_pkt = ExperimentStartPacket(0)
         self.network_manager.send_packet(experiment_start_pkt)
 
         while any([raises(self.name_to_agent[name].observe, IOError) for name in self.agents]):
-            obs_pkts = self.network_manager.pop_packets(ObservationPacket, digest=True, callback=self._process_buffer)
+            obs_pkts = self.network_manager.get_packets(
+                ObservationPacket, digest=True, callback=self._process_buffer
+            )
             self._distribute_packets(obs_pkts)
 
         return super().reset()
