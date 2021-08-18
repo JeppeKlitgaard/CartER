@@ -4,6 +4,8 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import Any, Generic, Optional, Type, TypeVar, cast
 
+from time import sleep
+
 import gym
 import supersuit as ss
 from gym import spaces
@@ -320,10 +322,16 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     name_to_agent: Mapping[AgentNameT, ExperimentalCartpoleAgent]
 
     def __init__(
-        self, agents: Sequence[ExperimentalCartpoleAgent], port: str = "COM3", baudrate: int = 74880
+        self,
+        agents: Sequence[ExperimentalCartpoleAgent],
+        port: str = "COM3",
+        baudrate: int = 74880,
+        observation_buffer_size: int = 100,
     ) -> None:
         self.port = port
         self.baudrate = baudrate
+
+        self.observation_buffer_size = observation_buffer_size
 
         self.network_manager = NetworkManager(port=self.port, baudrate=self.baudrate)
 
@@ -363,7 +371,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         self.cart_id_to_agent: dict[CartID, ExperimentalCartpoleAgent] = {}
 
         for agent in self.get_agents(all_=True):
-            agent.network_manager = self.network_manager
+            agent.setup_by_environment(
+                network_manager=self.network_manager,
+                observation_buffer_size=self.observation_buffer_size,
+            )
+
             self.cart_id_to_agent[agent.cart_id] = agent
 
         logger.info("Opening serial connection to controller")
@@ -411,12 +423,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         self.network_manager.assert_ping_pong()
 
-        # Jiggle
-        jiggle_pkt = DoJigglePacket()
-        self.network_manager.send_packet(jiggle_pkt)
-        self.network_manager.get_packet(DoJigglePacket, digest=True, block=True)
-
         # Ask controller to start experiment
+        logger.info("Starting experiment")
         experiment_start_pkt = ExperimentStartPacket(0)
         self.network_manager.send_packet(experiment_start_pkt)
 
@@ -426,7 +434,43 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             )
             self._distribute_packets(obs_pkts)
 
+        # Jiggle
+        logger.info("Jiggling carts to zero angle")
+        jiggle_pkt = DoJigglePacket()
+        self.network_manager.send_packet(jiggle_pkt)
+        self.network_manager.get_packet(DoJigglePacket, digest=True, block=True)
+
+        sleep(1.0)
+
+        # Set zero angles
+        logger.info("Zeroing angles")
+        for agent in self.get_agents():
+            agent.set_angle_offset()
+
         return super().reset()
+
+    def network_tick(self) -> None:
+        self.network_manager.digest()
+        self._process_buffer()
+
+    def is_settled(self) -> bool:
+        return all([agent.is_settled() for agent in self.get_agents()])
+
+    def end_experiment(self) -> None:
+        logger.info("Ending experiment")
+
+        logger.info("Jiggling carts to find angle wander")
+        jiggle_pkt = DoJigglePacket()
+        self.network_manager.send_packet(jiggle_pkt)
+        self.network_manager.get_packet(DoJigglePacket, digest=True, block=True)
+
+        while not self.is_settled():
+            logger.debug("Experiment not yet settled")
+            self.network_tick()
+
+        logger.debug("Experiment settled.")
+
+        ...
 
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         # ! For now assume single cart. Change later
@@ -442,10 +486,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
             infos[agent_name] = agent.step(action)
 
-        self.network_manager.digest()
-        self._process_buffer()
-
-        # TODO Logic to wait for new observations here
+        self.network_tick()
 
         for agent in self.get_agents():
             observation = agent.observe()
@@ -468,10 +509,10 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             dones[agent_name] = done
             infos[agent_name] |= info
 
-        # Flush packets for now
-        self.network_manager.read_packets()
-
         self.steps += 1
+
+        if any(dones.values()):
+            self.end_experiment()
 
         return observations, rewards, dones, infos
 

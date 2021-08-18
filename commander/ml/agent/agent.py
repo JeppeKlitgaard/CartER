@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Optional, Type, TypeVar, cast
+from collections import deque
+from typing import Any, Deque, Optional, Type, TypeVar, cast
+from math import radians
 
 import numpy as np
 
@@ -431,6 +433,7 @@ class SimulatedCartpoleAgent(CartpoleAgent):
 
 class ExperimentalCartpoleAgent(CartpoleAgent):
     network_manager: NetworkManager
+    observation_buffer_size: int = 1
 
     def __init__(
         self,
@@ -438,6 +441,10 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         cart_id: CartID = CartID.ONE,
         port: str = "COM3",
         baudrate: int = 74880,
+
+        settled_x_threshold: float = 5.0,
+        settled_theta_threshold: float = radians(1.0),
+
         max_steps: int = 2500,
         goal_params: Optional[GoalParams] = None,
     ):
@@ -447,6 +454,9 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         self.port = port
         self.baudrate = baudrate
 
+        self.settled_x_threshold = settled_x_threshold
+        self.settled_theta_threshold = settled_theta_threshold
+
         super().__init__(name=name, max_steps=max_steps, goal_params=goal_params)
 
     def setup(self) -> None:
@@ -455,6 +465,10 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
     def initialise(self) -> None:
         self._pre_reset()
 
+    def setup_by_environment(self, network_manager: NetworkManager, observation_buffer_size: int) -> None:
+        self.network_manager = network_manager
+        self.observation_buffer_size = observation_buffer_size
+
     def _pre_reset(self) -> None:
         """
         Specific to ExperimentAgent.
@@ -462,20 +476,52 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         Called by environment prior to the reset that needs to return
         observations.
         """
+        self.observation_buffer: Deque[ExternalState] = deque(maxlen=self.observation_buffer_size)
         self.last_observation_time: int = 0
         self._state: Optional[InternalState] = None
+        self.angle_offset: float = 0
 
     def _reset(self) -> ExternalState:
         return self.observe()
+
+    def set_angle_offset(self) -> None:
+        state = self.observe_as_dict()
+        self.angle_offset = state["theta"] - np.pi
 
     def absorb_packet(self, packet: CartSpecificPacket) -> None:
         if isinstance(packet, ObservationPacket):
             if packet.timestamp_micros > self.last_observation_time:
                 self.last_observation_time = packet.timestamp_micros
-                self._state = np.array((packet.position_steps, packet.angle))
+
+                x = packet.position_steps
+                theta = radians(packet.angle) - self.angle_offset
+
+                self._state = np.array(
+                    (
+                        x,
+                        theta,
+                    )
+                )
+
+                self.observation_buffer.append(self.observe())
 
         else:
             raise TypeError(f"Agent does not handle {type(packet)}")
+
+    def is_settled(self) -> bool:
+        """
+        Returns True if the cart is considered settled."""
+        xs = [state[self.external_state_idx.X] for state in self.observation_buffer]
+        thetas = [state[self.external_state_idx.THETA] for state in self.observation_buffer]
+
+        return all([
+            max(xs) - min(xs) <= self.settled_x_threshold,
+            max(thetas) - min(thetas) <= self.settled_theta_threshold,
+        ])
+
+    def end_experiment(self) -> None:
+
+        ...
 
     def _step(self, action: Action) -> StepInfo:
         value = 200
