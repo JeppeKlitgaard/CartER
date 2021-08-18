@@ -15,7 +15,7 @@ logger = getLogger(__name__)
 PORT: str = "COM3"
 BAUDRATE: int = 74880
 
-DigestCallback = Callable[..., None]
+DigestCallback = Callable[[], None]
 
 
 class NetworkManager:
@@ -123,66 +123,6 @@ class NetworkManager:
 
         self.packet_buffer.extend(packets)
 
-    def wait_for_packet_type(self, packet_type: Type[PacketT]) -> tuple[PacketT, list[Packet]]:
-        """
-        Blocks until a packet of the wanted type comes along.
-
-        Returns a tuple of shape (WantedPacket, list[OtherPackets])
-        """
-        packets: list[Packet] = []
-
-        while True:
-            packet = self.read_packet()
-
-            if isinstance(packet, packet_type):
-                return packet, packets
-
-            packets.append(packet)
-
-    @overload
-    def wait_for_packet(
-        self, packet_type: Literal[None], selector: Literal[None]
-    ) -> tuple[InboundPacket, list[Packet]]:
-        ...
-
-    @overload
-    def wait_for_packet(
-        self, packet_type: Optional[Type[PacketT]], selector: Optional[PacketSelector[PacketT]]
-    ) -> tuple[PacketT, list[Packet]]:
-        ...
-
-    def wait_for_packet(
-        self, packet_type: Optional[Type[PacketT]], selector: Optional[PacketSelector[PacketT]]
-    ) -> tuple[Union[InboundPacket, PacketT], list[Packet]]:
-        """
-        Blocks until a packet of the wanted type and selection comes along.
-
-        Returns a tuple of shape (WantedPacket, list[OtherPackets])
-        """
-        if packet_type is None and selector is not None:
-            raise ValueError(
-                "Invalid combination of arguments. Must specify packet_type to use selector"
-            )
-
-        if selector is None:
-            if packet_type is None:
-                return self.read_packet(), []
-            else:
-                return self.wait_for_packet_type(packet_type)
-
-        else:
-            assert packet_type is not None
-
-            packets = []
-
-            while True:
-                packet, opackets = self.wait_for_packet_type(packet_type)
-                packets.extend(opackets)
-
-                if selector(packet):
-                    return packet, packets
-
-                packets.append(packet)
 
     @overload
     def pop_packet(
@@ -223,7 +163,7 @@ class NetworkManager:
         selector: Optional[PacketSelector[PacketT]] = None,
         digest: bool = True,
         block: bool = False,
-        callback: Callable[..., None] = noop,
+        callback: DigestCallback = noop,
     ) -> Optional[PacketT]:
         """
         Pops a packet from the internel buffer.
@@ -242,29 +182,31 @@ class NetworkManager:
 
         # Try to look for packet in buffer
         packet: Optional[PacketT] = None
-        for trial in self.packet_buffer:
+        while True:
+            for trial in self.packet_buffer:
 
-            # Skip if not right type
-            if packet_type is not None and not isinstance(trial, packet_type):
-                continue
+                # Skip if not right type
+                if packet_type is not None and not isinstance(trial, packet_type):
+                    continue
 
-            trial = cast(PacketT, trial)
+                trial = cast(PacketT, trial)
 
-            # Skip if not right attributes
-            if selector is not None and not selector(trial):
-                continue
+                # Skip if not right attributes
+                if selector is not None and not selector(trial):
+                    continue
 
-            # We have a match
-            packet = trial
+                # We have a match
+                packet = trial
 
-            self.packet_buffer.remove(packet)
-            break
+                self.packet_buffer.remove(packet)
+                break
 
-        # Wait for packet if blocking
-        if packet is None and block:
-            packet, opackets = self.wait_for_packet(packet_type=packet_type, selector=selector)
-
-            self.packet_buffer.extend(opackets)
+            # Wait for packet if blocking
+            if packet is None and block:
+                self.digest()
+                callback()
+            else:
+                break
 
         return packet
 
@@ -274,13 +216,14 @@ class NetworkManager:
         selector: Optional[PacketSelector[PacketT]] = None,
         digest: bool = True,
         block: bool = False,
+        callback: DigestCallback = noop,
     ) -> list[PacketT]:
 
         packets: list[PacketT] = []
 
         while True:
             packet = self.pop_packet(
-                packet_type=packet_type, selector=selector, digest=digest, block=block
+                packet_type=packet_type, selector=selector, digest=digest, block=block, callback=callback
             )
 
             if packet is None:

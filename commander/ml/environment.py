@@ -419,9 +419,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv):
         self.network_manager.send_packet(experiment_start_pkt)
 
         while any([raises(self.name_to_agent[name].observe, IOError) for name in self.agents]):
-            obs_pkt, opkts = self.network_manager.wait_for_packet_type(ObservationPacket)
-
-            self._distribute_packet(obs_pkt)
+            obs_pkts = self.network_manager.pop_packets(ObservationPacket, digest=True, callback=self._process_buffer)
+            self._distribute_packets(obs_pkts)
 
         return super().reset()
 
