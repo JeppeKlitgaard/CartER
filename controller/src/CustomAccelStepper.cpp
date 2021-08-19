@@ -33,6 +33,11 @@ float_t CustomAccelStepper::stepsToDistance(int32_t steps)
     return (steps / _microsteps) * _distancePerRotation / _stepsPerRotation;
 }
 
+float_t CustomAccelStepper::stepsToDistance(float_t steps)
+{
+    return (steps / _microsteps) * _distancePerRotation / _stepsPerRotation;
+}
+
 /**
  * Converts an angle to an integer number of steps
  * @param angle
@@ -251,6 +256,15 @@ void CustomAccelStepper::moveDistanceCond(float relative)
     {
         moveDistance(relative);
     }
+}
+
+/**
+ * Get the maximum speed in distance units
+ * @return
+ */
+float_t CustomAccelStepper::maxSpeedDistance()
+{
+    return stepsToDistance(maxSpeed());
 }
 
 /**

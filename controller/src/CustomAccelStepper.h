@@ -31,6 +31,7 @@ public:
 
     int32_t distanceToSteps(float distance);
     float_t stepsToDistance(int32_t steps);
+    float_t stepsToDistance(float_t steps);
     int32_t angleToSteps(float angle);
 
     void setMicrosteps(int microsteps);
@@ -62,6 +63,7 @@ public:
     void moveCond(long relative);
     void moveDistanceCond(float relative);
 
+    float_t maxSpeedDistance();
     void setMaxSpeedDistance(float speed);
     void setAccelerationDistance(float acceleration);
 
