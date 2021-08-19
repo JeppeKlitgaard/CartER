@@ -1,7 +1,10 @@
 #ifndef BUTTONS_H_INCLUDED
 #define BUTTONS_H_INCLUDED
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wregister"
 #include <Bounce2.h>
+#pragma GCC diagnostic pop
 
 // Buttons
 const int BOUNCE_INTERVAL = 5; // debounce, in ms

@@ -1,7 +1,10 @@
 #ifndef CUSTOM_ACCEL_STEPPER_H
 #define CUSTOM_ACCEL_STEPPER_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wregister"
 #include <AccelStepper.h>
+#pragma GCC diagnostic pop
 
 class CustomAccelStepper : public AccelStepper
 {

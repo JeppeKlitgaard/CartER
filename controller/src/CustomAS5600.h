@@ -1,7 +1,10 @@
 #ifndef CUSTOM_AS5600_H
 #define CUSTOM_AS5600_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wregister"
 #include <AS5600.h> // https://github.com/olkal/Seeed_Arduino_AS5600 <-- Fork
+#pragma GCC diagnostic pop
 
 class CustomAMS_5600 : public AMS_5600
 {
