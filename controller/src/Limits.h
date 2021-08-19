@@ -6,7 +6,7 @@
 #include <Steppers.h>
 
 // Buttons
-const int LIMIT_SW_BOUNCE_INTERVAL = 1; // debounce, in ms
+const int LIMIT_SW_BOUNCE_INTERVAL = 2; // debounce, in ms
 
 extern Bounce2::Button limit_sw_left;
 extern Bounce2::Button limit_sw_right;
@@ -63,7 +63,7 @@ enum class LimitCheckMode
 
 extern LimitCheckMode limit_check_mode;
 
-const uint16_t JIGGLE_COUNT = 250;
+const uint16_t JIGGLE_COUNT = 100;
 const uint32_t JIGGLE_SPEED_DISTANCE = Speed::SUPER_FAST;
 
 extern float_t track_length_distance;
