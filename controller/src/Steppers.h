@@ -38,7 +38,7 @@ extern CustomAccelStepper astepper2;
 // for now we just use math.
 const float_t STEPPER_DISTANCE_PER_ROTATION = 3.141592 * STEPPER_DRIVE_GEAR_OD_MM;
 
-const float_t MAX_ACCELERATION = 5000.0;
+const float_t MAX_ACCELERATION = 3000.0;
 
 const float_t LEFT = -1.0;
 const float_t RIGHT = 1.0;
@@ -48,10 +48,10 @@ struct Speed
 public:
     static constexpr float_t SLOW = 10.0;
     static constexpr float_t MEDIUM = 50.0;
-    static constexpr float_t FAST = 100.0;
-    static constexpr float_t VERY_FAST = 200.0;
-    static constexpr float_t SUPER_FAST = 300.0;
-    static constexpr float_t ULTRA_FAST = 500.0;
+    static constexpr float_t FAST = 75.0;
+    static constexpr float_t VERY_FAST = 150.0;
+    static constexpr float_t SUPER_FAST = 200.0;
+    static constexpr float_t ULTRA_FAST = 400.0;
 };
 
 const float_t MAX_SETTABLE_SPEED = Speed::ULTRA_FAST * 40.0;
