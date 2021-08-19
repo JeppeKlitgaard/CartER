@@ -51,7 +51,7 @@ public:
     static constexpr float_t FAST = 75.0;
     static constexpr float_t VERY_FAST = 150.0;
     static constexpr float_t SUPER_FAST = 200.0;
-    static constexpr float_t ULTRA_FAST = 400.0;
+    static constexpr float_t ULTRA_FAST = 300.0;
 };
 
 const float_t MAX_SETTABLE_SPEED = Speed::ULTRA_FAST * 40.0;
