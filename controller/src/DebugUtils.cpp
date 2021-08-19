@@ -3,6 +3,7 @@
 #include <Init.h>
 #include <Limits.h>
 #include <Steppers.h>
+#include <Utils.h>
 
 void print_debug_information()
 {
@@ -28,6 +29,7 @@ void print_debug_information()
 
 void send_debug_information()
 {
+    packet_sender.send_debug("Free memory: " + std::to_string(free_memory()));
     packet_sender.send_debug("STEPPER_CURRENT: " + std::to_string(STEPPER_CURRENT));
     packet_sender.send_debug("STEPPER_MICROSTEPS: " + std::to_string(STEPPER_MICROSTEPS));
     packet_sender.send_debug("STEPPER_DISTANCE_PER_ROTATION: " + std::to_string(STEPPER_DISTANCE_PER_ROTATION));
