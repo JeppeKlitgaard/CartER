@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from collections import deque
-from typing import Any, Deque, Optional, Type, TypeVar, cast
+from collections.abc import Mapping
 from math import radians
+from typing import Any, Deque, Optional, Type, TypeVar, cast
 
 import numpy as np
 
@@ -22,7 +22,7 @@ from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
 from commander.network import NetworkManager
 from commander.network.constants import CartID, SetOperation
-from commander.network.protocol import CartSpecificPacket, CheckLimitPacket, ObservationPacket, SetPositionPacket
+from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetPositionPacket
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
 
 logger = logging.getLogger(__name__)
@@ -441,10 +441,8 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         cart_id: CartID = CartID.ONE,
         port: str = "COM3",
         baudrate: int = 74880,
-
         settled_x_threshold: float = 5.0,
-        settled_theta_threshold: float = radians(1.0),
-
+        settled_theta_threshold: float = radians(0.25),
         max_steps: int = 2500,
         goal_params: Optional[GoalParams] = None,
     ):
@@ -465,7 +463,9 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
     def initialise(self) -> None:
         self._pre_reset()
 
-    def setup_by_environment(self, network_manager: NetworkManager, observation_buffer_size: int) -> None:
+    def setup_by_environment(
+        self, network_manager: NetworkManager, observation_buffer_size: int
+    ) -> None:
         self.network_manager = network_manager
         self.observation_buffer_size = observation_buffer_size
 
@@ -514,15 +514,23 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         xs = [state[self.external_state_idx.X] for state in self.observation_buffer]
         thetas = [state[self.external_state_idx.THETA] for state in self.observation_buffer]
 
-        return all([
-            max(xs) - min(xs) <= self.settled_x_threshold,
-            max(thetas) - min(thetas) <= self.settled_theta_threshold,
-        ])
+        return all(
+            [
+                max(xs) - min(xs) <= self.settled_x_threshold,
+                max(thetas) - min(thetas) <= self.settled_theta_threshold,
+            ]
+        )
 
-    def end_experiment(self) -> None:
-        chk_pkt = CheckLimitPacket()
+    def get_angle_drift(self) -> float:
+        # We have just been jiggled, so now is a good time to check angle drift
+        logger.info("%s| Checking angle drift.", self.name)
+        state = self.observe_as_dict()
 
-        self.network_manager.send_packet(chk_pkt)
+        angle_drift = state["theta"] - np.pi
+
+        logger.info("%s| Angle drift: %s rad.", self.name, angle_drift)
+
+        return angle_drift
 
     def _step(self, action: Action) -> StepInfo:
         value = 200

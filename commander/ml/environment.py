@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping, Sequence
-from typing import Any, Generic, Optional, Type, TypeVar, cast
-
-from time import sleep
+from typing import Any, Generic, Optional, Type, TypedDict, cast
 
 import gym
 import supersuit as ss
@@ -22,13 +20,17 @@ from commander.ml.agent.agent import (
 )
 from commander.ml.constants import Action
 from commander.network import NetworkManager
-from commander.network.constants import CartID, SetOperation
+from commander.network.constants import CartID, ExperimentInfoSpecifier, SetOperation
 from commander.network.protocol import (
     CartSpecificPacket,
+    CheckLimitPacket,
     DebugPacket,
     DoJigglePacket,
     ErrorPacket,
+    ExperimentDonePacket,
+    ExperimentInfoPacket,
     ExperimentStartPacket,
+    ExperimentStopPacket,
     FindLimitsPacket,
     InfoPacket,
     ObservationPacket,
@@ -39,6 +41,11 @@ from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepRetu
 from commander.utils import raises
 
 logger = logging.getLogger(__name__)
+
+
+class EnvironmentState(TypedDict):
+    angle_drifts: dict[AgentNameT, float]
+    position_drifts: dict[AgentNameT, int]
 
 
 class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
@@ -364,6 +371,21 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         for err_pkt in err_pkts:
             logger.error("CONTROLLER| %s", err_pkt.msg)
 
+        # ExperimentInfoPackets
+        exp_info_pkts = self.network_manager.get_packets(ExperimentInfoPacket)
+        for exp_info_pkt in exp_info_pkts:
+            if exp_info_pkt.specifier == ExperimentInfoSpecifier.POSITION_DRIFT:
+                agent = self.cart_id_to_agent[exp_info_pkt.cart_id]
+                self.environment_state["position_drifts"][agent.name] = cast(
+                    int, exp_info_pkt.value
+                )
+
+            else:
+                raise ValueError(
+                    "Environment does not know how to deal with specifier: "
+                    + exp_info_pkt.specifier.name
+                )
+
     def setup(self) -> None:
         logger.info("Running experimental environment setup")
         super().setup()
@@ -395,11 +417,16 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         self.network_manager.send_packet(find_limits_pkt)
 
         # Wait for limit finding
-        self.network_manager.get_packet(FindLimitsPacket, digest=True, block=True)
+        self.network_manager.get_packet(
+            FindLimitsPacket, digest=True, block=True, callback=self._process_buffer
+        )
 
         # Flush InfoPackets
         self.network_manager.get_packets(
-            InfoPacket, selector=message_startswith("LimitFinder: "), digest=False
+            InfoPacket,
+            selector=message_startswith("LimitFinder: "),
+            digest=False,
+            callback=self._process_buffer,
         )
         assert not len(self.network_manager.packet_buffer)
         assert not self.network_manager.in_queue
@@ -414,6 +441,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
     def reset(self) -> Mapping[str, ExternalState]:
         logger.info("Resetting experimental environment")
+
+        self.environment_state: EnvironmentState = {
+            "angle_drifts": {},
+            "position_drifts": {},
+        }
 
         self.network_manager.serial.reset_input_buffer()
 
@@ -434,13 +466,17 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             )
             self._distribute_packets(obs_pkts)
 
+        self.wait_for_settled()
+
         # Jiggle
         logger.info("Jiggling carts to zero angle")
         jiggle_pkt = DoJigglePacket()
         self.network_manager.send_packet(jiggle_pkt)
-        self.network_manager.get_packet(DoJigglePacket, digest=True, block=True)
+        self.network_manager.get_packet(
+            DoJigglePacket, digest=True, block=True, callback=self._process_buffer
+        )
 
-        sleep(1.0)
+        self.wait_for_settled()
 
         # Set zero angles
         logger.info("Zeroing angles")
@@ -456,22 +492,57 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def is_settled(self) -> bool:
         return all([agent.is_settled() for agent in self.get_agents()])
 
+    def wait_for_settled(self) -> None:
+        logger.debug("Waiting for system to settle")
+
+        while not self.is_settled():
+            self.network_tick()
+
+        logger.debug("Experiment settled")
+
     def end_experiment(self) -> None:
         logger.info("Ending experiment")
+
+        self.wait_for_settled()
 
         logger.info("Jiggling carts to find angle wander")
         jiggle_pkt = DoJigglePacket()
         self.network_manager.send_packet(jiggle_pkt)
-        self.network_manager.get_packet(DoJigglePacket, digest=True, block=True)
+        self.network_manager.get_packet(
+            DoJigglePacket, digest=True, block=True, callback=self._process_buffer
+        )
 
-        while not self.is_settled():
-            logger.debug("Experiment not yet settled")
-            self.network_tick()
+        self.wait_for_settled()
 
-        logger.debug("Experiment settled.")
-
+        # Gets angle wander for each cart
         for agent in self.get_agents():
-            agent.end_experiment()
+            self.environment_state["angle_drifts"][agent.name] = agent.get_angle_drift()
+
+        # Check limits
+        logger.info("Checking limits")
+        chk_pkt = CheckLimitPacket()
+        self.network_manager.send_packet(chk_pkt)
+        self.network_manager.get_packet(
+            CheckLimitPacket, digest=True, block=True, callback=self._process_buffer
+        )
+
+        # Stop experiment
+        logger.info("Stopping carts")
+        stop_pkt = ExperimentStopPacket()
+        self.network_manager.send_packet(stop_pkt)
+
+        # Wait for stop ACK
+        self.network_manager.get_packet(
+            ExperimentStopPacket, digest=True, block=True, callback=self._process_buffer
+        )
+
+        # Wait for experiment to end
+        self.network_manager.get_packet(
+            ExperimentDonePacket, digest=True, block=True, callback=self._process_buffer
+        )
+
+        # Process final packets
+        self.network_tick()
 
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         # ! For now assume single cart. Change later
@@ -514,6 +585,9 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         if any(dones.values()):
             self.end_experiment()
+
+            # TODO
+            logger.debug("Environment state: %s", self.environment_state)
 
         return observations, rewards, dones, infos
 

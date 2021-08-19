@@ -19,6 +19,8 @@ CRLF: bytes = "\r\n".encode("ascii")
 
 
 class Format(str, Enum):
+    NUL = "_"
+
     CHAR = "c"
 
     INT_8 = "b"
@@ -40,7 +42,7 @@ class Format(str, Enum):
     ASCII_CHAR = "A"  # home-made
 
 
-PackableT = Union[str, int, float, bytes]
+PackableT = Union[str, int, float, bytes, None]
 UnpackableT = PackableT
 
 StringFormats = Literal[Format.STRING, Format.ASCII_CHAR]
@@ -56,6 +58,9 @@ IntFormats = Literal[
 ]
 FloatFormats = Literal[Format.FLOAT_32, Format.FLOAT_64]
 ByteFormats = Literal[Format.CHAR]
+NulFormats = Literal[Format.NUL]
+
+Formats = Union[StringFormats, IntFormats, FloatFormats, ByteFormats, NulFormats, Format]
 
 
 def _stringify_self(self: "Packet") -> str:
@@ -78,6 +83,11 @@ def _stringify_self(self: "Packet") -> str:
 
 
 @overload
+def unpack(fmt: NulFormats, serial: Serial) -> None:
+    ...
+
+
+@overload
 def unpack(fmt: StringFormats, serial: Serial) -> str:
     ...
 
@@ -97,14 +107,20 @@ def unpack(fmt: ByteFormats, serial: Serial) -> bytes:
     ...
 
 
-def unpack(
-    fmt: Union[StringFormats, IntFormats, FloatFormats, ByteFormats], serial: Serial
-) -> UnpackableT:
+@overload
+def unpack(fmt: Format, serial: Serial) -> UnpackableT:
+    ...
+
+
+def unpack(fmt: Formats, serial: Serial) -> UnpackableT:
     """
     Wraps struct.unpack to make calcsizing easier.
 
     Note: Only unpacks a single data type at a time
     """
+    if fmt is Format.NUL:
+        return None
+
     # Special case: string
     if fmt is Format.STRING:
         # String consists of an size_t (ulong on Due)
@@ -131,6 +147,9 @@ def unpack(
 
 
 def pack(fmt: Union[Format, str], obj: PackableT) -> bytes:
+    if fmt is Format.NUL:
+        return b""
+
     if fmt is Format.STRING:
         assert isinstance(obj, str)
         size_bytes = pack(Format.UINT_32, len(obj))

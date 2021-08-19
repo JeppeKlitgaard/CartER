@@ -62,5 +62,13 @@ void experiment_start() {
 void experiment_stop() {
     packet_sender.send_debug("Stopping experiment...");
 
+    std::unique_ptr<ExperimentStopPacket> stop_pkt = std::make_unique<ExperimentStopPacket>();
+    packet_sender.send(std::move(stop_pkt));
+
     experiment_mode = ExperimentMode::DONE;
+
+    std::unique_ptr<ExperimentDonePacket> done_pkt = std::make_unique<ExperimentDonePacket>();
+    done_pkt->construct(0, FailureMode::NUL);
+    packet_sender.send(std::move(done_pkt));
+
 }

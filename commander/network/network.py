@@ -103,7 +103,7 @@ class NetworkManager:
 
         try:
             packet_cls = INBOUND_PACKET_ID_MAP[id_]
-        except KeyError:
+        except KeyError as exc:
             rest_of_data = self.serial.read_all()
             rest_of_data_str = rest_of_data.decode("ascii", "replace")
 
@@ -115,9 +115,11 @@ class NetworkManager:
 
             err = f"Invalid packet ID: {id_}."
 
-            raise ConnectionError(err)
+            raise ConnectionError(err) from exc
 
         packet = packet_cls.read(self.serial)
+        logger.debug("Read packet: %s", packet, extra={"packet": packet})
+
         return packet
 
     def read_packets(self, block: bool = False) -> list[Packet]:

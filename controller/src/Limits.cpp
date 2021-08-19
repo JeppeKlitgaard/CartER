@@ -80,7 +80,6 @@ void loop_limit_finding()
         astepper1.setMaxSpeedDistance(Speed::FAST);
 
         toggle_limit_finding_mode();
-
         break;
 
     case LimitFindingMode::LEFT_FAST:
@@ -96,7 +95,6 @@ void loop_limit_finding()
         {
             astepper1.moveDistanceCond(STEPPER_BIG_DISTANCE * LEFT);
         }
-
         break;
 
     case LimitFindingMode::LEFT_RETRACT:
@@ -106,9 +104,8 @@ void loop_limit_finding()
             toggle_limit_finding_mode();
 
             astepper1.setMaxSpeedDistance(Speed::SLOW);
-
-            break;
         }
+        break;
 
     case LimitFindingMode::LEFT_SLOW:
         if (limit_sw_left.pressed())
@@ -122,19 +119,20 @@ void loop_limit_finding()
         {
             astepper1.moveDistanceCond(STEPPER_BIG_DISTANCE * LEFT);
         }
-
         break;
+
     case LimitFindingMode::LEFT_POSITION_SET:
         if (astepper1.distanceToGo() == 0)
         {
             packet_sender.send_info("LimitFinder: LEFT LIMIT SET");
 
             astepper1.setCurrentPosition(0);
-            astepper1.setMaxSpeedDistance(Speed::FAST);
+            astepper1.setMaxSpeedDistance(Speed::MEDIUM);
 
             toggle_limit_finding_mode();
         }
         break;
+
     case LimitFindingMode::RIGHT_FAST:
         if (limit_sw_right.pressed())
         {
@@ -148,8 +146,8 @@ void loop_limit_finding()
         {
             astepper1.moveDistanceCond(STEPPER_BIG_DISTANCE * RIGHT);
         }
-
         break;
+
     case LimitFindingMode::RIGHT_RETRACT:
         if (astepper1.distanceToGo() == 0)
         {
@@ -159,6 +157,7 @@ void loop_limit_finding()
             astepper1.setMaxSpeedDistance(Speed::SLOW);
         }
         break;
+
     case LimitFindingMode::RIGHT_SLOW:
         if (limit_sw_right.pressed())
         {
@@ -286,8 +285,8 @@ void loop_limit_check()
 
             astepper1.setMaxSpeedDistance(Speed::SLOW);
 
-            break;
         }
+        break;
 
     case LimitCheckMode::LEFT_SLOW:
         if (limit_sw_left.pressed())
@@ -301,8 +300,8 @@ void loop_limit_check()
         {
             astepper1.moveDistanceCond(STEPPER_BIG_DISTANCE * LEFT);
         }
-
         break;
+
     case LimitCheckMode::LEFT_POSITION_GET:
         if (astepper1.distanceToGo() == 0)
         {
@@ -348,6 +347,11 @@ void do_limit_check()
 
 void react_limit_check(int32_t left_limit_new_position) {
     packet_sender.send_info("LimitChecker: New limit was " + std::to_string(left_limit_new_position));
+
+    std::unique_ptr<ExperimentInfoPacket> packet = std::make_unique<ExperimentInfoPacket>();
+    packet->construct(ExperimentInfoSpecifier::POSITION_DRIFT, 1, left_limit_new_position);
+
+    packet_sender.send(std::move(packet));
 }
 
 
@@ -378,7 +382,6 @@ void do_jiggle() {
         if (configuration == TWO_CARRIAGES) {
             astepper2.runToPosition();
         }
-
 
         jiggle_counter++;
     }

@@ -12,10 +12,17 @@ from typing import Any, Dict, Optional, Type, Union
 from serial import Serial
 from typing_extensions import TypeGuard
 
-from commander.network.constants import CartID, SetOperation
+from commander.network.constants import (
+    SPECIFIER_TO_FORMAT,
+    CartID,
+    ExperimentInfoSpecifier,
+    FailureMode,
+    SetOperation,
+)
 from commander.network.utils import (
     CRLF,
     Format,
+    UnpackableT,
     _stringify_self,
     byte,
     bytes_to_hexstr,
@@ -318,7 +325,7 @@ class ObservationPacket(InboundPacket):
 
 
 class ExperimentStartPacket(BidirectionalPacket):
-    id_ = byte(0x02)  # STX
+    id_ = byte(0x02)  # STX (start-of-text)
 
     def __init__(self, timestamp_micros: int):
         self.timestamp_micros = timestamp_micros
@@ -339,18 +346,77 @@ class ExperimentStartPacket(BidirectionalPacket):
 
 
 class ExperimentStopPacket(OnlyIDPacket):
-    id_ = byte(0x03)  # ETX
+    id_ = byte(0x03)  # ETX (end-of-text)
 
 
 class ExperimentDonePacket(BidirectionalPacket):
-    ...
+    id_ = byte(0x04)  # EOT (end-of-transmission)
+
+    def __init__(self, cart_id: int, failure_mode: FailureMode) -> None:
+        self.cart_id = cart_id
+        self.failure_mode = failure_mode
+
+    @classmethod
+    def _read(cls, serial: Serial) -> ExperimentDonePacket:
+        cart_id = unpack(Format.UINT_8, serial)
+
+        failure_mode_raw = unpack(Format.INT_8, serial)
+        failure_mode: FailureMode
+        try:
+            failure_mode = FailureMode(failure_mode_raw)
+        except ValueError as exc:
+            raise ConnectionError(
+                f"Malformed ExperimentDonePacket. Got bad failure_mode: {failure_mode_raw}"
+            ) from exc
+
+        return cls(cart_id=cart_id, failure_mode=failure_mode)
+
+    def to_bytes(self) -> bytes:
+        bytes = b""
+
+        bytes += self.id_
+        bytes += pack(Format.UINT_8, self.cart_id)
+        bytes += pack(Format.INT_8, self.failure_mode.value)
+
+        return bytes
 
 
 class ExperimentInfoPacket(InboundPacket):
-    ...
+    id_ = byte(0x3A)  # :
+
+    def __init__(
+        self, specifier: ExperimentInfoSpecifier, cart_id: CartID, value: UnpackableT
+    ) -> None:
+        self.specifier = specifier
+        self.cart_id = cart_id
+        self.value = value
+
+    @classmethod
+    def _read(cls, serial: Serial) -> ExperimentInfoPacket:
+        specifier_raw = unpack(Format.UINT_8, serial)
+        specifier: ExperimentInfoSpecifier
+        try:
+            specifier = ExperimentInfoSpecifier(specifier_raw)
+        except ValueError as exc:
+            raise ConnectionError(
+                f"Malformed ExperimentInfoPacket. Got bad specifier: {specifier_raw}."
+            ) from exc
+
+        cart_id_raw = unpack(Format.UINT_8, serial)
+        cart_id: CartID
+        try:
+            cart_id = CartID(cart_id_raw)
+        except ValueError as exc:
+            raise ConnectionError(
+                f"Malformed ExperimentInfoPacket. Got bad cart id: {cart_id_raw}."
+            ) from exc
+
+        value = unpack(SPECIFIER_TO_FORMAT[specifier], serial)
+
+        return cls(specifier=specifier, cart_id=cart_id, value=value)
 
 
-CartSpecificPacket = Union[ObservationPacket]
+CartSpecificPacket = Union[ObservationPacket, ExperimentInfoPacket]
 
 
 def is_valid_packet(cls: Type[object]) -> TypeGuard[Type[Packet]]:

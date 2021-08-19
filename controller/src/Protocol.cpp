@@ -178,13 +178,13 @@ ExperimentStopPacket::ExperimentStopPacket() {}
 byte ExperimentStopPacket::get_id() const { return ExperimentStopPacket::id; }
 
 // ExperimentDone
-ExperimentDonePacket::ExperimentDonePacket() : _failure_mode{FailureMode::NUL}, _cart_id{0} {}
+ExperimentDonePacket::ExperimentDonePacket() : _cart_id{0}, _failure_mode{FailureMode::NUL} {}
 byte ExperimentDonePacket::get_id() const { return ExperimentDonePacket::id; }
 
-void ExperimentDonePacket::construct(FailureMode failure_mode, uint8_t cart_id)
+void ExperimentDonePacket::construct(uint8_t cart_id, FailureMode failure_mode)
 {
-    _failure_mode = failure_mode;
     _cart_id = cart_id;
+    _failure_mode = failure_mode;
 }
 
 RawPacket ExperimentDonePacket::to_raw_packet() const
@@ -193,14 +193,45 @@ RawPacket ExperimentDonePacket::to_raw_packet() const
 
     raw_packet.add(this->get_id());
 
-    raw_packet.add(static_cast<int8_t>(this->_failure_mode));
     raw_packet.add(this->_cart_id);
+    raw_packet.add(static_cast<int8_t>(this->_failure_mode));
 
     return raw_packet;
 }
 
 void ExperimentDonePacket::read(Stream &sbuf)
 {
-    _failure_mode = static_cast<FailureMode>(read_int8(sbuf));
     _cart_id = read_uint8(sbuf);
+    _failure_mode = static_cast<FailureMode>(read_int8(sbuf));
+}
+
+// ExperimentInfo
+ExperimentInfoPacket::ExperimentInfoPacket() : _specifier{ExperimentInfoSpecifier::NUL}, _cart_id{0}, _value{0} {}
+byte ExperimentInfoPacket::get_id() const { return ExperimentInfoPacket::id; }
+
+void ExperimentInfoPacket::construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<int32_t> value)
+{
+    _specifier = specifier;
+    _cart_id = cart_id;
+    _value = value;
+}
+
+RawPacket ExperimentInfoPacket::to_raw_packet() const
+{
+    RawPacket raw_packet;
+
+    raw_packet.add(this->get_id());
+
+    raw_packet.add(static_cast<uint8_t>(this->_specifier));
+    raw_packet.add(this->_cart_id);
+
+    switch (this->_specifier) {
+        case ExperimentInfoSpecifier::NUL : ;
+        case ExperimentInfoSpecifier::POSITION_DRIFT : raw_packet.add(std::get<int32_t>(this->_value));
+    }
+
+    // DP("Packet size: ");
+    // DPL(raw_packet.size());
+
+    return raw_packet;
 }

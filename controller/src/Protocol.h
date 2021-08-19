@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <variant>
 
 #include <PString.h>
 #include <Packet.h>
@@ -243,7 +244,7 @@ class ExperimentStartPacket : public BidirectionalPacket
 public:
     uint32_t _timestamp_micros;
 
-    static const byte id = 0x02; // STX
+    static const byte id = 0x02; // STX (start-of-text)
 
     ExperimentStartPacket();
     using OutboundPacket::construct;
@@ -260,7 +261,7 @@ public:
 class ExperimentStopPacket : public OnlyIDPacket
 {
 public:
-    static const byte id = 0x03; // ETX
+    static const byte id = 0x03; // ETX (end-of-text)
 
     ExperimentStopPacket();
     using OnlyIDPacket::construct;
@@ -272,19 +273,44 @@ public:
 class ExperimentDonePacket : public BidirectionalPacket
 {
 public:
-    FailureMode _failure_mode;
     uint8_t _cart_id;
+    FailureMode _failure_mode;
 
-    static const byte id = 0x2E; // .
+    static const byte id = 0x04; // EOT (end-of-transmission)
 
     ExperimentDonePacket();
     using BidirectionalPacket::construct;
 
     virtual byte get_id() const override;
 
-    virtual void construct(FailureMode failure_mode, uint8_t cart_id);
+    virtual void construct(uint8_t cart_id, FailureMode failure_mode);
     virtual RawPacket to_raw_packet() const override;
     virtual void read(Stream &sbuf) override;
+};
+
+enum class ExperimentInfoSpecifier
+{
+    NUL = 0,
+    POSITION_DRIFT = 1,
+};
+
+// ExperimentInfo
+class ExperimentInfoPacket : public OutboundPacket
+{
+public:
+    ExperimentInfoSpecifier _specifier;
+    uint8_t _cart_id;
+    std::variant<int32_t> _value;
+
+    static const byte id = 0x3A; // :
+
+    ExperimentInfoPacket();
+    using OutboundPacket::construct;
+
+    virtual byte get_id() const override;
+
+    virtual void construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<int32_t> value);
+    virtual RawPacket to_raw_packet() const override;
 };
 
 #endif
