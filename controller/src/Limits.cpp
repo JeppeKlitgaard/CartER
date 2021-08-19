@@ -1,7 +1,6 @@
 #include <Limits.h>
 
 #include <Mode.h>
-#include <Steppers.h>
 #include <Init.h>
 #include <Protocol.h>
 
@@ -353,20 +352,41 @@ void react_limit_check(int32_t left_limit_new_position) {
 
 
 void do_jiggle() {
+    float_t astepper1_orig_speed = astepper1.maxSpeed();
+    float_t astepper2_orig_speed;
+    astepper1.setMaxSpeedDistance(JIGGLE_SPEED_DISTANCE);
+
+    if (configuration == TWO_CARRIAGES) {
+        astepper2_orig_speed = astepper2.maxSpeed();
+        astepper2.setMaxSpeedDistance(JIGGLE_SPEED_DISTANCE);
+    }
+
     uint16_t jiggle_counter = 0;
 
     while (jiggle_counter < JIGGLE_COUNT) {
-        int32_t steps = 10 * ((jiggle_counter % 2 == 0) ? 1 : -1);
+        int32_t direction = (jiggle_counter % 2 == 0) ? 1 : -1;
+        int32_t steps = static_cast<int>(STEPPER_MICROSTEPS) * direction;
 
         astepper1.move(steps);
 
         if (configuration == TWO_CARRIAGES) {
-            astepper2.move(steps);
+            astepper2.moveCond(steps);
         }
 
-        jiggle_counter++;
+        astepper1.runToPosition();
 
-        delay(JIGGLE_DELAY);
+        if (configuration == TWO_CARRIAGES) {
+            astepper2.runToPosition();
+        }
+
+
+        jiggle_counter++;
+    }
+
+
+    astepper1.setMaxSpeed(astepper1_orig_speed);
+    if (configuration == TWO_CARRIAGES) {
+        astepper2.setMaxSpeed(astepper2_orig_speed);
     }
 
     // Send back response

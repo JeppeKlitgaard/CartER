@@ -22,7 +22,7 @@ from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
 from commander.network import NetworkManager
 from commander.network.constants import CartID, SetOperation
-from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetPositionPacket
+from commander.network.protocol import CartSpecificPacket, CheckLimitPacket, ObservationPacket, SetPositionPacket
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
 
 logger = logging.getLogger(__name__)
@@ -520,8 +520,9 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         ])
 
     def end_experiment(self) -> None:
+        chk_pkt = CheckLimitPacket()
 
-        ...
+        self.network_manager.send_packet(chk_pkt)
 
     def _step(self, action: Action) -> StepInfo:
         value = 200

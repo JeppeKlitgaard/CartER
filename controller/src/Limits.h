@@ -3,6 +3,7 @@
 
 #include <CustomArduino.h>
 #include <Bounce2.h>
+#include <Steppers.h>
 
 // Buttons
 const int LIMIT_SW_BOUNCE_INTERVAL = 1; // debounce, in ms
@@ -62,8 +63,8 @@ enum class LimitCheckMode
 
 extern LimitCheckMode limit_check_mode;
 
-const uint16_t JIGGLE_COUNT = 1000;
-const uint16_t JIGGLE_DELAY = 2;  // ms
+const uint16_t JIGGLE_COUNT = 250;
+const uint32_t JIGGLE_SPEED_DISTANCE = Speed::SUPER_FAST;
 
 extern float_t track_length_distance;
 extern int32_t track_length_steps;

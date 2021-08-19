@@ -470,7 +470,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         logger.debug("Experiment settled.")
 
-        ...
+        for agent in self.get_agents():
+            agent.end_experiment()
 
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         # ! For now assume single cart. Change later
