@@ -25,3 +25,6 @@ output_data/
 
 # Documentation
 site/
+
+# Logging
+logs/*.log
