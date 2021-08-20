@@ -21,23 +21,26 @@ class ReadPacketFilter(logging.Filter):
         return True
 
 
-def setup_logging() -> None:
+def setup_logging(console: bool = True, file: bool = True) -> None:
     now = dt.datetime.now()
     now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-    console_formatter = logging.Formatter("%(name)-30s: %(levelname)-8s %(message)s")
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(console_formatter)
-    console_handler.setLevel(logging.DEBUG)
+    if console:
+        console_formatter = logging.Formatter("%(name)-30s: %(levelname)-8s %(message)s")
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(console_formatter)
+        console_handler.setLevel(logging.DEBUG)
 
-    file_formatter = logging.Formatter("%(asctime)s %(name)-30s %(levelname)-8s %(message)s")
-    file_path = Path("logs") / f"commander_{now_str}.log"
-    file_handler = logging.FileHandler(file_path)
-    file_handler.setFormatter(file_formatter)
-    file_handler.setLevel(logging.DEBUG)
+        logging.root.addHandler(console_handler)
 
-    logging.root.addHandler(console_handler)
-    logging.root.addHandler(file_handler)
+    if file:
+        file_formatter = logging.Formatter("%(asctime)s %(name)-30s %(levelname)-8s %(message)s")
+        file_path = Path("logs") / f"commander_{now_str}.log"
+        file_handler = logging.FileHandler(file_path)
+        file_handler.setFormatter(file_formatter)
+        file_handler.setLevel(logging.DEBUG)
+
+        logging.root.addHandler(file_handler)
 
     logging.root.setLevel(logging.DEBUG)
 
