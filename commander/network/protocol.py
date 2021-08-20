@@ -31,6 +31,8 @@ from commander.network.utils import (
     unpack,
 )
 
+from commander.network.exceptions import PacketReadError
+
 
 class Packet(ABC):
     id_: bytes
@@ -365,8 +367,11 @@ class ExperimentDonePacket(BidirectionalPacket):
         try:
             failure_mode = FailureMode(failure_mode_raw)
         except ValueError as exc:
-            raise ConnectionError(
-                f"Malformed ExperimentDonePacket. Got bad failure_mode: {failure_mode_raw}"
+            raise PacketReadError(
+                "Malformed ExperimentDonePacket",
+                cls.id_,
+                reason=f"Got bad failure mode: {failure_mode_raw}",
+                dump_buf=serial,
             ) from exc
 
         return cls(cart_id=cart_id, failure_mode=failure_mode)
@@ -398,8 +403,11 @@ class ExperimentInfoPacket(InboundPacket):
         try:
             specifier = ExperimentInfoSpecifier(specifier_raw)
         except ValueError as exc:
-            raise ConnectionError(
-                f"Malformed ExperimentInfoPacket. Got bad specifier: {specifier_raw}."
+            raise PacketReadError(
+                "Malformed ExperimentInfoPacket",
+                cls.id_,
+                f"Got bad specifier: {specifier_raw}",
+                dump_buf=serial,
             ) from exc
 
         cart_id_raw = unpack(Format.UINT_8, serial)
@@ -407,8 +415,11 @@ class ExperimentInfoPacket(InboundPacket):
         try:
             cart_id = CartID(cart_id_raw)
         except ValueError as exc:
-            raise ConnectionError(
-                f"Malformed ExperimentInfoPacket. Got bad cart id: {cart_id_raw}."
+            raise PacketReadError(
+                "Malformed ExperimentInfoPacket",
+                cls.id_,
+                f"Got bad cart id: {cart_id_raw}",
+                dump_buf=serial,
             ) from exc
 
         value = unpack(SPECIFIER_TO_FORMAT[specifier], serial)

@@ -16,6 +16,7 @@ from commander.network.protocol import (
 )
 from commander.network.types import PacketSelector, PacketT
 from commander.network.utils import bytes_to_hexes, bytes_to_hexstr
+from commander.network.exceptions import PacketReadError
 from commander.utils import noop
 
 logger = getLogger(__name__)
@@ -98,6 +99,9 @@ class NetworkManager:
         pong_pkt = self.get_packet(PongPacket, block=True)
         assert pong_pkt.timestamp == checksum
 
+    def _print_packet_read_fail_debug(self, *args, **kwargs) -> None:
+        logger.error("Something went wrong while ")
+
     def read_packet(self) -> InboundPacket:
         id_ = self.serial.read(1)
 
@@ -105,17 +109,8 @@ class NetworkManager:
             packet_cls = INBOUND_PACKET_ID_MAP[id_]
         except KeyError as exc:
             rest_of_data = self.serial.read_all()
-            rest_of_data_str = rest_of_data.decode("ascii", "replace")
 
-            hex_str = bytes_to_hexstr(rest_of_data, prefix=False)
-            ascii_str = "".join([f" {char} " for char in rest_of_data_str])
-
-            logger.warn("Rest of data (HEX)  : " + hex_str)
-            logger.warn("Rest of data (ASCII): " + ascii_str)
-
-            err = f"Invalid packet ID: {id_}."
-
-            raise ConnectionError(err) from exc
+            raise PacketReadError("Invalid packet ID", id_, dump_buf=self.serial) from exc
 
         packet = packet_cls.read(self.serial)
         logger.debug("Read packet: %s", packet, extra={"packet": packet})
