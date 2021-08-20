@@ -118,6 +118,10 @@ byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }
 CheckLimitPacket::CheckLimitPacket() {}
 byte CheckLimitPacket::get_id() const { return CheckLimitPacket::id; }
 
+// SoftLimitReached
+SoftLimitReachedPacket::SoftLimitReachedPacket() {}
+byte SoftLimitReachedPacket::get_id() const { return SoftLimitReachedPacket::id; }
+
 // DoJiggle
 DoJigglePacket::DoJigglePacket() {}
 byte DoJigglePacket::get_id() const { return DoJigglePacket::id; }
@@ -209,7 +213,7 @@ void ExperimentDonePacket::read(Stream &sbuf)
 ExperimentInfoPacket::ExperimentInfoPacket() : _specifier{ExperimentInfoSpecifier::NUL}, _cart_id{0}, _value{0} {}
 byte ExperimentInfoPacket::get_id() const { return ExperimentInfoPacket::id; }
 
-void ExperimentInfoPacket::construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<int32_t> value)
+void ExperimentInfoPacket::construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<FailureMode, int32_t> value)
 {
     _specifier = specifier;
     _cart_id = cart_id;
@@ -226,12 +230,17 @@ RawPacket ExperimentInfoPacket::to_raw_packet() const
     raw_packet.add(this->_cart_id);
 
     switch (this->_specifier) {
-        case ExperimentInfoSpecifier::NUL : ;
-        case ExperimentInfoSpecifier::POSITION_DRIFT : raw_packet.add(std::get<int32_t>(this->_value));
-    }
+        case ExperimentInfoSpecifier::NUL :
+            break;
 
-    // DP("Packet size: ");
-    // DPL(raw_packet.size());
+        case ExperimentInfoSpecifier::POSITION_DRIFT :
+            raw_packet.add(std::get<int32_t>(this->_value));
+            break;
+
+        case ExperimentInfoSpecifier::FAILURE_MODE :
+            raw_packet.add(static_cast<int8_t>(std::get<FailureMode>(this->_value)));
+            break;
+    }
 
     return raw_packet;
 }

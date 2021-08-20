@@ -284,9 +284,18 @@ class CheckLimitPacket(OnlyIDPacket):
     """
     Instructs the controller to do a limit checking routine.
 
-    Controller will return a `CheckLimitPacket` when the limit checking is done."""
+    Controller will return a `CheckLimitPacket` when the limit checking is done.
+    """
 
     id_ = byte(0x2F)  # / (forward slash)
+
+
+class SoftLimitReachedPacket(OnlyIDPacket):
+    """
+    Sent by the controller when the soft limit has been reached.
+    """
+
+    id_ = byte(0x5C)  # \ (backward slash)
 
 
 class DoJigglePacket(OnlyIDPacket):
@@ -386,11 +395,14 @@ class ExperimentDonePacket(BidirectionalPacket):
         return bytes
 
 
+ExperimentInfoValueT = Union[UnpackableT, FailureMode]
+
+
 class ExperimentInfoPacket(InboundPacket):
     id_ = byte(0x3A)  # :
 
     def __init__(
-        self, specifier: ExperimentInfoSpecifier, cart_id: CartID, value: UnpackableT
+        self, specifier: ExperimentInfoSpecifier, cart_id: CartID, value: ExperimentInfoValueT
     ) -> None:
         self.specifier = specifier
         self.cart_id = cart_id
@@ -422,7 +434,11 @@ class ExperimentInfoPacket(InboundPacket):
                 dump_buf=serial,
             ) from exc
 
-        value = unpack(SPECIFIER_TO_FORMAT[specifier], serial)
+        value: ExperimentInfoValueT = unpack(SPECIFIER_TO_FORMAT[specifier], serial)
+
+        # Special case:
+        if specifier == ExperimentInfoSpecifier.FAILURE_MODE:
+            value = FailureMode(value)
 
         return cls(specifier=specifier, cart_id=cart_id, value=value)
 

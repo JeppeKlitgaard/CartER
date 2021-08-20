@@ -6,6 +6,12 @@
 #include <AccelStepper.h>
 #pragma GCC diagnostic pop
 
+enum class RunSafetyCheck {
+    SAFE = 0,
+    LOW_LIMIT_FAIL = 1,
+    HIGH_LIMIT_FAIL = 2,
+};
+
 class CustomAccelStepper : public AccelStepper
 {
 protected:
@@ -50,7 +56,7 @@ public:
     int32_t getLimitSafetyMargin();
     float_t getLimitSafetyMarginDistance();
 
-    int8_t runSafe();
+    RunSafetyCheck runSafe();
 
     float getCurrentPositionDistance();
     void setCurrentPositionDistance(float absolute);

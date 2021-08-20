@@ -10,7 +10,7 @@ Bounce2::Button b_mode = Bounce2::Button();   // MODE
 
 void setup_buttons()
 {
-    DPL("Configuring buttons.");
+    packet_sender.send_debug("Configuring buttons");
 
     // LEFT
     b_left.attach(B_LEFT_PIN, INPUT_PULLUP);

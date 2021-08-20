@@ -3,13 +3,12 @@
 #include <Mode.h>
 #include <Init.h>
 #include <Protocol.h>
+#include <TimerInterrupt.h>
 
 #include <DebugUtils.h>
 
 Bounce2::Button limit_sw_left = Bounce2::Button();
 Bounce2::Button limit_sw_right = Bounce2::Button();
-
-LimitCheckMode limit_check_mode = LimitCheckMode::INIT;
 
 
 void setup_limit_switches()
@@ -183,6 +182,9 @@ void loop_limit_finding()
         if (astepper1.distanceToGo() == 0)
         {
             packet_sender.send_info("LimitFinder: NOW DONE");
+            limit_finding_has_been_done = true;
+            trigger_ctx.has_failed = false;
+
             toggle_limit_finding_mode();
         }
         break;
@@ -320,6 +322,7 @@ void loop_limit_check()
         if (astepper1.distanceToGo() == 0)
         {
             packet_sender.send_info("LimitChecker: NOW DONE");
+            trigger_ctx.has_failed = false;
             toggle_limit_check_mode();
         }
         break;

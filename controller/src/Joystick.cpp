@@ -18,7 +18,7 @@ void loop_joystick()
         if (astepper1.distanceToGo() == 0)
         {
             astepper1.moveDistance(STEPPER_STEP_DISTANCE * LEFT);
-            DPL("Moving left...");
+            packet_sender.send_debug("Moving left...");
         }
     }
     else if (b_right.isPressed())
@@ -26,7 +26,7 @@ void loop_joystick()
         if (astepper1.distanceToGo() == 0)
         {
             astepper1.moveDistance(STEPPER_STEP_DISTANCE * RIGHT);
-            DPL("Moving right...");
+            packet_sender.send_debug("Moving right...");
         }
     }
 

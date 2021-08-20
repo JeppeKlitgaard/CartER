@@ -141,29 +141,25 @@ float_t CustomAccelStepper::getLimitSafetyMarginDistance()
 
 /**
  * Does a step in a manner that allows for easy safety implementation.
- * Returns 0 if the position is safe.
- * Returns -1 if the position is unsafe (below 0 + limitSafetyMargin)
- * Returns +1 if the position is unsafe (above farLimit + limitSafetyMargin)
  * Calling stop() is then the responsibility of the developer.
  * @return
  */
-int8_t CustomAccelStepper::runSafe()
+RunSafetyCheck CustomAccelStepper::runSafe()
 {
     run();
-
     int32_t currPos = currentPosition();
 
     if (currPos < _limitSafetyMargin)
     {
-        return -1;
+        return RunSafetyCheck::LOW_LIMIT_FAIL;
     }
     else if (currPos > _farLimit - _limitSafetyMargin)
     {
-        return +1;
+        return RunSafetyCheck::HIGH_LIMIT_FAIL;
     }
     else
     {
-        return 0;
+        return RunSafetyCheck::SAFE;
     }
 }
 

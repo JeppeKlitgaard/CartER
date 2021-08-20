@@ -7,6 +7,6 @@
 #undef min
 
 #undef SERIAL_BUFFER_SIZE
-#define SERIAL_BUFFER_SIZE 512
+#define SERIAL_BUFFER_SIZE 2048
 
 #pragma GCC diagnostic pop

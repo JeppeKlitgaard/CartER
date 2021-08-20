@@ -206,6 +206,18 @@ public:
     virtual byte get_id() const override;
 };
 
+// SoftLimitReached
+class SoftLimitReachedPacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0x5C; // \...
+
+    SoftLimitReachedPacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // DoJiggle
 class DoJigglePacket : public OnlyIDPacket
 {
@@ -292,6 +304,7 @@ enum class ExperimentInfoSpecifier
 {
     NUL = 0,
     POSITION_DRIFT = 1,
+    FAILURE_MODE = 2,
 };
 
 // ExperimentInfo
@@ -300,7 +313,7 @@ class ExperimentInfoPacket : public OutboundPacket
 public:
     ExperimentInfoSpecifier _specifier;
     uint8_t _cart_id;
-    std::variant<int32_t> _value;
+    std::variant<FailureMode, int32_t> _value;
 
     static const byte id = 0x3A; // :
 
@@ -309,7 +322,7 @@ public:
 
     virtual byte get_id() const override;
 
-    virtual void construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<int32_t> value);
+    virtual void construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<FailureMode, int32_t> value);
     virtual RawPacket to_raw_packet() const override;
 };
 

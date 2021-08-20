@@ -4,6 +4,8 @@
 #include <Steppers.h>
 #include <CustomAccelStepper.h>
 
+#include <CustomArduino.h>
+
 #include <TMC26XStepper.h>
 // Note this is my fork of TMC260XStepper.h, not CainZ's version
 // See: https://github.com/JeppeKlitgaard/TMC26XStepper
@@ -19,6 +21,7 @@ const unsigned int STEPPER_MICROSTEPS = 8;
 const unsigned int STEPPER_RANDOM_OFFTIME = 0;
 const float STEPPER_STEP_DISTANCE = 200.0;
 const float STEPPER_BIG_DISTANCE = 5000.0; // Must be bigger than max length movable in mm
+const float STEPPER_SAFETY_MARGIN_DISTANCE = 50.0;
 
 const int STEPPER1_EN_PIN = 24;
 const int STEPPER1_CS_PIN = 9;
@@ -38,7 +41,7 @@ extern CustomAccelStepper astepper2;
 // for now we just use math.
 const float_t STEPPER_DISTANCE_PER_ROTATION = 3.141592 * STEPPER_DRIVE_GEAR_OD_MM;
 
-const float_t MAX_ACCELERATION = 3000.0;
+const float_t MAX_ACCELERATION = 1000.0;
 
 const float_t LEFT = -1.0;
 const float_t RIGHT = 1.0;
@@ -59,14 +62,21 @@ const float_t MAX_SETTABLE_SPEED = Speed::ULTRA_FAST * 40.0;
 void setup_steppers();
 void setup_stepper_drivers();
 void start_stepper_drivers();
+
+void setup_astepper(CustomAccelStepper &astepper);
 void setup_asteppers();
+
 CustomAccelStepper &get_astepper_by_id(uint8_t cart_id);
+
 void asteppers_run();
-// void asteppers_speed_run(CustomAccelStepper & astepper);
+bool astepper_run_safe(CustomAccelStepper &astepper);
+bool asteppers_run_safe();
+
 void asteppers_enable();
 void asteppers_disable();
 void asteppers_toggle_enabled();
 void asteppers_stop();
 void asteppers_run_to_position();
+
 
 #endif

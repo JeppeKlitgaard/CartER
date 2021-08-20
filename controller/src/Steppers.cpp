@@ -22,7 +22,7 @@ CustomAccelStepper astepper2 = CustomAccelStepper(2, astepper2.DRIVER, STEPPER2_
 
 void setup_steppers()
 {
-    DPL("Setting up steppers.");
+    packet_sender.send_debug("Setting up steppers.");
     setup_asteppers();
     setup_stepper_drivers();
     start_stepper_drivers();
@@ -30,8 +30,8 @@ void setup_steppers()
 
 void setup_stepper_drivers()
 {
-    DPL("Setting up stepper drivers.");
-    DPL("Setting up stepper driver 1.");
+    packet_sender.send_debug("Setting up stepper drivers.");
+    packet_sender.send_debug("Setting up stepper driver 1.");
     // steps/rot, cs, dir, step, current
     stepper1.start(STEPPER_STEPS_PER_ROTATION, STEPPER1_CS_PIN, STEPPER1_DIR_PIN, STEPPER1_STEP_PIN, STEPPER_CURRENT);
 
@@ -44,7 +44,7 @@ void setup_stepper_drivers()
 
     if (configuration == TWO_CARRIAGES)
     {
-        DPL("Setting up stepper driver 2.");
+        packet_sender.send_debug("Setting up stepper driver 2.");
         stepper2.start(STEPPER_STEPS_PER_ROTATION, STEPPER2_CS_PIN, STEPPER2_DIR_PIN, STEPPER2_STEP_PIN, STEPPER_CURRENT);
         stepper2.setConstantOffTimeChopper(7, 54, 13, 12, 1);
         stepper2.setRandomOffTime(STEPPER_RANDOM_OFFTIME);
@@ -54,44 +54,44 @@ void setup_stepper_drivers()
 
 void start_stepper_drivers()
 {
-    DPL("Starting stepper drivers.");
-    DPL("Starting stepper driver 1.");
+    packet_sender.send_debug("Starting stepper drivers.");
+    packet_sender.send_debug("Starting stepper driver 1.");
     stepper1.getCurrentStallGuardReading(); // We need this to initialise, apparently
 
     if (configuration == TWO_CARRIAGES)
     {
-        DPL("Starting stepper driver 1.");
+        packet_sender.send_debug("Starting stepper driver 1.");
         stepper2.getCurrentStallGuardReading(); // We need this to initialise, apparently
     }
 }
 
+void setup_astepper(CustomAccelStepper &astepper)
+{
+    packet_sender.send_debug("Initiating astepper " + std::to_string(astepper.cart_id));
+
+    int en_pin = (astepper.cart_id == 1) ? STEPPER1_EN_PIN : STEPPER2_EN_PIN;
+
+    astepper.setEnablePin(en_pin);
+    astepper.setMicrosteps(STEPPER_MICROSTEPS);
+    astepper.setStepsPerRotation(STEPPER_STEPS_PER_ROTATION);
+    astepper.setDistancePerRotation(STEPPER_DISTANCE_PER_ROTATION);
+    astepper.setMaxSpeedDistance(Speed::MEDIUM);
+    astepper.setLimitSafetyMarginDistance(STEPPER_SAFETY_MARGIN_DISTANCE);
+    astepper.setAccelerationDistance(MAX_ACCELERATION);
+    astepper.setPinsInverted(true, false, true);
+    astepper.setEnabled(true);
+}
 /**
  * Should be called before the stepper driver is set up.
  */
 void setup_asteppers()
 {
-    DPL("Starting stepper library.");
-    DPL("Initiating astepper 1.");
-    astepper1.setEnablePin(STEPPER1_EN_PIN);
-    astepper1.setMicrosteps(STEPPER_MICROSTEPS);
-    astepper1.setStepsPerRotation(STEPPER_STEPS_PER_ROTATION);
-    astepper1.setDistancePerRotation(STEPPER_DISTANCE_PER_ROTATION);
-    astepper1.setMaxSpeedDistance(Speed::MEDIUM);
-    astepper1.setAccelerationDistance(MAX_ACCELERATION);
-    astepper1.setPinsInverted(true, false, true);
-    astepper1.setEnabled(true);
+    packet_sender.send_debug("Starting stepper library.");
+    setup_astepper(astepper1);
 
     if (configuration == TWO_CARRIAGES)
     {
-        DPL("Initiating astepper 2.");
-        astepper2.setEnablePin(STEPPER2_EN_PIN);
-        astepper2.setMicrosteps(STEPPER_MICROSTEPS);
-        astepper2.setStepsPerRotation(STEPPER_STEPS_PER_ROTATION);
-        astepper2.setDistancePerRotation(STEPPER_DISTANCE_PER_ROTATION);
-        astepper2.setMaxSpeedDistance(Speed::MEDIUM);
-        astepper2.setAccelerationDistance(MAX_ACCELERATION);
-        astepper2.setPinsInverted(false, false, true);
-        astepper2.setEnabled(true);
+        setup_astepper(astepper2);
     }
 }
 
@@ -120,24 +120,40 @@ void asteppers_run()
     }
 }
 
-// void astepper_speed_run(CustomAccelStepper &astepper) {
-//     int8_t limit_check = position_within_limits(astepper.currentPosition());
+/**
+ * Runs an astepper in a safe way that respects the currently imposed limits
+ * Note: Does not call stop(). Do this in trigger_callback
+ * @return whether run was safe or not
+ */
+bool astepper_run_safe(CustomAccelStepper &astepper) {
+    RunSafetyCheck limit_check = astepper.runSafe();
 
-//     if (limit_check != 0) {
-//         experiment_done = true;
-//         if (limit_check == -1) {
-//             failure_mode = FailureMode::POSITION_LEFT;
-//         } else {
-//             failure_mode = FailureMode::POSITION_RIGHT;
-//         }
+    switch (limit_check) {
+        case RunSafetyCheck::LOW_LIMIT_FAIL:
+            failure_mode = FailureMode::POSITION_LEFT;
+            failure_cart_id = astepper.cart_id;
+            return false;
 
-//         experiment_done_trigger();
-//     }
+        case RunSafetyCheck::HIGH_LIMIT_FAIL:
+            failure_mode = FailureMode::POSITION_RIGHT;
+            failure_cart_id = astepper.cart_id;
+            return false;
 
-//     int direction = sgn(astepper.speed());
-//     astepper.move(direction * STEPPER_STEP_DISTANCE);
-//     astepper.run();
-// }
+        default:
+            return true;
+    }
+}
+
+bool asteppers_run_safe()
+{
+    bool was_safe = astepper_run_safe(astepper1);
+
+    if (was_safe && configuration == TWO_CARRIAGES) {
+        was_safe = astepper_run_safe(astepper2);
+    }
+
+    return was_safe;
+}
 
 void asteppers_enable()
 {

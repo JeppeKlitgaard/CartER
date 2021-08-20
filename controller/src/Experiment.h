@@ -13,4 +13,6 @@ void send_observation(uint8_t cart_id);
 void experiment_start();
 void experiment_stop();
 
+void unsafe_run_trigger();
+
 #endif

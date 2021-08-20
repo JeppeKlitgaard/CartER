@@ -3,6 +3,8 @@
 
 #include <CustomArduino.h>
 
+#include <string>
+
 // Mode
 enum Mode
 {
@@ -12,7 +14,7 @@ enum Mode
     COMMAND_AND_CONTROL,
 };
 
-const String ModeStrings[] = {
+inline const std::string ModeStrings[] = {
     "JOYSTICK",
     "DEBUG_ROTARY_ENCODERS",
     "LIMIT_FINDING",
@@ -62,6 +64,7 @@ const String FailureModeStrings[] = {
 
 enum class ExperimentMode {
     RUNNING,
+    FAILED,
     DONE,
 };
 

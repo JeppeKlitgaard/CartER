@@ -6,7 +6,7 @@
 #include <PacketSender.h>
 #include <Mode.h>
 
-#define DEBUG
+// #define DEBUG
 // #define SERIALUSB
 
 // Definitions
@@ -25,6 +25,8 @@ const byte INITIAL_OUTPUT_STOP_MARKER[22] = {0x45, 0x4E, 0x44, 0x20, 0x4F, 0x46,
 
 const unsigned int STRING_BUF_SIZE = 100;
 
+extern bool is_observing;
+extern bool limit_finding_has_been_done;
 extern bool experiment_done;
 
 // Networking

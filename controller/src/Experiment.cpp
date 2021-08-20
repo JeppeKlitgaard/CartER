@@ -11,8 +11,7 @@
 uint32_t last_observation_us = 0;
 
 void observation_tick()
-{
-    if (experiment_mode != ExperimentMode::RUNNING) {
+{   if (!is_observing) {
         return;
     }
 
@@ -51,6 +50,7 @@ void experiment_start() {
     packet_sender.send_debug("Starting experiment...");
 
     experiment_mode = ExperimentMode::RUNNING;
+    is_observing = true;
 
     std::unique_ptr<ExperimentStartPacket> packet = std::make_unique<ExperimentStartPacket>();
 
@@ -66,9 +66,30 @@ void experiment_stop() {
     packet_sender.send(std::move(stop_pkt));
 
     experiment_mode = ExperimentMode::DONE;
+    is_observing = false;
 
     std::unique_ptr<ExperimentDonePacket> done_pkt = std::make_unique<ExperimentDonePacket>();
     done_pkt->construct(0, FailureMode::NUL);
     packet_sender.send(std::move(done_pkt));
 
+}
+
+/**
+ * Called shortly after an unsafe move has been made.
+ *
+ * We don't mark experiment_done since we wish to keep sending observations.
+ * It is up to commander to handle behaviour after
+ */
+void unsafe_run_trigger() {
+    asteppers_stop();
+    packet_sender.send_info("Stopped steppers.");
+
+    experiment_mode = ExperimentMode::FAILED;
+
+    std::unique_ptr<SoftLimitReachedPacket> limit_reached_pkt = std::make_unique<SoftLimitReachedPacket>();
+    packet_sender.send(std::move(limit_reached_pkt));
+
+    std::unique_ptr<ExperimentInfoPacket> failure_mode_pkt = std::make_unique<ExperimentInfoPacket>();
+    failure_mode_pkt->construct(ExperimentInfoSpecifier::FAILURE_MODE, failure_cart_id, failure_mode);
+    packet_sender.send(std::move(failure_mode_pkt));
 }

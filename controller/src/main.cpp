@@ -1,5 +1,7 @@
 #include <CustomArduino.h>
 
+#include <string>
+
 #include <Init.h>
 #include <DebugUtils.h>
 
@@ -29,17 +31,12 @@ void setup()
     while (!S)
         ;
 #endif
+    packet_sender.send_info("=== Cartpole Controller ===");
 
-    S.println("===================");
-    S.println("CartPole Controller");
-    S.println("===================");
-
-#ifdef DEBUG
-    print_debug_information();
-#endif
+    send_debug_information();
 
     // I2C
-    DPL("Setting up I2C.");
+    packet_sender.send_debug("Setting up I2C");
     Wire.begin();
 
     // Buttons
@@ -58,30 +55,27 @@ void setup()
     setup_timer_interrupt();
 
     // Finish up
-    S.println("Config finished.");
-    S.println("Starting loop.");
-    S.println("--------------");
-    S.println();
+    packet_sender.send_debug("Config finished");
+    packet_sender.send_debug("Starting loop");
     S.write(INITIAL_OUTPUT_STOP_MARKER, INITIAL_OUTPUT_STOP_MARKER_LENGTH);
 }
 
 void loop()
 {
-    // Update bouncer
-    update_buttons();
+    // TODO Fix up modes. Uncomment below to activate other modes for now.
+    // // Update bouncer
+    // update_buttons();
 
-    // Do any steps we need to do
-    asteppers_run();
+    // // Do any steps we need to do
+    // asteppers_run();
 
     if (b_mode.pressed())
     {
-        DP("Current mode: ");
-        DPL(ModeStrings[mode]);
+        packet_sender.send_info("Current mode: " + ModeStrings[mode]);
 
         toggle_mode();
 
-        DP("Switched to mode: ");
-        DPL(ModeStrings[mode]);
+        packet_sender.send_info("Switched to mode: " + ModeStrings[mode]);
     }
 
     else if (b_status.pressed())
@@ -97,7 +91,7 @@ void loop()
             break;
 
         case DEBUG_ROTARY_ENCODERS:
-            DPL(String(rot_encoder1.readAngleDeg(), DEC));
+            packet_sender.send_debug(std::to_string(rot_encoder1.readAngleDeg()));
             break;
 
         case LIMIT_FINDING:
@@ -109,8 +103,7 @@ void loop()
             break;
 
         default:
-            DP("Mode unknown: ");
-            DPL(ModeStrings[mode]);
+            packet_sender.send_error("Mode unknown: " + ModeStrings[mode]);
             break;
         }
     }

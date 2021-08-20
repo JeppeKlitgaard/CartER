@@ -1,3 +1,5 @@
+#include <string>
+
 #include <CustomAS5600.h>
 #include <DebugUtils.h>
 
@@ -49,29 +51,19 @@ void CustomAMS_5600::start(uint8_t addr)
     {
         if (detectMagnet() == 1)
         {
-            DP("Current Magnitude: ");
-            DPL(getMagnitude());
+            packet_sender.send_debug("Current magnitude: " + std::to_string(getMagnitude()));
             break;
         }
         else
         {
-            DPL("Can not detect magnet");
+            packet_sender.send_info("Cannot detect magnet");
         }
         delay(100); // ms
     }
 
-    DP("Rotary Encoder @");
-    DP(_addr);
-    DPL(" has following:");
-
-    DP("Magnitude: ");
-    DPL(getMagnitude());
-
-    DP("Strength (1=too weak, 2=good, 3=too strong): ");
-    DPL(getMagnetStrength());
-
-    DP("Detected: ");
-    DPL(detectMagnet());
+    packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Magnitude: " + std::to_string(getMagnitude()));
+    packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Strength Strength (1=too weak, 2=good, 3=too strong): " + std::to_string(getMagnitude()));
+    packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Detected: " + std::to_string(detectMagnet()));
 
     _unselect();
 }

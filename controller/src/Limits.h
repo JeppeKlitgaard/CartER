@@ -2,6 +2,9 @@
 #define LIMITS_H
 
 #include <CustomArduino.h>
+
+#include <string>
+
 #include <Bounce2.h>
 #include <Steppers.h>
 
@@ -15,7 +18,7 @@ const int LEFT_LIMIT_SW_PIN = 22;
 const int RIGHT_LIMIT_SW_PIN = 23;
 
 const float_t LIMIT_RETRACTION_DISTANCE = 20.0;
-const float_t LIMIT_SAFETY_DISTANCE = 50.0;
+const float_t LIMIT_SAFETY_DISTANCE = 25.0;
 
 void setup_limit_switches();
 void update_limit_switches();
@@ -35,7 +38,7 @@ enum class LimitFindingMode
     DONE,
 };
 
-const String LimitFindingModeStrings[] = {
+inline const std::string LimitFindingModeStrings[] = {
     "INIT",
     "LEFT_FAST",
     "LEFT_RETRACT",
@@ -59,6 +62,16 @@ enum class LimitCheckMode
     LEFT_POSITION_GET,
     REPOSITION,
     DONE,
+};
+
+inline const std::string LimitCheckModeStrings[] = {
+    "INIT",
+    "LEFT_FAST",
+    "LEFT_RETRACT",
+    "LEFT_SLOW",
+    "LEFT_POSITION_GET",
+    "REPOSITION",
+    "DONE",
 };
 
 extern LimitCheckMode limit_check_mode;

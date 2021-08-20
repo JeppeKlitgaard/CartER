@@ -8,28 +8,28 @@ CustomAMS_5600 rot_encoder2;
 
 void setup_rotary_encoders()
 {
-    DPL("Setting up supply pins for rotary encoders.");
+    packet_sender.send_debug("Setting up supply pins for rotary encoders.");
     pinMode(ROT_ENCODER_1_SUPPLY_PIN, OUTPUT);
     if (configuration == TWO_CARRIAGES)
     {
         pinMode(ROT_ENCODER_2_SUPPLY_PIN, OUTPUT);
     }
 
-    DPL("Power-cycling rotary encoders.");
+    packet_sender.send_debug("Power-cycling rotary encoders.");
     power_cycle_rotary_encoders();
 
-    DPL("Starting rotary encoders.");
+    packet_sender.send_debug("Starting rotary encoders.");
     start_rotary_encoders();
 }
 
 void start_rotary_encoders()
 {
-    DPL("Starting rotary encoder 1.");
+    packet_sender.send_debug("Starting rotary encoder 1.");
     rot_encoder1.start(ROT_ENCODER_1_ADDR);
 
     if (configuration == TWO_CARRIAGES)
     {
-        DPL("Starting rotary encoder 2.");
+        packet_sender.send_debug("Starting rotary encoder 2.");
         rot_encoder2.start(ROT_ENCODER_2_ADDR);
     }
 }

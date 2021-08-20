@@ -4,19 +4,29 @@
 
 action_tc0_declaration();
 
-struct ctx
+action_ctx trigger_ctx;
+
+void step_timer_callback(void *a_ctx)
 {
-  ctx() {}
-};
+    action_ctx *ctx = reinterpret_cast<action_ctx *>(a_ctx);
 
-
-ctx action_ctx;
-
-void step_timer_callback(void *a_ctx) {
-    asteppers_run();
+    if (!ctx->run_safely)
+    {
+        asteppers_run();
+    }
+    else if (ctx->run_safely && !ctx->has_failed)
+    {
+        bool was_safe = asteppers_run_safe();
+        ctx->has_failed = ctx->has_failed || !was_safe;
+    }
+    else
+    {
+        ;
+    }
 }
 
-void setup_timer_interrupt() {
-    S.println("Setting up timer interrupt.");
-    action_tc0.start(STEP_TIMER_PERIOD, step_timer_callback, &action_ctx);
+void setup_timer_interrupt()
+{
+    packet_sender.send_debug("Setting up timer interrupt");
+    action_tc0.start(STEP_TIMER_PERIOD, step_timer_callback, &trigger_ctx);
 }
