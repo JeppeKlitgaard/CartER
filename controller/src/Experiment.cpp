@@ -8,6 +8,7 @@
 #include <Protocol.h>
 #include <Mode.h>
 #include <Limits.h>
+#include <TimerInterrupt.h>
 
 uint32_t last_observation_us = 0;
 

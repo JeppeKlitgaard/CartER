@@ -24,7 +24,7 @@ void step_timer_callback(void *a_ctx)
         }
         else
         {
-            ;
+            asteppers_run();
         }
 
         break;
@@ -41,7 +41,7 @@ void step_timer_callback(void *a_ctx)
         }
         else
         {
-            ;
+            asteppers_run_speed();
         }
 
         break;
@@ -53,3 +53,4 @@ void setup_timer_interrupt()
     packet_sender.send_debug("Setting up timer interrupt");
     action_tc0.start(STEP_TIMER_PERIOD, step_timer_callback, &trigger_ctx);
 }
+//

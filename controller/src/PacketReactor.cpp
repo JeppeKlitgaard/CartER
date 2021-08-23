@@ -12,6 +12,7 @@
 #include <CustomAccelStepper.h>
 #include <Limits.h>
 #include <Experiment.h>
+#include <TimerInterrupt.h>
 
 // PacketReactor
 PacketReactor::PacketReactor(Stream &stream) : _s(stream) {}
@@ -100,21 +101,29 @@ void PacketReactor::tick()
     {
         std::unique_ptr<SetVelocityPacket> packet = _read_and_construct_packet<SetVelocityPacket>();
 
-        CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
-
-        switch (packet->operation)
+        if (trigger_ctx.run_mode == RunMode::CONSTANT_SPEED)
         {
-        case SetOperation::ADD:
-            astepper.setSpeed(astepper.speed() + static_cast<float_t>(packet->value));
-            break;
-        case SetOperation::EQUAL:
-            astepper.setSpeed(static_cast<float_t>(packet->value));
-            break;
-        case SetOperation::SUBTRACT:
-            astepper.setSpeed(astepper.speed() - static_cast<float_t>(packet->value));
-            break;
-        case SetOperation::NUL:
-            break;
+
+            CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
+
+            switch (packet->operation)
+            {
+            case SetOperation::ADD:
+                astepper.setSpeed(astepper.speed() + static_cast<float_t>(packet->value));
+                break;
+            case SetOperation::EQUAL:
+                astepper.setSpeed(static_cast<float_t>(packet->value));
+                break;
+            case SetOperation::SUBTRACT:
+                astepper.setSpeed(astepper.speed() - static_cast<float_t>(packet->value));
+                break;
+            case SetOperation::NUL:
+                break;
+            }
+        }
+        else
+        {
+            packet_sender.send_info("Not in constant velocity mode - SetVelocity ignored.");
         }
 
         break;
@@ -122,7 +131,7 @@ void PacketReactor::tick()
 
     case SetMaxVelocityPacket::id:
     {
-        std::unique_ptr<SetVelocityPacket> packet = _read_and_construct_packet<SetVelocityPacket>();
+        std::unique_ptr<SetMaxVelocityPacket> packet = _read_and_construct_packet<SetMaxVelocityPacket>();
 
         CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
 

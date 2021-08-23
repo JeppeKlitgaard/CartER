@@ -242,6 +242,7 @@ void asteppers_toggle_enabled()
 void asteppers_stop()
 {
     astepper1.stop();
+
     if (configuration == TWO_CARRIAGES)
     {
         astepper2.stop();
