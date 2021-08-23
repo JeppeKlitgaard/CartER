@@ -38,9 +38,27 @@ class SimulatedTimeCallback(BaseCallback):
         return True
 
 
-class FailureModeCallback(BaseCallback):
+class ExperimentalDataCallback(BaseCallback):
     """
-    Adds two failure mode metrics.
+    Adds the experimental data from the experimental agent to tensorboard
+    """
+
+    def _on_step(self) -> bool:
+
+        assert isinstance(self.logger, Logger)
+
+        for infos in self.locals["infos"]:
+            if x := infos.get("x"):
+                self.logger.record("experiment/x", x)
+            if theta := infos.get("theta"):
+                self.logger.record("experiment/theta", theta)
+
+        return True
+
+
+class GeneralCartpoleMLCallback(BaseCallback):
+    """
+    Adds a few general metrics to Tensorboard
     """
 
     FAILURE_MODE_TO_NUM: dict[str, int] = {
@@ -58,9 +76,6 @@ class FailureModeCallback(BaseCallback):
         "multiple": 0,
         "steps": 10,
     }
-
-    def __init__(self, verbose: int = 0) -> None:
-        super().__init__(verbose)
 
     def _on_step(self) -> bool:
         assert isinstance(self.logger, Logger)

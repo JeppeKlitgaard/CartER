@@ -615,7 +615,13 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             dones[self.environment_state["failure_agent_name"]] = True
 
         for agent in self.get_agents():
+            info: StepInfo = {}
+
             observation = agent.observe()
+            observation_dict = agent.observe_as_dict()
+
+            info["x"] = observation_dict["x"]
+            info["theta"] = observation_dict["theta"]
 
             checks = agent.check_state(observation)
             done = any(checks.values())
@@ -628,7 +634,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
                 infos[agent.name]["failure_modes"] = failure_modes
 
-            info: StepInfo = {}
 
             observations[agent_name] = observation
             rewards[agent_name] = reward

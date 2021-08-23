@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from math import exp
 from typing import Any
 
 import numpy as np
@@ -25,7 +26,7 @@ from commander.ml.environment import (
     make_env,
     make_sb3_env,
 )
-from commander.ml.tensorboard import FailureModeCallback
+from commander.ml.tensorboard import ExperimentalDataCallback, GeneralCartpoleMLCallback
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -182,9 +183,10 @@ def experiment(
         policy_params["clip_range"] = lambda x: 0.2 * x
 
     # Callbacks
-    failure_mode_callback = FailureModeCallback()
+    general_cartpoleml_callback = GeneralCartpoleMLCallback()
+    experimental_data_callback = ExperimentalDataCallback()
 
-    callbacks = [failure_mode_callback]
+    callbacks = [general_cartpoleml_callback, experimental_data_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
     env = make_sb3_env(ExperimentalCartpoleEnv, **env_params)

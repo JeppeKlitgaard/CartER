@@ -23,7 +23,7 @@ from commander.ml.agent.state_specification import (
 )
 from commander.ml.configurations import DeepPILCOConfiguration
 from commander.ml.environment import SimulatedCartpoleEnv, get_sb3_env_root_env, make_sb3_env
-from commander.ml.tensorboard import FailureModeCallback, SimulatedTimeCallback
+from commander.ml.tensorboard import GeneralCartpoleMLCallback, SimulatedTimeCallback
 from commander.ml.utils import restore_step, vectorise_observations
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
@@ -183,9 +183,9 @@ def simulate(
         eval_env, best_model_save_path=str(best_model_path), eval_freq=int(total_timesteps / 25)
     )
     simulated_time_callback = SimulatedTimeCallback()
-    failure_mode_callback = FailureModeCallback()
+    general_cartpoleml_callback = GeneralCartpoleMLCallback()
 
-    callbacks = [eval_callback, simulated_time_callback, failure_mode_callback]
+    callbacks = [eval_callback, simulated_time_callback, general_cartpoleml_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
     env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
