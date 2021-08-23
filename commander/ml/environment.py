@@ -590,9 +590,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         # ! For now assume single cart. Change later
         # Very ugly temporary code - I'd like it to work today
 
-        print(actions)
-        print([self.observe(agent) for agent in self.agents])
-
         observations = {}
         rewards = {}
         dones = {}

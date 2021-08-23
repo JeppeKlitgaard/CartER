@@ -533,7 +533,6 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         return angle_drift
 
     def _step(self, action: Action) -> StepInfo:
-        print("ACTION: " + str(action))
         value = 50
 
         value *= 1 if action == Action.FORWARDS else -1
