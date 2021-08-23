@@ -37,6 +37,7 @@ from commander.network.protocol import (
     ObservationPacket,
     SetMaxVelocityPacket,
     SetVelocityPacket,
+    SoftLimitReachedPacket,
 )
 from commander.network.selectors import message_startswith
 from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepReturn
@@ -372,13 +373,18 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         for dbg_pkt in dbg_pkts:
             logger.debug("CONTROLLER| %s", dbg_pkt.msg)
 
+        # InfoPackets
+        info_pkts = self.network_manager.get_packets(InfoPacket, digest=False)
+        for info_pkt in info_pkts:
+            logger.debug("CONTROLLER| %s", info_pkt.msg)
+
         # ErrorPackets
         err_pkts = self.network_manager.get_packets(ErrorPacket, digest=False)
         for err_pkt in err_pkts:
             logger.error("CONTROLLER| %s", err_pkt.msg)
 
         # ExperimentInfoPackets
-        exp_info_pkts = self.network_manager.get_packets(ExperimentInfoPacket)
+        exp_info_pkts = self.network_manager.get_packets(ExperimentInfoPacket, digest=False)
         for exp_info_pkt in exp_info_pkts:
             if exp_info_pkt.specifier == ExperimentInfoSpecifier.POSITION_DRIFT:
                 agent = self.cart_id_to_agent[exp_info_pkt.cart_id]
@@ -399,6 +405,13 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                     "Environment does not know how to deal with specifier: "
                     + exp_info_pkt.specifier.name
                 )
+
+            # SoftLimitReachedPackets
+            # Just ignore since we currently use ExperimentInfoPackets to determine done state
+            self.network_manager.get_packets(SoftLimitReachedPacket, digest=False)
+
+        if self.network_manager.packet_buffer:
+            logger.error("Had packets in buffer after processing: %s", self.network_manager.packet_buffer)
 
     def setup(self) -> None:
         logger.info("Running experimental environment setup")
@@ -442,8 +455,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             digest=False,
             callback=self._process_buffer,
         )
-        assert not len(self.network_manager.packet_buffer)
-        assert not self.network_manager.in_queue
         logger.info("Limits found")
 
         # Set max velocity
@@ -482,6 +493,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         logger.info("Starting experiment")
         experiment_start_pkt = ExperimentStartPacket(0)
         self.network_manager.send_packet(experiment_start_pkt)
+        self.network_manager.get_packet(ExperimentStartPacket, digest=True, block=True, callback=self._process_buffer)
 
         while any([raises(agent.observe, IOError) for agent in self.get_agents()]):
             obs_pkts = self.network_manager.get_packets(
