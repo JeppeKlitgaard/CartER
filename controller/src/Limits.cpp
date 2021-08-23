@@ -224,6 +224,9 @@ void toggle_limit_check_mode()
     switch (limit_check_mode)
     {
     case LimitCheckMode::INIT:
+        limit_check_mode = LimitCheckMode::LEFT_SUPER_FAST;
+        break;
+    case LimitCheckMode::LEFT_SUPER_FAST:
         limit_check_mode = LimitCheckMode::LEFT_FAST;
         break;
     case LimitCheckMode::LEFT_FAST:
@@ -254,9 +257,21 @@ void loop_limit_check()
     switch (limit_check_mode)
     {
     case LimitCheckMode::INIT:
-        astepper1.setMaxSpeedDistance(Speed::MEDIUM);
+        astepper1.setMaxSpeedDistance(Speed::ULTRA_FAST);
+        astepper1.moveToDistance(LIMIT_CHECK_SUPER_FAST_MARGIN_DISTANCE);
 
         toggle_limit_check_mode();
+
+        break;
+
+    case LimitCheckMode::LEFT_SUPER_FAST:
+        if (astepper1.distanceToGo() == 0)
+        {
+            packet_sender.send_info("LimitChecker: LEFT SUPER FAST MARGIN HIT");
+            astepper1.setMaxSpeedDistance(Speed::MEDIUM);
+
+            toggle_limit_check_mode();
+        }
 
         break;
 

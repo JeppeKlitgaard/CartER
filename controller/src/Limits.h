@@ -56,6 +56,7 @@ extern LimitFindingMode limit_finding_mode;
 enum class LimitCheckMode
 {
     INIT,
+    LEFT_SUPER_FAST,
     LEFT_FAST,
     LEFT_RETRACT,
     LEFT_SLOW,
@@ -66,6 +67,7 @@ enum class LimitCheckMode
 
 inline const std::string LimitCheckModeStrings[] = {
     "INIT",
+    "LEFT_SUPER_FAST",
     "LEFT_FAST",
     "LEFT_RETRACT",
     "LEFT_SLOW",
@@ -73,6 +75,8 @@ inline const std::string LimitCheckModeStrings[] = {
     "REPOSITION",
     "DONE",
 };
+
+const float_t LIMIT_CHECK_SUPER_FAST_MARGIN_DISTANCE = 10.0;
 
 extern LimitCheckMode limit_check_mode;
 
