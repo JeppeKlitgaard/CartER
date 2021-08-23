@@ -326,6 +326,8 @@ class NetworkManager:
             packets.append(packet)
 
     def send_packet(self, packet: OutboundPacket) -> None:
+        logger.debug("Sent packet: %s", packet, extra={"packet": packet})
+
         bytes_to_transfer = packet.to_bytes()
 
         self.serial.write(bytes_to_transfer)

@@ -3,11 +3,11 @@ import logging
 from pathlib import Path
 from typing import Type
 
-from commander.network.protocol import InboundPacket, ObservationPacket
+from commander.network.protocol import ObservationPacket, Packet
 
 
-class ReadPacketFilter(logging.Filter):
-    def __init__(self, excludes: tuple[Type[InboundPacket]]) -> None:
+class PacketFilter(logging.Filter):
+    def __init__(self, excludes: tuple[Type[Packet], ...]) -> None:
         self.excludes = excludes
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -47,8 +47,8 @@ def setup_logging(console: bool = True, file: bool = True) -> None:
     logging.getLogger("numba").setLevel(logging.WARNING)
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-    packet_excludes = (ObservationPacket,)
-    pkt_filter = ReadPacketFilter(packet_excludes)
+    packet_excludes: tuple[Type[Packet], ...] = (ObservationPacket,)
+    pkt_filter = PacketFilter(packet_excludes)
 
     for handler in logging.root.handlers:
         handler.addFilter(pkt_filter)
