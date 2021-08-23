@@ -99,9 +99,6 @@ class NetworkManager:
         pong_pkt = self.get_packet(PongPacket, block=True)
         assert pong_pkt.timestamp == checksum
 
-    def _print_packet_read_fail_debug(self, *args, **kwargs) -> None:
-        logger.error("Something went wrong while ")
-
     def read_packet(self) -> InboundPacket:
         id_ = self.serial.read(1)
 
