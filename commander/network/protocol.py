@@ -438,6 +438,7 @@ class ExperimentInfoPacket(InboundPacket):
 
         # Special case:
         if specifier == ExperimentInfoSpecifier.FAILURE_MODE:
+            assert isinstance(value, int)
             value = FailureMode(value)
 
         return cls(specifier=specifier, cart_id=cart_id, value=value)
