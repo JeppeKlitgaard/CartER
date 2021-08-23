@@ -172,8 +172,8 @@ def experiment(
     # Algorithm-dependent hyperparameters
     policy_params: dict[str, Any] = {}
     if algorithm == Algorithm.PPO:
-        policy_params["n_steps"] = 2
-        policy_params["batch_size"] = 64
+        policy_params["n_steps"] = 8
+        policy_params["batch_size"] = 8
         policy_params["gae_lambda"] = 0.8
         policy_params["gamma"] = 0.98
         policy_params["n_epochs"] = 20
