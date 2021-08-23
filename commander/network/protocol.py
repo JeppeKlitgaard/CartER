@@ -19,6 +19,7 @@ from commander.network.constants import (
     FailureMode,
     SetOperation,
 )
+from commander.network.exceptions import PacketReadError
 from commander.network.utils import (
     CRLF,
     Format,
@@ -30,8 +31,6 @@ from commander.network.utils import (
     skip_crlf,
     unpack,
 )
-
-from commander.network.exceptions import PacketReadError
 
 
 class Packet(ABC):
@@ -268,6 +267,15 @@ class SetVelocityPacket(SetQuantityPacket):
 # ! Currently unused
 class GetVelocityPacket(GetPositionPacket):
     id_ = byte(0x56)  # V
+
+
+class SetMaxVelocityPacket(SetQuantityPacket):
+    id_ = byte(0x77)  # w
+
+
+# ! Currently unused
+class GetMaxVelocityPacket(GetPositionPacket):
+    id_ = byte(0x57)  # W
 
 
 class FindLimitsPacket(OnlyIDPacket):

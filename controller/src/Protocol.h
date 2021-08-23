@@ -182,6 +182,18 @@ public:
     virtual byte get_id() const override;
 };
 
+// SetMaxVelocity
+class SetMaxVelocityPacket : public SetQuantityBasePacket
+{
+public:
+    static const byte id = 0x77; // w
+
+    SetMaxVelocityPacket();
+    using SetQuantityBasePacket::construct;
+
+    virtual byte get_id() const override;
+};
+
 // FindLimits
 class FindLimitsPacket : public OnlyIDPacket
 {

@@ -105,6 +105,30 @@ void PacketReactor::tick()
         switch (packet->operation)
         {
         case SetOperation::ADD:
+            astepper.setSpeed(astepper.speed() + static_cast<float_t>(packet->value));
+            break;
+        case SetOperation::EQUAL:
+            astepper.setSpeed(static_cast<float_t>(packet->value));
+            break;
+        case SetOperation::SUBTRACT:
+            astepper.setSpeed(astepper.speed() - static_cast<float_t>(packet->value));
+            break;
+        case SetOperation::NUL:
+            break;
+        }
+
+        break;
+    }
+
+    case SetMaxVelocityPacket::id:
+    {
+        std::unique_ptr<SetVelocityPacket> packet = _read_and_construct_packet<SetVelocityPacket>();
+
+        CustomAccelStepper &astepper = get_astepper_by_id(packet->cart_id);
+
+        switch (packet->operation)
+        {
+        case SetOperation::ADD:
             astepper.setMaxSpeed(std::max(astepper.maxSpeed() + static_cast<float_t>(packet->value), MAX_SETTABLE_SPEED));
             break;
         case SetOperation::EQUAL:

@@ -1,7 +1,9 @@
-from serial import Serial
-from commander.network.utils import bytes_to_hexstr
 import logging
 from typing import Optional
+
+from serial import Serial
+
+from commander.network.utils import bytes_to_hexstr
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,13 @@ class PacketReadError(ConnectionError):
 
         return ascii_str
 
-    def __init__(self, message: str, id_: bytes, reason: Optional[str] = None, dump_buf: Optional[Serial] = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        id_: bytes,
+        reason: Optional[str] = None,
+        dump_buf: Optional[Serial] = None,
+    ) -> None:
         id_ascii = id_.decode("ascii", errors="ignore")
         id_hex = bytes_to_hexstr(id_, prefix=True)
 

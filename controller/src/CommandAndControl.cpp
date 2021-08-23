@@ -29,6 +29,13 @@ void loop_command_and_control()
     // Update runner to reflect run safety wish
     bool currently_limit_finding = (limit_finding_mode != LimitFindingMode::DONE) || (limit_check_mode != LimitCheckMode::DONE);
     trigger_ctx.run_safely = !currently_limit_finding && limit_finding_has_been_done;
+    trigger_ctx.run_mode = (currently_limit_finding) ? RunMode::REGULAR : RunMode::CONSTANT_SPEED;
+
+    if (currently_limit_finding && limit_finding_mode != LimitFindingMode::DONE) {
+        loop_limit_finding();
+    } else if (currently_limit_finding && limit_check_mode != LimitCheckMode::DONE) {
+        loop_limit_check();
+    }
 
     // int8_t safety = astepper1.runSafe();
 

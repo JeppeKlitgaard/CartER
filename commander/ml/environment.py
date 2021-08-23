@@ -10,6 +10,7 @@ from gym import spaces
 from gym.envs.classic_control import rendering
 from pettingzoo.utils.env import ParallelEnv
 
+import deepmerge
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from commander.ml.agent import CartpoleAgent
@@ -20,7 +21,7 @@ from commander.ml.agent.agent import (
 )
 from commander.ml.constants import Action
 from commander.network import NetworkManager
-from commander.network.constants import CartID, ExperimentInfoSpecifier, SetOperation
+from commander.network.constants import CartID, ExperimentInfoSpecifier, FailureMode, SetOperation
 from commander.network.protocol import (
     CartSpecificPacket,
     CheckLimitPacket,
@@ -34,6 +35,7 @@ from commander.network.protocol import (
     FindLimitsPacket,
     InfoPacket,
     ObservationPacket,
+    SetMaxVelocityPacket,
     SetVelocityPacket,
 )
 from commander.network.selectors import message_startswith
@@ -46,6 +48,10 @@ logger = logging.getLogger(__name__)
 class EnvironmentState(TypedDict):
     angle_drifts: dict[AgentNameT, float]
     position_drifts: dict[AgentNameT, int]
+    failure_cart_id: CartID
+    failure_agent: Optional[CartpoleAgent]
+    failure_agent_name: Optional[AgentNameT]
+    failure_mode: FailureMode
 
 
 class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
@@ -380,6 +386,14 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                     int, exp_info_pkt.value
                 )
 
+            elif exp_info_pkt.specifier == ExperimentInfoSpecifier.FAILURE_MODE:
+                agent = self.cart_id_to_agent[exp_info_pkt.cart_id]
+
+                self.environment_state["failure_cart_id"] = exp_info_pkt.cart_id
+                self.environment_state["failure_agent"] = agent
+                self.environment_state["failure_agent_name"] = agent.name
+                self.environment_state["failure_mode"] = cast(FailureMode, exp_info_pkt.value)
+
             else:
                 raise ValueError(
                     "Environment does not know how to deal with specifier: "
@@ -432,9 +446,9 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         assert not self.network_manager.in_queue
         logger.info("Limits found")
 
-        # Set velocity
+        # Set max velocity
         logger.info("Setting velocity")
-        velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
+        velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
         self.network_manager.send_packet(velo_pkt)
 
         logger.info("Experimental environment setup done")
@@ -445,6 +459,10 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         self.environment_state: EnvironmentState = {
             "angle_drifts": {},
             "position_drifts": {},
+            "failure_cart_id": CartID.NUL,
+            "failure_agent": None,
+            "failure_agent_name": None,
+            "failure_mode": FailureMode.NUL,
         }
 
         self.network_manager.serial.reset_input_buffer()
@@ -454,6 +472,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             agent._pre_reset()
 
         self.network_manager.assert_ping_pong()
+
+        # Set velocity
+        logger.info("Setting velocity")
+        velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=0)
+        self.network_manager.send_packet(velo_pkt)
 
         # Ask controller to start experiment
         logger.info("Starting experiment")
@@ -483,6 +506,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         for agent in self.get_agents():
             agent.set_angle_offset()
 
+        # Set velocity
+        logger.info("Setting velocity")
+        velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=0)
+        self.network_manager.send_packet(velo_pkt)
+
         return super().reset()
 
     def network_tick(self) -> None:
@@ -500,7 +528,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         logger.debug("Experiment settled")
 
-    def end_experiment(self) -> None:
+    def end_experiment(self) -> dict[str, Any]:
+        infos: dict[str, Any] = {}
+        for agent in self.get_agents():
+            infos[agent.name] = {}
+
         logger.info("Ending experiment")
 
         self.wait_for_settled()
@@ -544,9 +576,22 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         # Process final packets
         self.network_tick()
 
+        for agent_name, angle_drift in self.environment_state["angle_drifts"].items():
+            infos[agent_name]["angle_drift"] = angle_drift
+
+        for agent_name, position_drift in self.environment_state["position_drifts"].items():
+            infos[agent_name]["position_drift"] = position_drift
+
+        infos["failure_cart_id"] = self.environment_state["failure_cart_id"]
+
+        return infos
+
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         # ! For now assume single cart. Change later
         # Very ugly temporary code - I'd like it to work today
+
+        print(actions)
+        print([self.observe(agent) for agent in self.agents])
 
         observations = {}
         rewards = {}
@@ -559,6 +604,15 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             infos[agent_name] = agent.step(action)
 
         self.network_tick()
+
+        # Check if we have failed
+        if self.environment_state["failure_mode"] is not FailureMode.NUL:
+            assert self.environment_state["failure_agent_name"] is not None
+
+            infos[self.environment_state["failure_agent_name"]] = {
+                "failure_modes": [self.environment_state["failure_mode"].describe()]
+            }
+            dones[self.environment_state["failure_agent_name"]] = True
 
         for agent in self.get_agents():
             observation = agent.observe()
@@ -578,13 +632,14 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
             observations[agent_name] = observation
             rewards[agent_name] = reward
-            dones[agent_name] = done
+            dones[agent_name] = done or bool(dones.get(agent_name))
             infos[agent_name] |= info
 
         self.steps += 1
 
         if any(dones.values()):
-            self.end_experiment()
+            end_experiment_infos = self.end_experiment()
+            deepmerge.merge_or_raise.merge(infos, end_experiment_infos)
 
             # TODO
             logger.debug("Environment state: %s", self.environment_state)

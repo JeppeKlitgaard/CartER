@@ -57,6 +57,7 @@ public:
     float_t getLimitSafetyMarginDistance();
 
     RunSafetyCheck runSafe();
+    RunSafetyCheck runSafeSpeed();
 
     float getCurrentPositionDistance();
     void setCurrentPositionDistance(float absolute);

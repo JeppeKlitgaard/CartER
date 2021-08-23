@@ -22,7 +22,7 @@ from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
 from commander.network import NetworkManager
 from commander.network.constants import CartID, SetOperation
-from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetPositionPacket
+from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetVelocityPacket
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
 
 logger = logging.getLogger(__name__)
@@ -533,15 +533,15 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         return angle_drift
 
     def _step(self, action: Action) -> StepInfo:
-        value = 200
-        import random
+        print("ACTION: " + str(action))
+        value = 50
 
-        dir = random.choice([-1, 1])
-        value *= dir
-        # value *= 1 if action is Action.FORWARDS else -1
+        value *= 1 if action == Action.FORWARDS else -1
 
-        pos_pkt = SetPositionPacket(SetOperation.ADD, cart_id=self.cart_id, value=value)
-        self.network_manager.send_packet(pos_pkt)
+        velo_pkt = SetVelocityPacket(SetOperation.ADD, cart_id=self.cart_id, value=value)
+        # pos_pkt = SetPositionPacket(SetOperation.ADD, cart_id=self.cart_id, value=value)
+        # self.network_manager.send_packet(pos_pkt)
+        self.network_manager.send_packet(velo_pkt)
 
         info: StepInfo = {}
 

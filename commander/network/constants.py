@@ -15,6 +15,7 @@ class CartID(IntEnum):
     Must pack to an uint8_t.
     """
 
+    NUL = 0
     ONE = 1
     TWO = 2
 
@@ -43,10 +44,28 @@ class FailureMode(IntEnum):
 
     NUL = 0
 
+    MAX_STEPS_REACHED = -128
+
     POSITION_LEFT = -1
     POSITION_RIGHT = 1
 
     ANGLE_LEFT = -2
     ANGLE_RIGHT = 2
 
+    IMBALANCE = 50
+
     OTHER = 127
+
+    def describe(self) -> str:
+        return MODE_TO_DESCRIPTOR[self]
+
+
+MODE_TO_DESCRIPTOR: dict[FailureMode, str] = {
+    FailureMode.NUL: "nul",
+    FailureMode.MAX_STEPS_REACHED: "steps/max",
+    FailureMode.POSITION_LEFT: "position/left",
+    FailureMode.POSITION_RIGHT: "position/right",
+    FailureMode.ANGLE_LEFT: "angle/left",
+    FailureMode.ANGLE_RIGHT: "angle/right",
+    FailureMode.IMBALANCE: "imbalance",
+}

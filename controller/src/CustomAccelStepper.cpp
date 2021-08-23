@@ -164,6 +164,33 @@ RunSafetyCheck CustomAccelStepper::runSafe()
 }
 
 /**
+ * Does a step in a manner that allows for easy safety implementation.
+ * This is the constant speed version
+ * Calling stop() is then the responsibility of the developer.
+ * @return
+ */
+RunSafetyCheck CustomAccelStepper::runSafeSpeed()
+{
+    runSpeed();
+    int32_t currPos = currentPosition();
+
+    if (currPos < _limitSafetyMargin)
+    {
+        return RunSafetyCheck::LOW_LIMIT_FAIL;
+    }
+    else if (currPos > _farLimit - _limitSafetyMargin)
+    {
+        return RunSafetyCheck::HIGH_LIMIT_FAIL;
+    }
+    else
+    {
+        return RunSafetyCheck::SAFE;
+    }
+}
+
+
+
+/**
  * Return the current distance from the origin.
  * @return
  */

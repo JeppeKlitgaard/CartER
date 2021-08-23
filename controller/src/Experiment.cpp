@@ -7,6 +7,7 @@
 #include <RotaryEncoder.h>
 #include <Protocol.h>
 #include <Mode.h>
+#include <Limits.h>
 
 uint32_t last_observation_us = 0;
 
@@ -49,7 +50,12 @@ void send_observation(uint8_t cart_id)
 void experiment_start() {
     packet_sender.send_debug("Starting experiment...");
 
+    asteppers_stop();
+
     experiment_mode = ExperimentMode::RUNNING;
+    limit_finding_mode = LimitFindingMode::DONE;
+    limit_check_mode = LimitCheckMode::DONE;
+
     is_observing = true;
 
     std::unique_ptr<ExperimentStartPacket> packet = std::make_unique<ExperimentStartPacket>();
@@ -61,6 +67,8 @@ void experiment_start() {
 
 void experiment_stop() {
     packet_sender.send_debug("Stopping experiment...");
+
+    asteppers_stop();
 
     std::unique_ptr<ExperimentStopPacket> stop_pkt = std::make_unique<ExperimentStopPacket>();
     packet_sender.send(std::move(stop_pkt));
@@ -82,6 +90,7 @@ void experiment_stop() {
  */
 void unsafe_run_trigger() {
     asteppers_stop();
+
     packet_sender.send_info("Stopped steppers.");
 
     experiment_mode = ExperimentMode::FAILED;

@@ -110,6 +110,10 @@ byte SetPositionPacket::get_id() const { return SetPositionPacket::id; }
 SetVelocityPacket::SetVelocityPacket() {}
 byte SetVelocityPacket::get_id() const { return SetVelocityPacket::id; }
 
+// SetMaxVelocity
+SetMaxVelocityPacket::SetMaxVelocityPacket() {}
+byte SetMaxVelocityPacket::get_id() const { return SetMaxVelocityPacket::id; }
+
 // FindLimits
 FindLimitsPacket::FindLimitsPacket() {}
 byte FindLimitsPacket::get_id() const { return FindLimitsPacket::id; }

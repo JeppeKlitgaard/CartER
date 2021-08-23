@@ -10,18 +10,41 @@ void step_timer_callback(void *a_ctx)
 {
     action_ctx *ctx = reinterpret_cast<action_ctx *>(a_ctx);
 
-    if (!ctx->run_safely)
+    switch (ctx->run_mode)
     {
-        asteppers_run();
-    }
-    else if (ctx->run_safely && !ctx->has_failed)
-    {
-        bool was_safe = asteppers_run_safe();
-        ctx->has_failed = ctx->has_failed || !was_safe;
-    }
-    else
-    {
-        ;
+    case RunMode::REGULAR:
+        if (!ctx->run_safely)
+        {
+            asteppers_run();
+        }
+        else if (ctx->run_safely && !ctx->has_failed)
+        {
+            bool was_safe = asteppers_run_safe();
+            ctx->has_failed = ctx->has_failed || !was_safe;
+        }
+        else
+        {
+            ;
+        }
+
+        break;
+
+    case RunMode::CONSTANT_SPEED:
+        if (!ctx->run_safely)
+        {
+            asteppers_run_speed();
+        }
+        else if (ctx->run_safely && !ctx->has_failed)
+        {
+            bool was_safe = asteppers_run_safe_speed();
+            ctx->has_failed = ctx->has_failed || !was_safe;
+        }
+        else
+        {
+            ;
+        }
+
+        break;
     }
 }
 

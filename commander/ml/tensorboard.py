@@ -63,40 +63,47 @@ class FailureModeCallback(BaseCallback):
         super().__init__(verbose)
 
     def _on_step(self) -> bool:
-        done = any(self.locals["dones"])
+        assert isinstance(self.logger, Logger)
 
-        if done:
-            failure_modes = []
-            for info in self.locals["infos"]:
-                if "failure_modes" not in info.keys():
-                    continue
+        for infos in self.locals["infos"]:
+            # Angle drift
+            if angle_drift := infos.get("angle_drift"):
+                self.logger.record("cartpoleml/angle_drift", angle_drift)
 
-                failure_modes.extend(info["failure_modes"])
+            # Position drift
+            if position_drift := infos.get("position_drift"):
+                self.logger.record("cartpoleml/position_drift", position_drift)
 
-            failure_mode: str
-            if not failure_modes:
-                return True
-            elif len(failure_modes) > 1:
-                failure_mode = "multiple"
-            else:
-                failure_mode = failure_modes[0]
+        # Failure Modes
+        failure_modes = []
+        for info in self.locals["infos"]:
+            if "failure_modes" not in info.keys():
+                continue
 
-            if failure_mode not in self.FAILURE_MODE_TO_NUM:
-                logger.warn(f"Bad failure mode: {failure_mode}")
+            failure_modes.extend(info["failure_modes"])
 
-            failure_category = failure_mode.split("/")[0]
+        failure_mode: str
+        if not failure_modes:
+            return True
+        elif len(failure_modes) > 1:
+            failure_mode = "multiple"
+        else:
+            failure_mode = failure_modes[0]
 
-            assert isinstance(self.logger, Logger)
+        if failure_mode not in self.FAILURE_MODE_TO_NUM:
+            logger.warn(f"Bad failure mode: {failure_mode}")
 
-            self.logger.record("failure_mode/descriptor_text", failure_mode)
-            self.logger.record(
-                "failure_mode/descriptor_num", self.FAILURE_MODE_TO_NUM[failure_mode]
-            )
+        failure_category = failure_mode.split("/")[0]
 
-            self.logger.record("failure_mode/category_text", failure_category)
-            self.logger.record(
-                "failure_mode/category_num", self.FAILURE_CATEGORY_TO_NUM[failure_category]
-            )
+        self.logger.record("cartpoleml/failure_descriptor_text", failure_mode)
+        self.logger.record(
+            "cartpoleml/failure_descriptor_num", self.FAILURE_MODE_TO_NUM[failure_mode]
+        )
+
+        self.logger.record("cartpoleml/failure_category_text", failure_category)
+        self.logger.record(
+            "cartpoleml/failure_category_num", self.FAILURE_CATEGORY_TO_NUM[failure_category]
+        )
 
         return True
 

@@ -72,6 +72,10 @@ void asteppers_run();
 bool astepper_run_safe(CustomAccelStepper &astepper);
 bool asteppers_run_safe();
 
+void asteppers_run_speed();
+bool astepper_run_safe_speed(CustomAccelStepper &astepper);
+bool asteppers_run_safe_speed();
+
 void asteppers_enable();
 void asteppers_disable();
 void asteppers_toggle_enabled();

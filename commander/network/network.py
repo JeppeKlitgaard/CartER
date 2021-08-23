@@ -6,6 +6,7 @@ from typing import Literal, Optional, Sequence, Type, Union, cast, overload
 
 from serial import Serial
 
+from commander.network.exceptions import PacketReadError
 from commander.network.protocol import (
     INBOUND_PACKET_ID_MAP,
     InboundPacket,
@@ -15,8 +16,7 @@ from commander.network.protocol import (
     PongPacket,
 )
 from commander.network.types import PacketSelector, PacketT
-from commander.network.utils import bytes_to_hexes, bytes_to_hexstr
-from commander.network.exceptions import PacketReadError
+from commander.network.utils import bytes_to_hexes
 from commander.utils import noop
 
 logger = getLogger(__name__)
@@ -105,8 +105,6 @@ class NetworkManager:
         try:
             packet_cls = INBOUND_PACKET_ID_MAP[id_]
         except KeyError as exc:
-            rest_of_data = self.serial.read_all()
-
             raise PacketReadError("Invalid packet ID", id_, dump_buf=self.serial) from exc
 
         packet = packet_cls.read(self.serial)

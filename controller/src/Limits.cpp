@@ -185,6 +185,12 @@ void loop_limit_finding()
             limit_finding_has_been_done = true;
             trigger_ctx.has_failed = false;
 
+            asteppers_stop();
+
+            // Send back response
+            std::unique_ptr<FindLimitsPacket> packet = std::make_unique<FindLimitsPacket>();
+            packet_sender.send(std::move(packet));
+
             toggle_limit_finding_mode();
         }
         break;
@@ -211,15 +217,6 @@ void exit_limit_finding()
 void do_limit_finding()
 {
     limit_finding_mode = LimitFindingMode::INIT;
-
-    while (limit_finding_mode != LimitFindingMode::DONE)
-    {
-        loop_limit_finding();
-    }
-
-    // Send back response
-    std::unique_ptr<FindLimitsPacket> packet = std::make_unique<FindLimitsPacket>();
-    packet_sender.send(std::move(packet));
 }
 
 void toggle_limit_check_mode()
@@ -257,7 +254,7 @@ void loop_limit_check()
     switch (limit_check_mode)
     {
     case LimitCheckMode::INIT:
-        astepper1.setMaxSpeedDistance(Speed::FAST);
+        astepper1.setMaxSpeedDistance(Speed::MEDIUM);
 
         toggle_limit_check_mode();
 
@@ -324,6 +321,13 @@ void loop_limit_check()
             packet_sender.send_info("LimitChecker: NOW DONE");
             trigger_ctx.has_failed = false;
             toggle_limit_check_mode();
+
+            asteppers_stop();
+
+            // Send back response
+            std::unique_ptr<CheckLimitPacket> packet = std::make_unique<CheckLimitPacket>();
+            packet_sender.send(std::move(packet));
+
         }
         break;
 
@@ -337,15 +341,6 @@ void loop_limit_check()
 void do_limit_check()
 {
     limit_check_mode = LimitCheckMode::INIT;
-
-    while (limit_check_mode != LimitCheckMode::DONE)
-    {
-        loop_limit_check();
-    }
-
-    // Send back response
-    std::unique_ptr<CheckLimitPacket> packet = std::make_unique<CheckLimitPacket>();
-    packet_sender.send(std::move(packet));
 }
 
 void react_limit_check(int32_t left_limit_new_position) {
@@ -367,6 +362,8 @@ void do_jiggle() {
         astepper2_orig_speed = astepper2.maxSpeed();
         astepper2.setMaxSpeedDistance(JIGGLE_SPEED_DISTANCE);
     }
+
+    trigger_ctx.run_mode = RunMode::REGULAR;
 
     uint16_t jiggle_counter = 0;
 
@@ -394,6 +391,8 @@ void do_jiggle() {
     if (configuration == TWO_CARRIAGES) {
         astepper2.setMaxSpeed(astepper2_orig_speed);
     }
+
+    asteppers_stop();
 
     // Send back response
     std::unique_ptr<DoJigglePacket> packet = std::make_unique<DoJigglePacket>();

@@ -6,16 +6,25 @@
 
 const uint32_t STEP_TIMER_PERIOD = 1000;// in 1e-8 sec
 
+enum class RunMode {
+    REGULAR,
+    CONSTANT_SPEED,
+};
+
 struct action_ctx
 {
     action_ctx()
     {
         run_safely = false;
         has_failed = false;
+        run_mode = RunMode::REGULAR;
+
     }
 
     bool run_safely;
     bool has_failed;
+    RunMode run_mode;
+
 };
 
 extern action_ctx trigger_ctx;

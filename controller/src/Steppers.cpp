@@ -144,12 +144,66 @@ bool astepper_run_safe(CustomAccelStepper &astepper) {
     }
 }
 
+/**
+ * Runs the asteppers in a safe manner
+ */
 bool asteppers_run_safe()
 {
     bool was_safe = astepper_run_safe(astepper1);
 
     if (was_safe && configuration == TWO_CARRIAGES) {
         was_safe = astepper_run_safe(astepper2);
+    }
+
+    return was_safe;
+}
+
+
+// There is definitely a smarter way to define these and in the future I
+// will probably refactor this to be smarter.
+void asteppers_run_speed()
+{
+    astepper1.runSpeed();
+    if (configuration == TWO_CARRIAGES)
+    {
+        astepper2.runSpeed();
+    }
+}
+
+/**
+ * Runs an astepper in a safe way that respects the currently imposed limits
+ * Constant speed version
+ * Note: Does not call stop(). Do this in trigger_callback
+ * @return whether run was safe or not
+ */
+bool astepper_run_safe_speed(CustomAccelStepper &astepper) {
+    RunSafetyCheck limit_check = astepper.runSafeSpeed();
+
+    switch (limit_check) {
+        case RunSafetyCheck::LOW_LIMIT_FAIL:
+            failure_mode = FailureMode::POSITION_LEFT;
+            failure_cart_id = astepper.cart_id;
+            return false;
+
+        case RunSafetyCheck::HIGH_LIMIT_FAIL:
+            failure_mode = FailureMode::POSITION_RIGHT;
+            failure_cart_id = astepper.cart_id;
+            return false;
+
+        default:
+            return true;
+    }
+}
+
+/**
+ * Runs the asteppers in a safe manner, constant speed version
+ */
+bool asteppers_run_safe_speed()
+{
+    bool was_safe = astepper_run_safe_speed(astepper1);
+
+    if (was_safe && configuration == TWO_CARRIAGES) {
+        was_safe = astepper_run_safe_speed(astepper2);
     }
 
     return was_safe;
