@@ -2,6 +2,9 @@
 #define TIMER_INTERRUPT_H
 
 #include <CustomArduino.h>
+
+#include <string>
+
 #include <tc_lib.h>
 
 const uint32_t STEP_TIMER_PERIOD = 1000;// in 1e-8 sec
@@ -9,6 +12,11 @@ const uint32_t STEP_TIMER_PERIOD = 1000;// in 1e-8 sec
 enum class RunMode {
     REGULAR,
     CONSTANT_SPEED,
+};
+
+inline const std::string RunModeStrings[] = {
+    "REGULAR",
+    "CONSTANT_SPEED",
 };
 
 struct action_ctx

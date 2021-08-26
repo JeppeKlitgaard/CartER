@@ -34,6 +34,7 @@ supersuit = {git = "https://github.com/PettingZoo-Team/SuperSuit.git"}
 tqdm = "^4.62.1"
 ipywidgets = "^7.6.3"
 deepmerge = "^0.3.0"
+mkdocs-video = "^1.1.0"
 
 [tool.poetry.dev-dependencies]
 jupytext = "^1.11.3"

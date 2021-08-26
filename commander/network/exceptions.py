@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 from typing import Optional
 
 from serial import Serial
@@ -25,6 +26,7 @@ class PacketReadError(ConnectionError):
         id_: bytes,
         reason: Optional[str] = None,
         dump_buf: Optional[Serial] = None,
+        wait_buf: float = 0.100,
     ) -> None:
         id_ascii = id_.decode("ascii", errors="ignore")
         id_hex = bytes_to_hexstr(id_, prefix=True)
@@ -32,6 +34,8 @@ class PacketReadError(ConnectionError):
         message = f"Packet with id {id_ascii} ({id_hex}) failed: {message}. {reason or ''}"
 
         if dump_buf is not None:
+            sleep(wait_buf)
+
             rest_of_data = dump_buf.read_all()
 
             buf_str = rest_of_data.decode("ascii", errors="ignore")

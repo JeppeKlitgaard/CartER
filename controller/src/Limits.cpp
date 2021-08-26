@@ -167,6 +167,10 @@ void loop_limit_finding()
             track_length_distance = astepper1.getCurrentPositionDistance();
             track_length_steps = astepper1.currentPosition();
 
+            std::unique_ptr<ExperimentInfoPacket> packet = std::make_unique<ExperimentInfoPacket>();
+            packet->construct(ExperimentInfoSpecifier::TRACK_LENGTH_STEPS, 0, track_length_steps);
+            packet_sender.send(std::move(packet));
+
             astepper1.setMaxSpeedDistance(Speed::ULTRA_FAST);
             astepper1.moveToDistance(track_length_distance / 2.0);
 

@@ -35,6 +35,7 @@ from commander.network.protocol import (
     FindLimitsPacket,
     InfoPacket,
     ObservationPacket,
+    RequestDebugInfoPacket,
     SetMaxVelocityPacket,
     SetVelocityPacket,
     SoftLimitReachedPacket,
@@ -53,6 +54,7 @@ class EnvironmentState(TypedDict):
     failure_agent: Optional[CartpoleAgent]
     failure_agent_name: Optional[AgentNameT]
     failure_mode: FailureMode
+    track_length_steps: Optional[int]
 
 
 class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
@@ -376,7 +378,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         # InfoPackets
         info_pkts = self.network_manager.get_packets(InfoPacket, digest=False)
         for info_pkt in info_pkts:
-            logger.debug("CONTROLLER| %s", info_pkt.msg)
+            logger.info("CONTROLLER| %s", info_pkt.msg)
 
         # ErrorPackets
         err_pkts = self.network_manager.get_packets(ErrorPacket, digest=False)
@@ -386,19 +388,31 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         # ExperimentInfoPackets
         exp_info_pkts = self.network_manager.get_packets(ExperimentInfoPacket, digest=False)
         for exp_info_pkt in exp_info_pkts:
-            if exp_info_pkt.specifier == ExperimentInfoSpecifier.POSITION_DRIFT:
+            agent: Optional[ExperimentalCartpoleAgent]
+            try:
                 agent = self.cart_id_to_agent[exp_info_pkt.cart_id]
+            except KeyError:
+                agent = None
+
+            if exp_info_pkt.specifier == ExperimentInfoSpecifier.POSITION_DRIFT:
                 self.environment_state["position_drifts"][agent.name] = cast(
                     int, exp_info_pkt.value
                 )
 
             elif exp_info_pkt.specifier == ExperimentInfoSpecifier.FAILURE_MODE:
-                agent = self.cart_id_to_agent[exp_info_pkt.cart_id]
 
                 self.environment_state["failure_cart_id"] = exp_info_pkt.cart_id
                 self.environment_state["failure_agent"] = agent
                 self.environment_state["failure_agent_name"] = agent.name
                 self.environment_state["failure_mode"] = cast(FailureMode, exp_info_pkt.value)
+
+            elif exp_info_pkt.specifier == ExperimentInfoSpecifier.TRACK_LENGTH_STEPS:
+                self.environment_state["track_length_steps"] = cast(int, exp_info_pkt.value)
+
+                for agent in self.get_agents():
+                    agent.update_goal(
+                        {"track_length_steps": self.environment_state["track_length_steps"]}
+                    )
 
             else:
                 raise ValueError(
@@ -411,11 +425,26 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             self.network_manager.get_packets(SoftLimitReachedPacket, digest=False)
 
         if self.network_manager.packet_buffer:
-            logger.error("Had packets in buffer after processing: %s", self.network_manager.packet_buffer)
+            logger.error(
+                "Had packets in buffer after processing: %s", self.network_manager.packet_buffer
+            )
+
+    def _reset_environment_state(self) -> None:
+        self.environment_state: EnvironmentState = {
+            "angle_drifts": {},
+            "position_drifts": {},
+            "failure_cart_id": CartID.NUL,
+            "failure_agent": None,
+            "failure_agent_name": None,
+            "failure_mode": FailureMode.NUL,
+            "track_length_steps": None,
+        }
 
     def setup(self) -> None:
         logger.info("Running experimental environment setup")
         super().setup()
+
+        self._reset_environment_state()
 
         self.cart_id_to_agent: dict[CartID, ExperimentalCartpoleAgent] = {}
 
@@ -433,7 +462,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         initial_output = self.network_manager.read_initial_output(print_=False)
         logger.debug("Initial output: %s", initial_output)
 
-        assert not self.network_manager.in_queue
+        # assert not self.network_manager.in_queue
 
         # Check connection
         self.network_manager.assert_ping_pong()
@@ -448,35 +477,36 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             FindLimitsPacket, digest=True, block=True, callback=self._process_buffer
         )
 
-        # Flush InfoPackets
-        self.network_manager.get_packets(
-            InfoPacket,
-            selector=message_startswith("LimitFinder: "),
-            digest=False,
-            callback=self._process_buffer,
-        )
+        self.network_tick()
+
         logger.info("Limits found")
 
-        # Set max velocity
-        logger.info("Setting velocity")
-        velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
+        # Set velocity
+        logger.info("Setting velocity to zero")
+        velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=0)
         self.network_manager.send_packet(velo_pkt)
+
+        # Set max velocity
+        logger.info("Setting max velocity")
+        max_velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
+        self.network_manager.send_packet(max_velo_pkt)
+
+        debug_info_pkt = RequestDebugInfoPacket()
+        self.network_manager.send_packet(debug_info_pkt)
+
+        # Flush DebugPackets
+        self.network_manager.get_packets(
+            RequestDebugInfoPacket, digest=True, block=True, callback=self._process_buffer
+        )
+
+        # self.network_tick()
 
         logger.info("Experimental environment setup done")
 
     def reset(self) -> Mapping[str, ExternalState]:
         logger.info("Resetting experimental environment")
 
-        self.environment_state: EnvironmentState = {
-            "angle_drifts": {},
-            "position_drifts": {},
-            "failure_cart_id": CartID.NUL,
-            "failure_agent": None,
-            "failure_agent_name": None,
-            "failure_mode": FailureMode.NUL,
-        }
-
-        self.network_manager.serial.reset_input_buffer()
+        self._reset_environment_state()
 
         self.agents = self.possible_agents[:]
         for agent in self.get_agents():
@@ -493,7 +523,9 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         logger.info("Starting experiment")
         experiment_start_pkt = ExperimentStartPacket(0)
         self.network_manager.send_packet(experiment_start_pkt)
-        self.network_manager.get_packet(ExperimentStartPacket, digest=True, block=True, callback=self._process_buffer)
+        self.network_manager.get_packet(
+            ExperimentStartPacket, digest=True, block=True, callback=self._process_buffer
+        )
 
         while any([raises(agent.observe, IOError) for agent in self.get_agents()]):
             obs_pkts = self.network_manager.get_packets(
@@ -642,7 +674,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                 logger.info(f"Failure modes: {failure_modes}")
 
                 infos[agent.name]["failure_modes"] = failure_modes
-
 
             observations[agent_name] = observation
             rewards[agent_name] = reward

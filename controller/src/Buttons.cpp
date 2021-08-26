@@ -1,3 +1,5 @@
+#include <CustomArduino.h>
+
 #include <Buttons.h>
 
 #include <DebugUtils.h>

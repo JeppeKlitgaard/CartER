@@ -69,6 +69,10 @@ void PacketReactor::tick()
     case RequestDebugInfoPacket::id:
     {
         send_debug_information();
+
+        // Send back response
+        std::unique_ptr<RequestDebugInfoPacket> packet = std::make_unique<RequestDebugInfoPacket>();
+        packet_sender.send(std::move(packet));
         break;
     }
 

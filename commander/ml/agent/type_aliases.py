@@ -15,5 +15,8 @@ class CommonGoalParams(TypedDict, total=False):
     failure_time_above_threshold: float  # s
     punishment_positional_failure: float
 
+    # Potential
+    track_length_steps: int
+
 
 GoalParams = Union[CommonGoalParams, dict[str, Any]]

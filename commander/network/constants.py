@@ -28,12 +28,14 @@ class ExperimentInfoSpecifier(IntEnum):
     NUL = 0
     POSITION_DRIFT = 1
     FAILURE_MODE = 2
+    TRACK_LENGTH_STEPS = 3
 
 
 SPECIFIER_TO_FORMAT: dict[ExperimentInfoSpecifier, Format] = {
     ExperimentInfoSpecifier.NUL: Format.NUL,
     ExperimentInfoSpecifier.POSITION_DRIFT: Format.INT_32,
     ExperimentInfoSpecifier.FAILURE_MODE: Format.INT_8,
+    ExperimentInfoSpecifier.TRACK_LENGTH_STEPS: Format.INT_32,
 }
 
 

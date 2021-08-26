@@ -2,7 +2,8 @@
 
 Having the appropriate _pulse rate_ is critical when driving the steppers in a
 `dir/step` mode. From the datasheet of, for example, the [RS PRO 5350479] stepper
-motor, we can see that a pulse rate of $≈ 5\ \text{kHz}$ would be ideal.
+motor, we can see that a pulse rate of $≈ 5\ \text{kHz}$ would be ideal 
+if torque is the main concern.
 
 In order to achieve a reliable pulse rate, we can utilise __timer interrupts__,
 which is done using the `tc_lib` library for Arduino SAM. If you use a different board,

@@ -75,7 +75,7 @@ class CartpoleAgent(ABC):
 
         self.setup()
 
-        self.initialise_goal(self.goal_params)
+        self.update_goal(self.goal_params)
         self.initialise_state_spec()
 
         self.initialise()
@@ -214,7 +214,7 @@ class CartpoleAgent(ABC):
         """
         ...
 
-    def initialise_goal(self, goal_params: GoalParams) -> None:
+    def update_goal(self, goal_params: GoalParams) -> None:
         """
         Called by the agent after the main classes __init__ function
         to allow mixins to initialise.

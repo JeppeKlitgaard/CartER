@@ -244,6 +244,10 @@ RawPacket ExperimentInfoPacket::to_raw_packet() const
         case ExperimentInfoSpecifier::FAILURE_MODE :
             raw_packet.add(static_cast<int8_t>(std::get<FailureMode>(this->_value)));
             break;
+
+        case ExperimentInfoSpecifier::TRACK_LENGTH_STEPS :
+            raw_packet.add(std::get<int32_t>(this->_value));
+            break;
     }
 
     return raw_packet;

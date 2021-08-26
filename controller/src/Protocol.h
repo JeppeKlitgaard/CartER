@@ -317,6 +317,7 @@ enum class ExperimentInfoSpecifier
     NUL = 0,
     POSITION_DRIFT = 1,
     FAILURE_MODE = 2,
+    TRACK_LENGTH_STEPS = 3,
 };
 
 // ExperimentInfo

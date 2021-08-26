@@ -14,6 +14,7 @@ from matplotlib.animation import FFMpegWriter
 from commander.ml.agent import AgentSwingupGoalMixin, AgentTimeGoalMixin, make_agent
 from commander.ml.agent.agent import ExperimentalCartpoleAgent
 from commander.ml.agent.constants import ExperimentalInternalStateIdx
+from commander.ml.agent.goal import AgentRewardPotentialGoalMixin
 from commander.ml.agent.state_specification import (
     AgentPositionalKnowledgeStateSpecification,
     AgentTotalKnowledgeStateSpecification,
@@ -48,11 +49,13 @@ class Algorithm(str, Enum):
 class ConfigurationGoal(str, Enum):
     BALANCE = "BALANCE"
     SWINGUP = "SWINGUP"
+    BOUNCE = "BOUNCE"
 
 
 CONFIGURATION_GOAL_MAP = {
     "BALANCE": AgentTimeGoalMixin,
     "SWINGUP": AgentSwingupGoalMixin,
+    "BOUNCE": AgentRewardPotentialGoalMixin,
 }
 
 
@@ -86,7 +89,7 @@ CONFIGURATION_STATE_SPEC_MAP = {
     "-g",
     "--goal",
     type=click.Choice([_.value for _ in ConfigurationGoal], case_sensitive=False),
-    default=ConfigurationGoal.BALANCE,
+    default=ConfigurationGoal.BOUNCE,
 )
 @click.option(
     "-s",

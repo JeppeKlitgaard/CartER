@@ -18,7 +18,7 @@ class AgentGoalMixinBase(CartpoleAgent, ABC):
     without having to reimplement the mechanical logic.
     """
 
-    def initialise_goal(
+    def update_goal(
         self,
         goal_params: GoalParams,
     ) -> None:
@@ -42,6 +42,24 @@ class AgentGoalMixinBase(CartpoleAgent, ABC):
         ...
 
 
+class AgentRewardPotentialGoalMixin(AgentGoalMixinBase):
+    """ """
+
+    _DEFAULT_GOAL_PARAMS: GoalParams = {
+        "track_length_steps": 0,
+    }
+
+    def update_goal(self, goal_params: GoalParams) -> None:
+        self.track_length_steps = goal_params["track_length_steps"]
+
+    def reward(self, state: ExternalState) -> float:
+        x = state[self.external_state_idx.X]
+
+        return np.sin(x / self.track_length_steps * np.pi)
+
+    def _check_state(self, state: ExternalState) -> StateChecks:
+        return {}
+
 class AgentTimeGoalMixin(AgentGoalMixinBase):
     """
     This agent is fails when the cartpole leaves the allowed position region
@@ -60,7 +78,7 @@ class AgentTimeGoalMixin(AgentGoalMixinBase):
         "failure_angle_velo": (-np.inf, np.inf),  # rad/s
     }
 
-    def initialise_goal(
+    def update_goal(
         self,
         goal_params: GoalParams,
     ) -> None:
@@ -104,7 +122,7 @@ class AgentSwingupGoalMixin(AgentGoalMixinBase):
 
     tau: float
 
-    def initialise_goal(
+    def update_goal(
         self,
         goal_params: GoalParams,
     ) -> None:

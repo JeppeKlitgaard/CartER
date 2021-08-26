@@ -64,10 +64,7 @@ class NetworkManager:
 
         self.serial.timeout = None
 
-        # sleep 25ms and then flush buffers
-        sleep(0.025)
-        self.serial.reset_input_buffer()
-        self.serial.reset_output_buffer()
+        self.reset_buffers()
 
         return read_bytes.decode("ascii", errors="ignore")
 
@@ -83,6 +80,13 @@ class NetworkManager:
         output += "const byte INITIAL_OUTPUT_STOP_MARKER[" + hex_len_str + "] = {" + hex_str + "};"
 
         return output
+
+    def reset_buffers(self, wait: float = 0.025) -> None:
+        # sleep 25ms and then flush buffers
+        sleep(0.025)
+        self.serial.reset_input_buffer()
+        self.serial.reset_output_buffer()
+        sleep(0.025)
 
     def assert_ping_pong(self) -> None:
         """
@@ -305,12 +309,14 @@ class NetworkManager:
         packets: list[PacketT] = []
 
         while True:
+            still_block = block and not bool(packets)
+
             packet = self.get_packet(
                 packet_type=packet_type,
                 selector=selector,
                 pop=pop,
                 digest=digest,
-                block=block,
+                block=still_block,
                 callback=callback,
                 _excludes=packets,
             )
