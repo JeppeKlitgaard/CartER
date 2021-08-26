@@ -28,6 +28,7 @@ git clone https://github.com/JeppeKlitgaard/CartpoleML.git
 ## 3 - Poetry
 
 - [Install Poetry](https://python-poetry.org/docs/#installation)
+- Configure `poetry` to use local `venv` by running `poetry config virtualenvs.in-project true`
 - Run `poetry install` in `CartpoleML/` directory
 
 !!! Note "Virtual Environments"
