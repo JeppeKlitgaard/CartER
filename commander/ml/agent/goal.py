@@ -60,6 +60,7 @@ class AgentRewardPotentialGoalMixin(AgentGoalMixinBase):
     def _check_state(self, state: ExternalState) -> StateChecks:
         return {}
 
+
 class AgentTimeGoalMixin(AgentGoalMixinBase):
     """
     This agent is fails when the cartpole leaves the allowed position region

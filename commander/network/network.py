@@ -21,7 +21,7 @@ from commander.utils import noop
 
 logger = getLogger(__name__)
 
-PORT: str = "COM3"
+PORT: str = "/dev/ttyACM0"
 BAUDRATE: int = 74880
 
 DigestCallback = Callable[[], None]
@@ -30,7 +30,7 @@ DigestCallback = Callable[[], None]
 class NetworkManager:
     INITIAL_OUTPUT_STOP_MARKER: bytes = "END OF INITIALISATION\n".encode("ascii")
 
-    def __init__(self, port: str = "COM3", baudrate: int = 74880):
+    def __init__(self, port: str = "/dev/ttyACM0", baudrate: int = 74880):
         self.serial = Serial()
         self.serial.port = port
         self.serial.baudrate = baudrate

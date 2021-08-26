@@ -10,7 +10,6 @@ from typing import Any, Deque, Optional, Type, TypeVar, cast
 import numpy as np
 
 from gym import spaces
-from gym.envs.classic_control import rendering
 from gym.utils import seeding
 
 from scipy.integrate import solve_ivp
@@ -20,6 +19,7 @@ from commander.integration import DerivativesWrapper, IntegratorOptions
 from commander.ml.agent.constants import ExternalStateIdx, ExternalStateMap, InternalStateIdx
 from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
+from commander.ml.display import rendering
 from commander.network import NetworkManager
 from commander.network.constants import CartID, SetOperation
 from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetVelocityPacket
@@ -439,7 +439,7 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         self,
         name: str = "Cartpole_1",
         cart_id: CartID = CartID.ONE,
-        port: str = "COM3",
+        port: str = "/dev/ttyACM0",
         baudrate: int = 74880,
         settled_x_threshold: float = 5.0,
         settled_theta_threshold: float = radians(0.25),

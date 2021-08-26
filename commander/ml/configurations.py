@@ -94,7 +94,7 @@ class ExperimentAgentConfiguration(AgentConfiguration, total=False):
 
 DefaultExperimentConfiguration: ExperimentConfiguration = {
     "agent": {
-        "port": "COM3",
+        "port": "/dev/ttyACM0",
         "baudrate": 74880,
     }
 }

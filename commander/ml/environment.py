@@ -7,7 +7,7 @@ from typing import Any, Generic, Optional, Type, TypedDict, cast
 import gym
 import supersuit as ss
 from gym import spaces
-from gym.envs.classic_control import rendering
+from commander.ml.display import rendering
 from pettingzoo.utils.env import ParallelEnv
 
 import deepmerge
@@ -340,7 +340,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def __init__(
         self,
         agents: Sequence[ExperimentalCartpoleAgent],
-        port: str = "COM3",
+        port: str = "/dev/ttyACM0",
         baudrate: int = 74880,
         observation_buffer_size: int = 100,
     ) -> None:
