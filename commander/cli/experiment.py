@@ -176,14 +176,15 @@ def experiment(
     # Algorithm-dependent hyperparameters
     policy_params: dict[str, Any] = {}
     if algorithm == Algorithm.PPO:
-        policy_params["n_steps"] = 8
-        policy_params["batch_size"] = 8
-        policy_params["gae_lambda"] = 0.8
-        policy_params["gamma"] = 0.98
-        policy_params["n_epochs"] = 20
-        policy_params["ent_coef"] = 0.0
-        policy_params["learning_rate"] = lambda x: 0.001 * x
-        policy_params["clip_range"] = lambda x: 0.2 * x
+        # policy_params["n_steps"] = 8
+        # policy_params["batch_size"] = 8
+        # policy_params["gae_lambda"] = 0.8
+        # policy_params["gamma"] = 0.98
+        # policy_params["n_epochs"] = 20
+        # policy_params["ent_coef"] = 0.0
+        # policy_params["learning_rate"] = lambda x: 0.001 * x
+        # policy_params["clip_range"] = lambda x: 0.2 * x
+        pass
 
     # Callbacks
     general_cartpoleml_callback = GeneralCartpoleMLCallback()
