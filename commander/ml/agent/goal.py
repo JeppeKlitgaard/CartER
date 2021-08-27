@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import cast
+from typing import cast, Union
 
 import numpy as np
 
@@ -61,6 +61,8 @@ class AgentRewardPotentialGoalMixin(AgentGoalMixinBase):
         ),  # rad
         "failure_angle_velo": (-np.inf, np.inf),  # rad/s
     }
+
+    track_length: Union[float, int]
 
     def update_goal(self, goal_params: GoalParams) -> None:
         self.__dict__ |= goal_params
