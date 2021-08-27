@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import cast
 
 import numpy as np
 
@@ -43,22 +44,49 @@ class AgentGoalMixinBase(CartpoleAgent, ABC):
 
 
 class AgentRewardPotentialGoalMixin(AgentGoalMixinBase):
-    """ """
+    """
+    Agent is rewarded with a sine potential such that it get no reward at the edges
+    and 1 at the centre.
+    """
+
+    _DEFAULT_FAILURE_ANGLE = 2 * np.pi * 12 / 360
 
     _DEFAULT_GOAL_PARAMS: GoalParams = {
-        "track_length_steps": 0,
+        "track_length": 1,
+        "failure_position": (-0.5, 0.5),  # m
+        "failure_position_velo": (-np.inf, np.inf),  # m/s
+        "failure_angle": (
+            -_DEFAULT_FAILURE_ANGLE,
+            _DEFAULT_FAILURE_ANGLE,
+        ),  # rad
+        "failure_angle_velo": (-np.inf, np.inf),  # rad/s
     }
 
     def update_goal(self, goal_params: GoalParams) -> None:
-        self.track_length_steps = goal_params["track_length_steps"]
+        self.failure_position = goal_params["failure_position"]
+        self.failure_position_velo = goal_params["failure_position_velo"]
+        self.failure_angle = goal_params["failure_angle"]
+        self.failure_angle_velo = goal_params["failure_angle_velo"]
+
+        self.track_length = goal_params["track_length"]
 
     def reward(self, state: ExternalState) -> float:
         x = state[self.external_state_idx.X]
 
-        return np.sin(x / self.track_length_steps * np.pi)
+        return cast(float, np.sin(x / self.track_length * np.pi))
 
     def _check_state(self, state: ExternalState) -> StateChecks:
-        return {}
+        x = state[self.external_state_idx.X]
+        theta = state[self.external_state_idx.THETA]
+
+        checks = {
+            FailureDescriptors.POSITION_LEFT: x < self.failure_position[0],
+            FailureDescriptors.POSITION_RIGHT: x > self.failure_position[1],
+            FailureDescriptors.ANGLE_RIGHT: theta < self.failure_angle[0],
+            FailureDescriptors.ANGLE_LEFT: theta > self.failure_angle[1],
+        }
+
+        return checks
 
 
 class AgentTimeGoalMixin(AgentGoalMixinBase):

@@ -408,11 +408,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                 self.environment_state["failure_mode"] = cast(FailureMode, exp_info_pkt.value)
 
             elif exp_info_pkt.specifier == ExperimentInfoSpecifier.TRACK_LENGTH_STEPS:
-                self.environment_state["track_length_steps"] = cast(int, exp_info_pkt.value)
+                self.environment_state["track_length"] = cast(int, exp_info_pkt.value)
 
                 for agent in self.get_agents():
                     agent.update_goal(
-                        {"track_length_steps": self.environment_state["track_length_steps"]}
+                        {"track_length": cast(int, self.environment_state["track_length"])}
                     )
 
             else:
@@ -438,7 +438,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             "failure_agent": None,
             "failure_agent_name": None,
             "failure_mode": FailureMode.NUL,
-            "track_length_steps": None,
+            "track_length": None,
             "last_observation_times": {},
         }
 
