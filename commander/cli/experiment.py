@@ -216,10 +216,15 @@ def experiment(
 
         try:
             model.learn(total_timesteps=total_timesteps, callback=callbacks)
-        except KeyboardInterrupt:
-            print("Stopping learning and saving model")
+        except KeyboardInterrupt as exc:
+            logger.info("Stopping learning and saving model")
+            model.save(model_path)
 
-        model.save(model_path)
+            logger.info("Reraising exception for debugging purposes")
+
+            raise exc
+        else:
+            model.save(model_path)
 
     # if render:
     #     env = make_env(**env_params)
