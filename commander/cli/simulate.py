@@ -88,7 +88,8 @@ def simulate(
 
     if CONFIGURATION_GOAL_MAP[goal] is AgentRewardPotentialGoalMixin:
         agent_params["start_angle"] = np.pi
-        agent_params["goal_params"]["failure_position"] = (-0.5, 0.5)
+        agent_params["start_pos"] = 0.5
+        agent_params["goal_params"]["failure_position"] = (0, 1.0)
         agent_params["goal_params"]["failure_angle"] = (-np.inf, np.inf)
         agent_params["goal_params"]["track_length"] = 0.98
 
