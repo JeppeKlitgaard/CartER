@@ -12,8 +12,6 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.logger import Logger, Video
 
-from commander.ml.environment import get_sb3_env_root_env
-
 logger = logging.getLogger(__name__)
 
 
@@ -66,6 +64,14 @@ class GeneralCartpoleMLCallback(BaseCallback):
             # Total world time
             if world_time := info.get("total_world_time"):
                 self.logger.record("time/total_world_time", world_time)
+
+            # Total world time
+            if total_world_time := info.get("total_world_time"):
+                self.logger.record("time/total_world_time", total_world_time)
+
+            # Observation frequency
+            if obs_freq := info.get("observation_frequency"):
+                self.logger.record("time/observation_frequency", obs_freq)
 
             # Failure Modes
             if "failure_modes" in info.keys():

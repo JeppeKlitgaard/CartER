@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping, Sequence
+from time import time
 from typing import Any, Generic, Optional, Type, TypedDict, cast
 
 import gym
 import supersuit as ss
 from gym import spaces
-from time import time
 from pettingzoo.utils.env import ParallelEnv
 
 import deepmerge
@@ -42,7 +42,7 @@ from commander.network.protocol import (
     SoftLimitReachedPacket,
 )
 from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepReturn
-from commander.utils import raises
+from commander.utils import FrequencyTicker, raises
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +110,8 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
         self.episode: int = 0
         self.total_world_time: float = 0.0
 
+        self.observation_freq_ticker = FrequencyTicker()
+
     def reset(self) -> Mapping[str, ExternalState]:
         self.episode += 1
         observations = {}
@@ -125,6 +127,8 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
         self.viewer: Optional[rendering.Viewer] = None
         self.world_time: float = 0.0
 
+        self.observation_freq_ticker.clear()
+
         # Return observations from agent reset
         return observations
 
@@ -135,6 +139,14 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
         raise NotImplementedError("This should be overridden")
 
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
+        """
+        Performs a step using a dict of actions matching the current agents.
+        """
+        self.observation_freq_ticker.tick()
+
+        return self._step(actions=actions)
+
+    def _step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         """
         Performs a step using a dict of actions matching the current agents.
         """
@@ -182,7 +194,7 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
 
             agent.tau = self.timestep
 
-    def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
+    def _step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         """
         Performs a single step in the environment using the currently selector agent
         to perform the given action.
@@ -229,6 +241,7 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
             info["environment_episode"] = self.episode
             info["world_time"] = self.world_time
             info["total_world_time"] = self.total_world_time
+            info["observation_frequency"] = self.observation_freq_ticker.measure()
 
             observations[agent_name] = observation
             rewards[agent_name] = reward
@@ -656,7 +669,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         return infos
 
-    def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
+    def _step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         # ! For now assume single cart. Change later
         # Very ugly temporary code - I'd like it to work today
 
@@ -718,6 +731,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             world_time = time() - self.world_time_start
             info["world_time"] = world_time
             info["total_world_time"] = self.total_world_time
+            info["observation_frequency"] = self.observation_freq_ticker.measure()
 
             if done:
                 failure_modes = [k.value for k, v in checks.items() if v]
@@ -726,7 +740,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                 info["failure_modes"] = failure_modes
 
                 self.total_world_time += world_time
-
 
             observations[agent_name] = observation
             rewards[agent_name] = reward
