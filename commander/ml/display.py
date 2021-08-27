@@ -1,11 +1,12 @@
-from types import ModuleType
-from typing import Optional
+from typing import Any, cast
 
 from pyglet.canvas.xlib import NoSuchDisplayException
 
 # Display detection
-rendering: Optional[ModuleType]
 try:
-    from gym.envs.classic_control import rendering  # type: ignore[no-redef]
+    from gym.envs.classic_control import rendering
 except NoSuchDisplayException:
-    rendering = None
+    rendering = cast(Any, None)
+
+
+__all__ = ("rendering",)

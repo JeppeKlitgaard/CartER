@@ -2,7 +2,7 @@
 Type alises for agents.
 """
 
-from typing import Any, TypedDict, Union
+from typing import TypedDict, Union
 
 
 class CommonGoalParams(TypedDict, total=False):
@@ -19,4 +19,4 @@ class CommonGoalParams(TypedDict, total=False):
     track_length: Union[int, float]
 
 
-GoalParams = Union[CommonGoalParams, dict[str, Any]]
+GoalParams = Union[CommonGoalParams]

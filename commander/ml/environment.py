@@ -40,7 +40,6 @@ from commander.network.protocol import (
     SetVelocityPacket,
     SoftLimitReachedPacket,
 )
-from commander.network.selectors import message_startswith
 from commander.type_aliases import AgentNameT, ExternalState, StepInfo, StepReturn
 from commander.utils import raises
 
@@ -54,7 +53,7 @@ class EnvironmentState(TypedDict):
     failure_agent: Optional[CartpoleAgent]
     failure_agent_name: Optional[AgentNameT]
     failure_mode: FailureMode
-    track_length_steps: Optional[int]
+    track_length: Optional[int]
     last_observation_times: dict[AgentNameT, int]
 
 
@@ -233,6 +232,9 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
         return observations, rewards, dones, infos
 
     def render(self, mode: str = "human") -> rendering.Viewer:
+        if rendering is None:
+            raise SystemError("Display not available. Cannot render.")
+
         screen_width = 600
         screen_height = 400
 
@@ -396,11 +398,14 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                 agent = None
 
             if exp_info_pkt.specifier == ExperimentInfoSpecifier.POSITION_DRIFT:
+                assert agent is not None
+
                 self.environment_state["position_drifts"][agent.name] = cast(
                     int, exp_info_pkt.value
                 )
 
             elif exp_info_pkt.specifier == ExperimentInfoSpecifier.FAILURE_MODE:
+                assert agent is not None
 
                 self.environment_state["failure_cart_id"] = exp_info_pkt.cart_id
                 self.environment_state["failure_agent"] = agent

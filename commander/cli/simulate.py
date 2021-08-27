@@ -1,6 +1,7 @@
 import logging
-from enum import Enum
 from typing import Any
+
+import numpy as np
 
 import click
 import matplotlib.pyplot as plt
@@ -9,18 +10,18 @@ from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
 from stable_baselines3.common.callbacks import EvalCallback
 
-from commander.ml.agent import (
-    AgentSwingupGoalMixin,
-    AgentTimeGoalMixin,
-    SimulatedCartpoleAgent,
-    make_agent,
+from commander.cli.simexp_base import (
+    ALGORITHM_POLICY_PARAMS_MAP,
+    CONFIGURATION_GOAL_MAP,
+    CONFIGURATION_STATE_SPEC_MAP,
+    Algorithm,
+    ConfigurationStateSpec,
+    simexp_common_decorator,
 )
+from commander.ml.agent import SimulatedCartpoleAgent, make_agent
 from commander.ml.agent.constants import SimulatedInternalStateIdx
-from commander.ml.agent.state_specification import (
-    AgentPositionalKnowledgeStateSpecification,
-    AgentTotalKnowledgeStateSpecification,
-    make_state_spec,
-)
+from commander.ml.agent.goal import AgentRewardPotentialGoalMixin
+from commander.ml.agent.state_specification import make_state_spec
 from commander.ml.configurations import DeepPILCOConfiguration
 from commander.ml.environment import SimulatedCartpoleEnv, get_sb3_env_root_env, make_sb3_env
 from commander.ml.tensorboard import GeneralCartpoleMLCallback, SimulatedTimeCallback
@@ -31,74 +32,7 @@ SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 logger = logging.getLogger(__name__)
 
 
-class Algorithm(str, Enum):
-    # Note: Not all of these actually work with our action space and multiple agents
-    # Known working: A2C, PPO
-    A2C = "A2C"
-    DDPG = "DDPG"
-    DQN = "DQN"
-    HER = "HER"
-    PPO = "PPO"
-    SAC = "SAC"
-    TD3 = "TD3"
-
-
-class ConfigurationGoal(str, Enum):
-    BALANCE = "BALANCE"
-    SWINGUP = "SWINGUP"
-
-
-CONFIGURATION_GOAL_MAP = {
-    "BALANCE": AgentTimeGoalMixin,
-    "SWINGUP": AgentSwingupGoalMixin,
-}
-
-
-class ConfigurationStateSpec(str, Enum):
-    TOTAL_KNOWLEDGE = "TOTAL_KNOWLEDGE"
-    POSITIONAL_KNOWLEDGE = "POSITIONAL_KNOWLEDGE"
-
-
-CONFIGURATION_STATE_SPEC_MAP = {
-    "TOTAL_KNOWLEDGE": AgentTotalKnowledgeStateSpecification,
-    "POSITIONAL_KNOWLEDGE": AgentPositionalKnowledgeStateSpecification,
-}
-
-
-@click.command()
-@click.pass_context
-@click.option("--train/--no-train", default=True)
-@click.option("--load/--no-load", default=True)
-@click.option("--render/--no-render", default=True)
-@click.option("--render-with-best/--no-render-with-best", default=True)
-@click.option("--tensorboard/--no-tensorboard", default=True)
-@click.option("--record/--no-record", default=True)
-@click.option("-t", "--total-timesteps", type=int, default=100000)
-@click.option(
-    "-c",
-    "--carts",
-    type=int,
-    default=1,
-)
-@click.option(
-    "-g",
-    "--goal",
-    type=click.Choice([_.value for _ in ConfigurationGoal], case_sensitive=False),
-    default=ConfigurationGoal.BALANCE,
-)
-@click.option(
-    "-s",
-    "--state-spec",
-    type=click.Choice([_.value for _ in ConfigurationStateSpec], case_sensitive=False),
-    default=ConfigurationStateSpec.POSITIONAL_KNOWLEDGE,
-)
-@click.option(
-    "-a",
-    "--algorithm",
-    type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
-    default=Algorithm.PPO,
-)
-@click.option("-n", "--num-frame-stacking", type=int, default=-1)
+@simexp_common_decorator
 def simulate(
     ctx: click.Context,
     train: bool,
@@ -147,7 +81,7 @@ def simulate(
 
     agent_params = DeepPILCOConfiguration["agent"].copy()
     agent_params["agent"] = SimulatedCartpoleAgent  # type: ignore [misc]
-    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]  # type: ignore [misc]
+    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]
     agent_params["state_spec"] = make_state_spec(
         CONFIGURATION_STATE_SPEC_MAP[state_spec], SimulatedInternalStateIdx  # type: ignore [misc]
     )
@@ -171,17 +105,7 @@ def simulate(
         "world_size": (-5, 5),
     }
 
-    # Algorithm-dependent hyperparameters
-    policy_params: dict[str, Any] = {}
-    if algorithm == Algorithm.PPO:
-        policy_params["n_steps"] = 32 * 8
-        policy_params["batch_size"] = 64
-        policy_params["gae_lambda"] = 0.8
-        policy_params["gamma"] = 0.98
-        policy_params["n_epochs"] = 20
-        policy_params["ent_coef"] = 0.0
-        policy_params["learning_rate"] = lambda x: 0.001 * x
-        policy_params["clip_range"] = lambda x: 0.2 * x
+    policy_params = ALGORITHM_POLICY_PARAMS_MAP[Algorithm(algorithm)]
 
     # Callbacks
     eval_env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
@@ -217,10 +141,15 @@ def simulate(
 
         try:
             model.learn(total_timesteps=total_timesteps, callback=callbacks)
-        except KeyboardInterrupt:
-            print("Stopping learning and saving model")
+        except KeyboardInterrupt as exc:
+            logger.info("Stopping learning and saving model")
+            model.save(model_path)
 
-        model.save(model_path)
+            logger.info("Reraising exception for debugging purposes")
+
+            raise exc
+        else:
+            model.save(model_path)
 
     if render:
         env = make_sb3_env(SimulatedCartpoleEnv, **env_params)

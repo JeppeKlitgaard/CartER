@@ -1,6 +1,5 @@
 import datetime as dt
 import logging
-from pathlib import Path
 from typing import Type
 
 from commander.network.protocol import (

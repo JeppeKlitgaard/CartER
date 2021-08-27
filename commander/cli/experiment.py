@@ -159,7 +159,9 @@ def experiment(
 
     agent_params["agent"] = ExperimentalCartpoleAgent  # type: ignore [misc]
     agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]  # type: ignore [misc]
-    agent_params["state_spec"] = make_state_spec(CONFIGURATION_STATE_SPEC_MAP[state_spec], ExperimentalInternalStateIdx)  # type: ignore [misc]
+    agent_params["state_spec"] = make_state_spec(
+        CONFIGURATION_STATE_SPEC_MAP[state_spec], ExperimentalInternalStateIdx  # type: ignore [misc]
+    )
 
     agents = []
     for i in range(carts):
