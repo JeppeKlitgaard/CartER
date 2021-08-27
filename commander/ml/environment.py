@@ -717,6 +717,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
             world_time = time() - self.world_time_start
             info["world_time"] = world_time
+            info["total_world_time"] = self.total_world_time
 
             if done:
                 failure_modes = [k.value for k, v in checks.items() if v]
@@ -725,7 +726,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                 info["failure_modes"] = failure_modes
 
                 self.total_world_time += world_time
-                info["total_world_time"] = self.total_world_time
 
 
             observations[agent_name] = observation
