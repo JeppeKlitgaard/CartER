@@ -45,6 +45,9 @@ void setup()
     // Steppers
     setup_steppers();
 
+    // I2C Multiplexer
+    setup_I2C_multiplexer();
+
     // Rotary Encoders
     setup_rotary_encoders();
 

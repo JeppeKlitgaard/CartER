@@ -3,6 +3,7 @@
 #include <CustomAS5600.h>
 #include <DebugUtils.h>
 
+#include <RotaryEncoder.h>
 #include <I2CMultiplexer.h>
 
 CustomAMS_5600::CustomAMS_5600() {}
@@ -58,7 +59,8 @@ void CustomAMS_5600::start(uint8_t addr)
         {
             packet_sender.send_info("Cannot detect magnet");
         }
-        delay(100); // ms
+        power_cycle_I2C_multiplexer();
+        power_cycle_rotary_encoders();
     }
 
     packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Magnitude: " + std::to_string(getMagnitude()));
