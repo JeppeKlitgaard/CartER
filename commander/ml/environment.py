@@ -7,6 +7,7 @@ from typing import Any, Generic, Optional, Type, TypedDict, cast
 import gym
 import supersuit as ss
 from gym import spaces
+from time import time
 from pettingzoo.utils.env import ParallelEnv
 
 import deepmerge
@@ -106,9 +107,11 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
 
         Not called after each reset.
         """
+        self.episode: int = 0
         self.total_world_time: float = 0.0
 
     def reset(self) -> Mapping[str, ExternalState]:
+        self.episode += 1
         observations = {}
 
         # This needs to be agent names/ids
@@ -132,6 +135,9 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
         raise NotImplementedError("This should be overridden")
 
     def step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
+        """
+        Performs a step using a dict of actions matching the current agents.
+        """
         raise NotImplementedError("This should be overriden")
 
     def get_agents(self, all_: bool = False) -> list[CartpoleAgentT]:
@@ -220,6 +226,9 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
             info["x"] = observation_dict["x"]
             info["theta"] = observation_dict["theta"]
             info["agent_name"] = agent.name
+            info["environment_episode"] = self.episode
+            info["world_time"] = self.world_time
+            info["total_world_time"] = self.total_world_time
 
             observations[agent_name] = observation
             rewards[agent_name] = reward
@@ -514,7 +523,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             RequestDebugInfoPacket, digest=True, block=True, callback=self._process_buffer
         )
 
-        # self.network_tick()
+        self.total_world_time: float = 0.0
 
         logger.info("Experimental environment setup done")
 
@@ -569,6 +578,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         logger.info("Setting velocity")
         velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=0)
         self.network_manager.send_packet(velo_pkt)
+
+        self.world_time_start = time()
 
         return super().reset()
 
@@ -697,17 +708,25 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             info["x"] = observation_dict["x"]
             info["theta"] = observation_dict["theta"]
             info["agent_name"] = agent.name
+            info["environment_episode"] = self.episode
 
             checks = agent.check_state(observation)
             done = any(checks.values())
 
             reward = agent.reward(observation) if not done else 0.0
 
+            world_time = time() - self.world_time_start
+            info["world_time"] = world_time
+
             if done:
                 failure_modes = [k.value for k, v in checks.items() if v]
                 logger.info(f"Failure modes: {failure_modes}")
 
-                infos[agent.name]["failure_modes"] = failure_modes
+                info["failure_modes"] = failure_modes
+
+                self.total_world_time += world_time
+                info["total_world_time"] = self.total_world_time
+
 
             observations[agent_name] = observation
             rewards[agent_name] = reward

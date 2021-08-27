@@ -17,27 +17,6 @@ from commander.ml.environment import get_sb3_env_root_env
 logger = logging.getLogger(__name__)
 
 
-class SimulatedTimeCallback(BaseCallback):
-    """
-    Adds simulated world time to tensorboard.
-    """
-
-    def __init__(self, verbose: int = 0) -> None:
-        super().__init__(verbose)
-
-    def _on_step(self) -> bool:
-        # Bit of an ugly hack, but par_env does not bring unwrapping forward
-        self.training_env = cast(Any, self.training_env)  # Unwrapping is not nice with typing
-        root_env = get_sb3_env_root_env(self.training_env)
-
-        assert isinstance(self.logger, Logger)
-
-        self.logger.record("time/world_time", root_env.world_time)
-        self.logger.record("time/total_world_time", root_env.total_world_time)
-
-        return True
-
-
 class GeneralCartpoleMLCallback(BaseCallback):
     """
     Adds a few general metrics to Tensorboard
@@ -75,6 +54,18 @@ class GeneralCartpoleMLCallback(BaseCallback):
         for info in self.locals["infos"]:
             assert "agent_name" in info.keys()
             name = info["agent_name"]
+
+            # Episode
+            if episode := info.get("environment_episode"):
+                self.logger.record("time/env_episode", episode)
+
+            # World time
+            if world_time := info.get("world_time"):
+                self.logger.record("time/world_time", world_time)
+
+            # Total world time
+            if world_time := info.get("total_world_time"):
+                self.logger.record("time/total_world_time", world_time)
 
             # Failure Modes
             if "failure_modes" in info.keys():
