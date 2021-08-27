@@ -17,8 +17,8 @@ extern Bounce2::Button limit_sw_right;
 const int LEFT_LIMIT_SW_PIN = 22;
 const int RIGHT_LIMIT_SW_PIN = 23;
 
-const float_t LIMIT_RETRACTION_DISTANCE = 20.0;
-const float_t LIMIT_SAFETY_DISTANCE = 25.0;
+const float_t LIMIT_RETRACTION_DISTANCE = 5.0;
+const float_t LIMIT_SAFETY_DISTANCE = 20.0;
 
 void setup_limit_switches();
 void update_limit_switches();
@@ -80,7 +80,7 @@ const float_t LIMIT_CHECK_SUPER_FAST_MARGIN_DISTANCE = 10.0;
 
 extern LimitCheckMode limit_check_mode;
 
-const uint16_t JIGGLE_COUNT = 100;
+const uint16_t JIGGLE_COUNT = 50;
 const uint32_t JIGGLE_SPEED_DISTANCE = Speed::SUPER_FAST;
 
 extern float_t track_length_distance;
