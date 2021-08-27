@@ -204,6 +204,7 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
 
             info = agent.step(action)
             observation = agent.observe()
+            observation_dict = agent.observe_as_dict()
 
             checks = agent.check_state(observation)
             done = any(checks.values())
@@ -215,6 +216,10 @@ class SimulatedCartpoleEnv(CartpoleEnv[SimulatedCartpoleAgent]):
                 logger.info(f"Failure modes: {failure_modes}")
 
                 info["failure_modes"] = failure_modes
+
+            info["x"] = observation_dict["x"]
+            info["theta"] = observation_dict["theta"]
+            info["agent_name"] = agent.name
 
             observations[agent_name] = observation
             rewards[agent_name] = reward
@@ -691,6 +696,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
             info["x"] = observation_dict["x"]
             info["theta"] = observation_dict["theta"]
+            info["agent_name"] = agent.name
 
             checks = agent.check_state(observation)
             done = any(checks.values())

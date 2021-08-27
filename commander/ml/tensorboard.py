@@ -32,26 +32,8 @@ class SimulatedTimeCallback(BaseCallback):
 
         assert isinstance(self.logger, Logger)
 
-        self.logger.record("custom/world_time", root_env.world_time)
-        self.logger.record("custom/total_world_time", root_env.total_world_time)
-
-        return True
-
-
-class ExperimentalDataCallback(BaseCallback):
-    """
-    Adds the experimental data from the experimental agent to tensorboard
-    """
-
-    def _on_step(self) -> bool:
-
-        assert isinstance(self.logger, Logger)
-
-        for infos in self.locals["infos"]:
-            if x := infos.get("x"):
-                self.logger.record("experiment/x", x)
-            if theta := infos.get("theta"):
-                self.logger.record("experiment/theta", theta)
+        self.logger.record("time/world_time", root_env.world_time)
+        self.logger.record("time/total_world_time", root_env.total_world_time)
 
         return True
 
@@ -89,13 +71,22 @@ class GeneralCartpoleMLCallback(BaseCallback):
             if position_drift := infos.get("position_drift"):
                 self.logger.record("cartpoleml/position_drift", position_drift)
 
-        # Failure Modes
         failure_modes = []
         for info in self.locals["infos"]:
-            if "failure_modes" not in info.keys():
-                continue
+            assert "agent_name" in info.keys()
+            name = info["agent_name"]
 
-            failure_modes.extend(info["failure_modes"])
+            # Failure Modes
+            if "failure_modes" in info.keys():
+                failure_modes.extend(info["failure_modes"])
+
+            # x
+            if x := info.get("x"):
+                self.logger.record(f"cartpole_ml/x_{name}", x)
+
+            # theta
+            if theta := info.get("theta"):
+                self.logger.record(f"cartpole_ml/theta_{name}", theta)
 
         failure_mode: str
         if not failure_modes:
@@ -110,14 +101,15 @@ class GeneralCartpoleMLCallback(BaseCallback):
 
         failure_category = failure_mode.split("/")[0]
 
-        self.logger.record("cartpoleml/failure_descriptor_text", failure_mode)
+        self.logger.record(f"cartpoleml/failure_descriptor_text_{name}", failure_mode)
         self.logger.record(
-            "cartpoleml/failure_descriptor_num", self.FAILURE_MODE_TO_NUM[failure_mode]
+            f"cartpoleml/failure_descriptor_num_{name}", self.FAILURE_MODE_TO_NUM[failure_mode]
         )
 
-        self.logger.record("cartpoleml/failure_category_text", failure_category)
+        self.logger.record(f"cartpoleml/failure_category_text_{name}", failure_category)
         self.logger.record(
-            "cartpoleml/failure_category_num", self.FAILURE_CATEGORY_TO_NUM[failure_category]
+            f"cartpoleml/failure_category_num_{name}",
+            self.FAILURE_CATEGORY_TO_NUM[failure_category],
         )
 
         return True

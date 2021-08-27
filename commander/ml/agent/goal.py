@@ -63,12 +63,7 @@ class AgentRewardPotentialGoalMixin(AgentGoalMixinBase):
     }
 
     def update_goal(self, goal_params: GoalParams) -> None:
-        self.failure_position = goal_params["failure_position"]
-        self.failure_position_velo = goal_params["failure_position_velo"]
-        self.failure_angle = goal_params["failure_angle"]
-        self.failure_angle_velo = goal_params["failure_angle_velo"]
-
-        self.track_length = goal_params["track_length"]
+        self.__dict__ |= goal_params
 
     def reward(self, state: ExternalState) -> float:
         x = state[self.external_state_idx.X]

@@ -23,7 +23,7 @@ from commander.ml.agent.constants import ExperimentalInternalStateIdx
 from commander.ml.agent.state_specification import make_state_spec
 from commander.ml.configurations import CartpoleMLExperimentConfiguration
 from commander.ml.environment import ExperimentalCartpoleEnv, get_sb3_env_root_env, make_sb3_env
-from commander.ml.tensorboard import ExperimentalDataCallback, GeneralCartpoleMLCallback
+from commander.ml.tensorboard import GeneralCartpoleMLCallback
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 
@@ -107,9 +107,8 @@ def experiment(
 
     # Callbacks
     general_cartpoleml_callback = GeneralCartpoleMLCallback()
-    experimental_data_callback = ExperimentalDataCallback()
 
-    callbacks = [general_cartpoleml_callback, experimental_data_callback]
+    callbacks = [general_cartpoleml_callback]
 
     algorithm_obj = getattr(stable_baselines3, algorithm)
     env = make_sb3_env(ExperimentalCartpoleEnv, **env_params)
