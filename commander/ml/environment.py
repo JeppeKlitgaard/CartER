@@ -55,6 +55,7 @@ class EnvironmentState(TypedDict):
     failure_agent_name: Optional[AgentNameT]
     failure_mode: FailureMode
     track_length_steps: Optional[int]
+    last_observation_times: dict[AgentNameT, int]
 
 
 class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
@@ -438,7 +439,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             "failure_agent_name": None,
             "failure_mode": FailureMode.NUL,
             "track_length_steps": None,
+            "last_observation_times": {},
         }
+
+        for agent in self.get_agents():
+            self.environment_state["last_observation_times"][agent.name] = 0
 
     def setup(self) -> None:
         logger.info("Running experimental environment setup")
@@ -655,11 +660,29 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             }
             dones[self.environment_state["failure_agent_name"]] = True
 
+        while True:
+            all_observations_are_new = all(
+                [
+                    self.environment_state["last_observation_times"][agent.name]
+                    != agent.last_observation_time
+                    for agent in self.get_agents()
+                ]
+            )
+
+            if all_observations_are_new:
+                break
+
+            self.network_tick()
+
         for agent in self.get_agents():
             info: StepInfo = {}
 
             observation = agent.observe()
             observation_dict = agent.observe_as_dict()
+
+            self.environment_state["last_observation_times"][
+                agent.name
+            ] = agent.last_observation_time
 
             info["x"] = observation_dict["x"]
             info["theta"] = observation_dict["theta"]
