@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Type
 
 
@@ -23,3 +24,13 @@ def noop() -> None:
     No operation.
     """
     pass
+
+
+def get_project_root() -> Path:
+    """
+    Returns the project root as a Path object.
+    """
+    this_file = Path(__file__)
+    project_root_path = (this_file / ".." / "..").resolve()
+
+    return project_root_path

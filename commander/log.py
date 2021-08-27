@@ -11,6 +11,7 @@ from commander.network.protocol import (
     Packet,
     SetVelocityPacket,
 )
+from commander.utils import get_project_root
 
 
 class PacketFilter(logging.Filter):
@@ -41,8 +42,10 @@ def setup_logging(console: bool = True, file: bool = True) -> None:
         logging.root.addHandler(console_handler)
 
     if file:
+        project_root_path = get_project_root()
+
         file_formatter = logging.Formatter("%(asctime)s %(name)-30s %(levelname)-8s %(message)s")
-        file_path = Path("logs") / f"commander_{now_str}.log"
+        file_path = project_root_path / "logs" / f"commander_{now_str}.log"
         file_handler = logging.FileHandler(file_path)
         file_handler.setFormatter(file_formatter)
         file_handler.setLevel(logging.DEBUG)

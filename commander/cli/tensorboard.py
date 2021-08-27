@@ -1,8 +1,10 @@
+import logging
 import webbrowser as webbrowser_m
 from time import sleep
 
 import click
 from tensorboard import program
+from tensorboard.util.tb_logging import get_logger
 
 
 @click.command()
@@ -11,6 +13,10 @@ from tensorboard import program
 @click.option("-w", "--webbrowser/--no-webbrowser", default=True)
 def tensorboard(ctx: click.Context, experiment: str, webbrowser: bool) -> None:
     tb = program.TensorBoard()
+
+    logger = get_logger()
+    logger.setLevel(logging.INFO)
+    logger.info(f"Experiment: {experiment}")
 
     output_dir = ctx.obj["output_dir"]
 
@@ -21,6 +27,9 @@ def tensorboard(ctx: click.Context, experiment: str, webbrowser: bool) -> None:
         logdir = output_dir / latest
     else:
         logdir = output_dir / experiment
+
+    logdir = logdir.resolve()
+    logger.info(f"Logdir: {logdir}")
 
     tb.configure(argv=[None, "--logdir", str(logdir)])
     tb.launch()
