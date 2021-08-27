@@ -32,10 +32,10 @@ def tensorboard(ctx: click.Context, experiment: str, webbrowser: bool) -> None:
     logger.info(f"Logdir: {logdir}")
 
     tb.configure(argv=[None, "--logdir", str(logdir)])
-    tb.launch()
+    tb_url = tb.launch()
 
     if webbrowser:
-        webbrowser_m.open_new_tab("http://localhost:6006")
+        webbrowser_m.open_new_tab(tb_url)
 
     while True:
         sleep(100.0)
