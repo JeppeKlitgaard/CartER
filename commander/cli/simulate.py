@@ -105,6 +105,7 @@ def simulate(
         "world_size": (-5, 5),
     }
 
+    # Algorithm-dependent hyperparameters
     policy_params = ALGORITHM_POLICY_PARAMS_MAP[Algorithm(algorithm)]
 
     # Callbacks

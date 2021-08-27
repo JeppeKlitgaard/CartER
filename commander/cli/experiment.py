@@ -1,6 +1,4 @@
 import logging
-from enum import Enum
-from math import exp
 from typing import Any
 
 import numpy as np
@@ -11,22 +9,20 @@ import stable_baselines3
 from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
 
-from commander.ml.agent import AgentSwingupGoalMixin, AgentTimeGoalMixin, make_agent
+from commander.cli.simexp_base import (
+    ALGORITHM_POLICY_PARAMS_MAP,
+    CONFIGURATION_GOAL_MAP,
+    CONFIGURATION_STATE_SPEC_MAP,
+    Algorithm,
+    ConfigurationStateSpec,
+    simexp_common_decorator,
+)
+from commander.ml.agent import make_agent
 from commander.ml.agent.agent import ExperimentalCartpoleAgent
 from commander.ml.agent.constants import ExperimentalInternalStateIdx
-from commander.ml.agent.goal import AgentRewardPotentialGoalMixin
-from commander.ml.agent.state_specification import (
-    AgentPositionalKnowledgeStateSpecification,
-    AgentTotalKnowledgeStateSpecification,
-    make_state_spec,
-)
+from commander.ml.agent.state_specification import make_state_spec
 from commander.ml.configurations import CartpoleMLExperimentConfiguration
-from commander.ml.environment import (
-    ExperimentalCartpoleEnv,
-    get_sb3_env_root_env,
-    make_env,
-    make_sb3_env,
-)
+from commander.ml.environment import ExperimentalCartpoleEnv, get_sb3_env_root_env, make_sb3_env
 from commander.ml.tensorboard import ExperimentalDataCallback, GeneralCartpoleMLCallback
 
 SAVE_NAME_BASE: str = "cartpoleml_simulation_"
@@ -34,76 +30,7 @@ SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 logger = logging.getLogger(__name__)
 
 
-class Algorithm(str, Enum):
-    # Note: Not all of these actually work with our action space and multiple agents
-    # Known working: A2C, PPO
-    A2C = "A2C"
-    DDPG = "DDPG"
-    DQN = "DQN"
-    HER = "HER"
-    PPO = "PPO"
-    SAC = "SAC"
-    TD3 = "TD3"
-
-
-class ConfigurationGoal(str, Enum):
-    BALANCE = "BALANCE"
-    SWINGUP = "SWINGUP"
-    BOUNCE = "BOUNCE"
-
-
-CONFIGURATION_GOAL_MAP = {
-    "BALANCE": AgentTimeGoalMixin,
-    "SWINGUP": AgentSwingupGoalMixin,
-    "BOUNCE": AgentRewardPotentialGoalMixin,
-}
-
-
-class ConfigurationStateSpec(str, Enum):
-    TOTAL_KNOWLEDGE = "TOTAL_KNOWLEDGE"
-    POSITIONAL_KNOWLEDGE = "POSITIONAL_KNOWLEDGE"
-
-
-CONFIGURATION_STATE_SPEC_MAP = {
-    "TOTAL_KNOWLEDGE": AgentTotalKnowledgeStateSpecification,
-    "POSITIONAL_KNOWLEDGE": AgentPositionalKnowledgeStateSpecification,
-}
-
-
-@click.command()
-@click.pass_context
-@click.option("--train/--no-train", default=True)
-@click.option("--load/--no-load", default=True)
-@click.option("--render/--no-render", default=True)
-@click.option("--render-with-best/--no-render-with-best", default=True)
-@click.option("--tensorboard/--no-tensorboard", default=True)
-@click.option("--record/--no-record", default=True)
-@click.option("-t", "--total-timesteps", type=int, default=100000)
-@click.option(
-    "-c",
-    "--carts",
-    type=int,
-    default=1,
-)
-@click.option(
-    "-g",
-    "--goal",
-    type=click.Choice([_.value for _ in ConfigurationGoal], case_sensitive=False),
-    default=ConfigurationGoal.BOUNCE,
-)
-@click.option(
-    "-s",
-    "--state-spec",
-    type=click.Choice([_.value for _ in ConfigurationStateSpec], case_sensitive=False),
-    default=ConfigurationStateSpec.POSITIONAL_KNOWLEDGE,
-)
-@click.option(
-    "-a",
-    "--algorithm",
-    type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
-    default=Algorithm.PPO,
-)
-@click.option("-n", "--num-frame-stacking", type=int, default=-1)
+@simexp_common_decorator
 def experiment(
     ctx: click.Context,
     train: bool,
@@ -158,7 +85,7 @@ def experiment(
     }
 
     agent_params["agent"] = ExperimentalCartpoleAgent  # type: ignore [misc]
-    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]  # type: ignore [misc]
+    agent_params["goal"] = CONFIGURATION_GOAL_MAP[goal]
     agent_params["state_spec"] = make_state_spec(
         CONFIGURATION_STATE_SPEC_MAP[state_spec], ExperimentalInternalStateIdx  # type: ignore [misc]
     )
@@ -176,17 +103,7 @@ def experiment(
     }
 
     # Algorithm-dependent hyperparameters
-    policy_params: dict[str, Any] = {}
-    if algorithm == Algorithm.PPO:
-        # policy_params["n_steps"] = 8
-        # policy_params["batch_size"] = 8
-        # policy_params["gae_lambda"] = 0.8
-        # policy_params["gamma"] = 0.98
-        # policy_params["n_epochs"] = 20
-        # policy_params["ent_coef"] = 0.0
-        # policy_params["learning_rate"] = lambda x: 0.001 * x
-        # policy_params["clip_range"] = lambda x: 0.2 * x
-        pass
+    policy_params = ALGORITHM_POLICY_PARAMS_MAP[Algorithm(algorithm)]
 
     # Callbacks
     general_cartpoleml_callback = GeneralCartpoleMLCallback()
