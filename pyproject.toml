@@ -78,6 +78,7 @@ module = [
     "supersuit.*",
     "pettingzoo.*",
     "deepmerge.*",
+    "pyglet.*",
 ]
 ignore_missing_imports = true
 

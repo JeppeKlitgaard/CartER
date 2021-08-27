@@ -7,7 +7,6 @@ from typing import Any, Generic, Optional, Type, TypedDict, cast
 import gym
 import supersuit as ss
 from gym import spaces
-from commander.ml.display import rendering
 from pettingzoo.utils.env import ParallelEnv
 
 import deepmerge
@@ -20,6 +19,7 @@ from commander.ml.agent.agent import (
     SimulatedCartpoleAgent,
 )
 from commander.ml.constants import Action
+from commander.ml.display import rendering
 from commander.network import NetworkManager
 from commander.network.constants import CartID, ExperimentInfoSpecifier, FailureMode, SetOperation
 from commander.network.protocol import (
