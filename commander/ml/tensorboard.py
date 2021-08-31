@@ -53,37 +53,37 @@ class GeneralCartpoleMLCallback(BaseCallback):
             assert "agent_name" in info.keys()
             name = info["agent_name"]
 
+            # Available memory
+            if info.get("available_memory") is not None:
+                self.logger.record("cartpoleml/available_memory", info["available_memory"])
+
             # Episode
-            if episode := info.get("environment_episode"):
-                self.logger.record("time/env_episode", episode)
+            if info.get("environment_episode") is not None:
+                self.logger.record("time/env_episode", info["environment_episode"])
 
             # World time
-            if world_time := info.get("world_time"):
-                self.logger.record("time/world_time", world_time)
+            if info.get("world_time") is not None:
+                self.logger.record("time/world_time", info["world_time"])
 
             # Total world time
-            if world_time := info.get("total_world_time"):
-                self.logger.record("time/total_world_time", world_time)
-
-            # Total world time
-            if total_world_time := info.get("total_world_time"):
-                self.logger.record("time/total_world_time", total_world_time)
+            if info.get("total_world_time") is not None:
+                self.logger.record("time/total_world_time", info["total_world_time"])
 
             # Observation frequency
-            if obs_freq := info.get("observation_frequency"):
-                self.logger.record("time/observation_frequency", obs_freq)
+            if info.get("observation_frequency") is not None:
+                self.logger.record("time/observation_frequency", info["observation_frequency"])
 
             # Failure Modes
             if "failure_modes" in info.keys():
                 failure_modes.extend(info["failure_modes"])
 
             # x
-            if x := info.get("x"):
-                self.logger.record(f"cartpole_ml/x_{name}", x)
+            if info.get("x") is not None:
+                self.logger.record(f"cartpoleml/x_{name}", info["x"])
 
             # theta
-            if theta := info.get("theta"):
-                self.logger.record(f"cartpole_ml/theta_{name}", theta)
+            if info.get("theta") is not None:
+                self.logger.record(f"cartpoleml/theta_{name}", info["theta"])
 
         failure_mode: str
         if not failure_modes:

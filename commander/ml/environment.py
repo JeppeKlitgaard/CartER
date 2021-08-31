@@ -57,6 +57,7 @@ class EnvironmentState(TypedDict):
     failure_mode: FailureMode
     track_length: Optional[int]
     last_observation_times: dict[AgentNameT, int]
+    available_memory: Optional[int]
 
 
 class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
@@ -452,6 +453,9 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                         {"track_length": cast(int, self.environment_state["track_length"])}
                     )
 
+            elif exp_info_pkt.specifier == ExperimentInfoSpecifier.AVAILABLE_MEMORY:
+                self.environment_state["available_memory"] = exp_info_pkt.value
+
             else:
                 raise ValueError(
                     "Environment does not know how to deal with specifier: "
@@ -477,6 +481,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             "failure_mode": FailureMode.NUL,
             "track_length": None,
             "last_observation_times": {},
+            "available_memory": None,
         }
 
         for agent in self.get_agents():
@@ -727,6 +732,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             info["theta"] = observation_dict["theta"]
             info["agent_name"] = agent.name
             info["environment_episode"] = self.episode
+            info["available_memory"] = self.environment_state["available_memory"]
 
             checks = agent.check_state(observation)
             done = any(checks.values())

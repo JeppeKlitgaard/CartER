@@ -9,11 +9,15 @@
 #include <Mode.h>
 #include <Limits.h>
 #include <TimerInterrupt.h>
+#include <Utils.h>
 
 uint32_t last_observation_us = 0;
+uint32_t last_memory_us = 0;
 
 void observation_tick()
-{   if (!is_observing) {
+{
+    if (!is_observing)
+    {
         return;
     }
 
@@ -28,6 +32,17 @@ void observation_tick()
         {
             send_observation(2);
         }
+    }
+
+    if (abs(micros() - last_memory_us) >= MEMORY_INTERVAL_US)
+    {
+        // Update last memory
+        last_memory_us = micros();
+
+        std::unique_ptr<ExperimentInfoPacket> packet = std::make_unique<ExperimentInfoPacket>();
+        packet->construct(ExperimentInfoSpecifier::AVAILABLE_MEMORY, 0, free_memory());
+
+        packet_sender.send(std::move(packet));
     }
 }
 
@@ -48,7 +63,8 @@ void send_observation(uint8_t cart_id)
     packet_sender.send(std::move(packet));
 }
 
-void experiment_start() {
+void experiment_start()
+{
     packet_sender.send_debug("Starting experiment...");
 
     asteppers_stop();
@@ -66,7 +82,8 @@ void experiment_start() {
     packet_sender.send(std::move(packet));
 }
 
-void experiment_stop() {
+void experiment_stop()
+{
     packet_sender.send_debug("Stopping experiment...");
 
     asteppers_stop();
@@ -80,7 +97,6 @@ void experiment_stop() {
     std::unique_ptr<ExperimentDonePacket> done_pkt = std::make_unique<ExperimentDonePacket>();
     done_pkt->construct(0, FailureMode::NUL);
     packet_sender.send(std::move(done_pkt));
-
 }
 
 /**
@@ -89,7 +105,8 @@ void experiment_stop() {
  * We don't mark experiment_done since we wish to keep sending observations.
  * It is up to commander to handle behaviour after
  */
-void unsafe_run_trigger() {
+void unsafe_run_trigger()
+{
     asteppers_stop();
 
     packet_sender.send_info("Stopped steppers.");
