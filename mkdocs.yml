@@ -1,7 +1,30 @@
 site_name: CartpoleML
 
+nav:
+  - Development:
+    - 'development/index.md'
+    - 'development/installation.md'
+    - 'development/cli.md'
+    - 'development/bom.md'
+    - 'development/cad.md'
+    - 'development/serial.md'
+    - 'development/stepper.md'
+    - 'development/protocol.md'
+  - Articles:
+    - 'articles/introducing_cartpoleml.md'
+
 theme:
   name: material
+
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+
   palette:
     - scheme: default
       toggle:
@@ -23,6 +46,8 @@ markdown_extensions:
       generic: true
   - attr_list
   - admonition
+  - toc:
+      permalink: true
 
 extra_javascript:
   - extra/js/mathjax_config.js
