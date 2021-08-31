@@ -148,7 +148,7 @@ def simulate(
 
             logger.info("Reraising exception for debugging purposes")
 
-            raise exc
+            raise Exception from exc
         else:
             model.save(model_path)
 
