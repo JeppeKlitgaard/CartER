@@ -5,6 +5,11 @@
 
 PacketSender::PacketSender(Stream &stream) : _s(stream) {}
 
+size_t PacketSender::write(const byte *buf, size_t size)
+{
+    return _s.write(buf, size);
+}
+
 // Not entirely sure how to code-dedup this in c++
 // Could do templating, but I prefer having separate methods over overloading
 // in this case.

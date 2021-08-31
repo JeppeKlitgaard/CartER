@@ -7,13 +7,17 @@
 #include <string>
 #include <variant>
 
-#include <PString.h>
 #include <Packet.h>
 #include <Init.h>
 #include <Mode.h>
 
 /** Protocol is little-endian.
   */
+
+inline const size_t PACKET_REALIGNMENT_SEQUENCE_LENGTH = 36;
+inline const byte PACKET_REALIGNMENT_SEQUENCE[36] = {0x3D, 0x2A, 0x3D, 0x20, 0x50, 0x6C, 0x65, 0x61, 0x73, 0x65, 0x20, 0x72, 0x65, 0x61, 0x6C, 0x69, 0x67, 0x6E, 0x20, 0x70, 0x61, 0x63, 0x6B, 0x65, 0x74, 0x73, 0x20, 0x68, 0x65, 0x72, 0x65, 0x20, 0x3D, 0x2A, 0x3D, 0x0A};
+
+void send_realignment_sequence();
 
 // Enums
 // Mode
@@ -337,6 +341,18 @@ public:
 
     virtual void construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<FailureMode, int32_t> value);
     virtual RawPacket to_raw_packet() const override;
+};
+
+// RequestPacketRealignment
+class RequestPacketRealignmentPacket : public OnlyIDPacket
+{
+public:
+    static const byte id = 0x5E; // ^
+
+    RequestPacketRealignmentPacket();
+    using OnlyIDPacket::construct;
+
+    virtual byte get_id() const override;
 };
 
 #endif

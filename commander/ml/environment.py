@@ -35,6 +35,7 @@ from commander.network.protocol import (
     ExperimentStopPacket,
     FindLimitsPacket,
     InfoPacket,
+    NullPacket,
     ObservationPacket,
     RequestDebugInfoPacket,
     SetMaxVelocityPacket,
@@ -396,6 +397,10 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         """
         Call often to process packets in buffer of network manager.
         """
+
+        # NullPackets
+        self.network_manager.get_packets(NullPacket, digest=False)
+
         # ObservationPackets
         obs_pkts = self.network_manager.get_packets(ObservationPacket, digest=False)
         self._distribute_packets(obs_pkts)

@@ -187,6 +187,12 @@ void PacketReactor::tick()
         break;
     }
 
+    case RequestPacketRealignmentPacket::id:
+    {
+        send_realignment_sequence();
+        break;
+    }
+
     default:
         std::unique_ptr<UnknownPacket> packet = std::make_unique<UnknownPacket>();
         packet->construct(id);

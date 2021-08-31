@@ -452,6 +452,14 @@ class ExperimentInfoPacket(InboundPacket):
         return cls(specifier=specifier, cart_id=cart_id, value=value)
 
 
+class RequestPacketRealignmentPacket(OnlyIDPacket):
+    """
+    Sent by Commander in case of packet misalignment.
+    """
+
+    id_ = byte(0x5E)  # ^
+
+
 CartSpecificPacket = Union[ObservationPacket, ExperimentInfoPacket]
 
 

@@ -20,9 +20,9 @@ void loop_command_and_control()
     // Observation
     observation_tick();
 
-
     // If we have failed, we should end experiment
-    if (trigger_ctx.has_failed && experiment_mode != ExperimentMode::FAILED) {
+    if (trigger_ctx.has_failed && experiment_mode != ExperimentMode::FAILED)
+    {
         unsafe_run_trigger();
     }
 
@@ -31,18 +31,12 @@ void loop_command_and_control()
     trigger_ctx.run_safely = !currently_limit_finding && limit_finding_has_been_done;
     trigger_ctx.run_mode = (currently_limit_finding || trigger_ctx.has_failed) ? RunMode::REGULAR : RunMode::CONSTANT_SPEED;
 
-    if (currently_limit_finding && limit_finding_mode != LimitFindingMode::DONE) {
+    if (currently_limit_finding && limit_finding_mode != LimitFindingMode::DONE)
+    {
         loop_limit_finding();
-    } else if (currently_limit_finding && limit_check_mode != LimitCheckMode::DONE) {
+    }
+    else if (currently_limit_finding && limit_check_mode != LimitCheckMode::DONE)
+    {
         loop_limit_check();
     }
-
-    // int8_t safety = astepper1.runSafe();
-
-    // if (!currently_limit_finding && (safety != 0))
-    // {
-    //     // We did unsafe step while not limit finding!
-    //     experiment_done = true;
-    //     experiment_done_trigger();
-    // }
 }

@@ -30,6 +30,8 @@ a reliable serial connection is critical.
 
 Ensure that an appropriate baudrate is used.
 
+See also: [Noise suppression](#noise-suppression)
+
 ## Buffer size
 
 By default the serial buffer size of the Arduino is a measly 64 bytes, which means that
@@ -39,3 +41,18 @@ This can be mitigated by ensuring that the Commander empties the serial buffer o
 and further mitigated by increasing the buffer size using the `SERIAL_BUFFER_SIZE` definition.
 
 This can be done using _platform.io_ in the `platformio.ini` file with a build flag `-DSERIAL_BUFFER_SIZE=<buffer size>`
+
+## Noise suppression
+
+Currently without any noise suppression the experimental system seems to get misaligned very rarely,
+but this can be an issue if running the system for multiple hours or days.
+
+While an ACK/NACK-style protocol would arguably be the most robust choice, this
+would add a lot of complexity to the protocol and thus hasn't been implemented.
+
+Instead the Commander will request a realignment sequence to be sent by the Controller if it experiences misalignment.
+This does lead to some packet loss since any bytes prior to the realignment sequence will be flushed and are not resent.
+
+Given the rarity of noise, this approach will generally be robust enough to to have very long running experiments.
+
+Artificial noise can be added for testing using the constants defined in `PacketSender.h` of the Controller.

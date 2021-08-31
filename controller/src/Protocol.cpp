@@ -7,6 +7,11 @@
 #include <Packet.h>
 #include <DebugUtils.h>
 
+void send_realignment_sequence()
+{
+    packet_sender.write(PACKET_REALIGNMENT_SEQUENCE, PACKET_REALIGNMENT_SEQUENCE_LENGTH);
+}
+
 // Unknown
 UnknownPacket::UnknownPacket() {}
 byte UnknownPacket::get_id() const { return UnknownPacket::id; }
@@ -233,22 +238,27 @@ RawPacket ExperimentInfoPacket::to_raw_packet() const
     raw_packet.add(static_cast<uint8_t>(this->_specifier));
     raw_packet.add(this->_cart_id);
 
-    switch (this->_specifier) {
-        case ExperimentInfoSpecifier::NUL :
-            break;
+    switch (this->_specifier)
+    {
+    case ExperimentInfoSpecifier::NUL:
+        break;
 
-        case ExperimentInfoSpecifier::POSITION_DRIFT :
-            raw_packet.add(std::get<int32_t>(this->_value));
-            break;
+    case ExperimentInfoSpecifier::POSITION_DRIFT:
+        raw_packet.add(std::get<int32_t>(this->_value));
+        break;
 
-        case ExperimentInfoSpecifier::FAILURE_MODE :
-            raw_packet.add(static_cast<int8_t>(std::get<FailureMode>(this->_value)));
-            break;
+    case ExperimentInfoSpecifier::FAILURE_MODE:
+        raw_packet.add(static_cast<int8_t>(std::get<FailureMode>(this->_value)));
+        break;
 
-        case ExperimentInfoSpecifier::TRACK_LENGTH_STEPS :
-            raw_packet.add(std::get<int32_t>(this->_value));
-            break;
+    case ExperimentInfoSpecifier::TRACK_LENGTH_STEPS:
+        raw_packet.add(std::get<int32_t>(this->_value));
+        break;
     }
 
     return raw_packet;
 }
+
+// RequestPacketRealignment
+RequestPacketRealignmentPacket::RequestPacketRealignmentPacket() {}
+byte RequestPacketRealignmentPacket::get_id() const { return RequestPacketRealignmentPacket::id; }

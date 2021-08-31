@@ -10,10 +10,12 @@ from commander.network.exceptions import PacketReadError
 from commander.network.protocol import (
     INBOUND_PACKET_ID_MAP,
     InboundPacket,
+    NullPacket,
     OutboundPacket,
     Packet,
     PingPacket,
     PongPacket,
+    RequestPacketRealignmentPacket,
 )
 from commander.network.types import PacketSelector, PacketT
 from commander.network.utils import bytes_to_hexes
@@ -29,6 +31,7 @@ DigestCallback = Callable[[], None]
 
 class NetworkManager:
     INITIAL_OUTPUT_STOP_MARKER: bytes = "END OF INITIALISATION\n".encode("ascii")
+    PACKET_REALIGNMENT_SEQUENCE: bytes = "=*= Please realign packets here =*=\n".encode("ascii")
 
     def __init__(self, port: str = "/dev/ttyACM0", baudrate: int = 74880):
         self.serial = Serial()
@@ -68,25 +71,40 @@ class NetworkManager:
 
         return read_bytes.decode("ascii", errors="ignore")
 
-    def _cpp_initial_output_decl(self) -> str:
-        hexes = bytes_to_hexes(self.INITIAL_OUTPUT_STOP_MARKER)
+    def realign_packets(self) -> None:
+        request_realignment_pkt = RequestPacketRealignmentPacket()
+        self.send_packet(request_realignment_pkt)
+
+        self.serial.read_until(self.PACKET_REALIGNMENT_SEQUENCE)
+
+    @staticmethod
+    def __cpp_decl(var_name: str, seq: bytes) -> str:
+        hexes = bytes_to_hexes(seq)
 
         hex_str = ", ".join(hexes)
         hex_len_str = str(len(hexes))
 
-        output = ""
-        output += "const size_t INITIAL_OUTPUT_STOP_MARKER_LENGTH = " + hex_len_str + ";"
-        output += "\n"
-        output += "const byte INITIAL_OUTPUT_STOP_MARKER[" + hex_len_str + "] = {" + hex_str + "};"
+        decl = ""
+        decl += f"const size_t {var_name}_LENGTH = " + hex_len_str + ";"
+        decl += "\n"
+        decl += f"const byte {var_name}[" + hex_len_str + "] = {" + hex_str + "};"
 
-        return output
+        return decl
+
+    @classmethod
+    def _cpp_initial_output_decl(self) -> str:
+        return self.__cpp_decl("INITIAL_OUTPUT_STOP_MARKER", self.INITIAL_OUTPUT_STOP_MARKER)
+
+    @classmethod
+    def _cpp_realignment_sequence_decl(self) -> str:
+        return self.__cpp_decl("PACKET_REALIGNMENT_SEQUENCE", self.PACKET_REALIGNMENT_SEQUENCE)
 
     def reset_buffers(self, wait: float = 0.025) -> None:
         # sleep 25ms and then flush buffers
-        sleep(0.025)
+        sleep(wait)
         self.serial.reset_input_buffer()
         self.serial.reset_output_buffer()
-        sleep(0.025)
+        sleep(wait)
 
     def assert_ping_pong(self) -> None:
         """
@@ -103,24 +121,48 @@ class NetworkManager:
         pong_pkt = self.get_packet(PongPacket, block=True)
         assert pong_pkt.timestamp == checksum
 
-    def read_packet(self) -> InboundPacket:
+    def read_packet(self, auto_realign: bool = True) -> InboundPacket:
         id_ = self.serial.read(1)
 
         try:
             packet_cls = INBOUND_PACKET_ID_MAP[id_]
-        except KeyError as exc:
-            raise PacketReadError("Invalid packet ID", id_, dump_buf=self.serial) from exc
+        except KeyError as id_exc:
+            logger.warn("Received packet with invalid ID: %s", id_)
 
-        packet = packet_cls.read(self.serial)
-        logger.debug("Read packet: %s", packet, extra={"packet": packet})
+            if auto_realign:
+                logger.info("Attempting packet realignment")
+
+                self.realign_packets()
+
+                return NullPacket()
+
+            else:
+                raise PacketReadError("Invalid packet ID", id_, dump_buf=self.serial) from id_exc
+
+        try:
+            packet = packet_cls.read(self.serial)
+            logger.debug("Read packet: %s", packet, extra={"packet": packet})
+
+        except PacketReadError as read_exc:
+            logger.warn("Failed to read packet. Got exception: %s", read_exc)
+
+            if auto_realign:
+                logger.info("Attempting packet realignment")
+
+                self.realign_packets()
+
+                return NullPacket()
+
+            else:
+                raise read_exc
 
         return packet
 
-    def read_packets(self, block: bool = False) -> list[Packet]:
+    def read_packets(self, block: bool = False, auto_realign: bool = True) -> list[Packet]:
         packets: list[Packet] = []
 
         while self.serial.in_waiting or (block and not packets):
-            packets.append(self.read_packet())
+            packets.append(self.read_packet(auto_realign=auto_realign))
 
         return packets
 
@@ -137,12 +179,12 @@ class NetworkManager:
             if not continuous:
                 break
 
-    def digest(self, block: bool = False) -> None:
+    def digest(self, block: bool = False, auto_realign: bool = True) -> None:
         """
         Digests all the packets currently waiting to be read and stores them
         in the internal packet buffer.
         """
-        packets = self.read_packets(block=block)
+        packets = self.read_packets(block=block, auto_realign=auto_realign)
 
         self.packet_buffer.extend(packets)
 
@@ -173,6 +215,7 @@ class NetworkManager:
         digest: Literal[True] = True,
         block: Literal[True] = True,
         callback: Callable[..., None] = noop,
+        auto_realign: bool = True,
         _excludes: Optional[Sequence[PacketT]] = None,
     ) -> PacketT:
         ...
@@ -187,6 +230,7 @@ class NetworkManager:
         digest: bool = True,
         block: Literal[False] = False,
         callback: Callable[..., None] = noop,
+        auto_realign: bool = True,
         _excludes: Optional[Sequence[PacketT]] = None,
     ) -> Optional[PacketT]:
         ...
@@ -201,6 +245,7 @@ class NetworkManager:
         digest: bool = True,
         block: bool = False,
         callback: Callable[..., None] = noop,
+        auto_realign: bool = True,
         _excludes: Optional[Sequence[PacketT]] = None,
     ) -> Optional[PacketT]:
         ...
@@ -214,6 +259,7 @@ class NetworkManager:
         digest: bool = True,
         block: bool = False,
         callback: DigestCallback = noop,
+        auto_realign: bool = True,
         _excludes: Optional[Sequence[PacketT]] = None,
     ) -> Optional[PacketT]:
         """
@@ -231,7 +277,7 @@ class NetworkManager:
             _excludes = []
 
         if digest:
-            self.digest()
+            self.digest(auto_realign=auto_realign)
             callback()
 
         # Try to look for packet in buffer
@@ -279,6 +325,7 @@ class NetworkManager:
         digest: bool = True,
         block: bool = False,
         callback: DigestCallback = noop,
+        auto_realign: bool = True,
     ) -> list[Packet]:
         ...
 
@@ -292,6 +339,7 @@ class NetworkManager:
         digest: bool = True,
         block: bool = False,
         callback: DigestCallback = noop,
+        auto_realign: bool = True,
     ) -> list[PacketT]:
         ...
 
@@ -304,6 +352,7 @@ class NetworkManager:
         digest: bool = True,
         block: bool = False,
         callback: DigestCallback = noop,
+        auto_realign: bool = True,
     ) -> Union[list[PacketT], list[Packet]]:
 
         packets: list[PacketT] = []
@@ -318,6 +367,7 @@ class NetworkManager:
                 digest=digest,
                 block=still_block,
                 callback=callback,
+                auto_realign=auto_realign,
                 _excludes=packets,
             )
 
