@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+from serial.tools import list_ports
+
 import numpy as np
 
 import click
@@ -33,6 +35,7 @@ logger = logging.getLogger(__name__)
 @simexp_common_decorator
 def experiment(
     ctx: click.Context,
+    port: str,
     train: bool,
     load: bool,
     render: bool,
@@ -46,6 +49,9 @@ def experiment(
     algorithm: str,
     num_frame_stacking: int,
 ) -> None:
+
+    if port == "AUTODETECT":
+        port = list_ports.comports()[0].device
 
     if num_frame_stacking == -1:
         num_frame_stacking = 1 if state_spec == ConfigurationStateSpec.TOTAL_KNOWLEDGE else 4
@@ -99,6 +105,7 @@ def experiment(
 
     env_params: dict[str, Any] = {
         "num_frame_stacking": num_frame_stacking,
+        "port": port,
         "agents": agents,
     }
 
