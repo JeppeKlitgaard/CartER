@@ -454,7 +454,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                     )
 
             elif exp_info_pkt.specifier == ExperimentInfoSpecifier.AVAILABLE_MEMORY:
-                self.environment_state["available_memory"] = exp_info_pkt.value
+                self.environment_state["available_memory"] = cast(int, exp_info_pkt.value)
 
             else:
                 raise ValueError(
