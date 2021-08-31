@@ -1,8 +1,6 @@
 import logging
 from typing import Any
 
-from serial.tools import list_ports
-
 import numpy as np
 
 import click
@@ -10,6 +8,7 @@ import matplotlib.pyplot as plt
 import stable_baselines3
 from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
+from serial.tools import list_ports
 
 from commander.cli.simexp_base import (
     ALGORITHM_POLICY_PARAMS_MAP,
