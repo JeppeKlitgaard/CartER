@@ -68,6 +68,7 @@ CONFIGURATION_STATE_SPEC_MAP = {
 
 
 def simexp_common_decorator(func: Callable[..., None]) -> Command:
+    func = click.option("-p", "--port", type=str, default="AUTODETECT")(func)
     func = click.option("--train/--no-train", default=True)(func)
     func = click.option("--load/--no-load", default=True)(func)
     func = click.option("--render/--no-render", default=True)(func)
