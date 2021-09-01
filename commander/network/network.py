@@ -141,7 +141,8 @@ class NetworkManager:
 
         try:
             packet = packet_cls.read(self.serial)
-            logger.debug("Read packet: %s", packet, extra={"packet": packet})
+            if not type(packet) in EXCLUDE_PACKETS:
+                logger.debug("Read packet: %s", packet, extra={"packet": packet})
 
         except PacketReadError as read_exc:
             logger.warn("Failed to read packet. Got exception: %s", read_exc)
