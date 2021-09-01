@@ -155,7 +155,7 @@ def pack(fmt: Union[Format, str], obj: PackableT) -> bytes:
         assert isinstance(obj, str)
         size_bytes = pack(Format.UINT_32, len(obj))
 
-        return size_bytes + pack(str(len(obj)) + "s", obj)
+        return size_bytes + pack(str(len(obj)) + "s", obj.encode("ascii"))
 
     if fmt is Format.ASCII_CHAR:
         assert isinstance(obj, str)
