@@ -6,10 +6,13 @@ from typing import Literal, Optional, Sequence, Type, Union, cast, overload
 
 from serial import Serial
 
+from commander.log import EXCLUDE_PACKETS
+from commander.network.constants import DEFAULT_BAUDRATE, DEFAULT_PORT
 from commander.network.exceptions import PacketReadError
 from commander.network.protocol import (
     INBOUND_PACKET_ID_MAP,
     InboundPacket,
+    InfoPacket,
     NullPacket,
     OutboundPacket,
     Packet,
