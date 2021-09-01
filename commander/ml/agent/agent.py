@@ -23,7 +23,7 @@ from commander.ml.agent.type_aliases import GoalParams
 from commander.ml.constants import Action, FailureDescriptors
 from commander.ml.display import rendering
 from commander.network import NetworkManager
-from commander.network.constants import CartID, SetOperation
+from commander.network.constants import DEFAULT_BAUDRATE, DEFAULT_PORT, CartID, SetOperation
 from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetVelocityPacket
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
 from commander.utils import FrequencyTicker
@@ -450,8 +450,8 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         self,
         name: str = "Cartpole_1",
         cart_id: CartID = CartID.ONE,
-        port: str = "/dev/ttyACM0",
-        baudrate: int = 74880,
+        port: str = DEFAULT_PORT,
+        baudrate: int = DEFAULT_BAUDRATE,
         settled_x_threshold: float = 5.0,
         settled_theta_threshold: float = radians(0.25),
         observation_maximum_interval: int = 10 * 1000,  # us

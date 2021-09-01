@@ -158,7 +158,8 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
         """
         self.observation_freq_ticker.tick()
 
-        return self._step(actions=actions)
+        result = self._step(actions=actions)
+        return result
 
     def _step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         """

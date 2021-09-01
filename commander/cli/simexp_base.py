@@ -32,8 +32,8 @@ class Algorithm(str, Enum):
 
 ALGORITHM_POLICY_PARAMS_MAP: dict[Algorithm, dict[str, Any]] = {
     Algorithm.PPO: {
-        "n_steps": 32 * 8,
-        "batch_size": 64,
+        "n_steps": 8,
+        "batch_size": 8,
         "gae_lambda": 0.8,
         "gamma": 0.98,
         "n_epochs": 20,
