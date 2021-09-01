@@ -59,8 +59,7 @@ void CustomAMS_5600::start(uint8_t addr)
         {
             packet_sender.send_info("Cannot detect magnet");
         }
-        power_cycle_I2C_multiplexer();
-        power_cycle_rotary_encoders();
+        reset_I2C_multiplexer();
     }
 
     packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Magnitude: " + std::to_string(getMagnitude()));

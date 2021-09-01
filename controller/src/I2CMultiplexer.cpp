@@ -5,18 +5,18 @@
 void setup_I2C_multiplexer()
 {
     packet_sender.send_debug("Setting up I2C multiplexer");
-    pinMode(I2C_VIN_PIN, OUTPUT);
+    pinMode(I2C_RST_PIN, OUTPUT);
 
-    packet_sender.send_debug("Power-cycling I2C multiplexer");
-    power_cycle_I2C_multiplexer();
+    packet_sender.send_debug("Reset I2C multiplexer");
+    reset_I2C_multiplexer();
 }
 
-void power_cycle_I2C_multiplexer()
+void reset_I2C_multiplexer()
 {
-    digitalWrite(I2C_VIN_PIN, LOW);
-    delay(I2C_POWER_CYCLE_HALFTIME);
-    digitalWrite(I2C_VIN_PIN, HIGH);
-    delay(I2C_POWER_CYCLE_HALFTIME);
+    digitalWrite(I2C_RST_PIN, LOW);
+    delay(I2C_RESET_HALFTIME);
+    digitalWrite(I2C_RST_PIN, HIGH);
+    delay(I2C_RST_PIN);
 }
 
 void I2C_select(uint8_t i)
