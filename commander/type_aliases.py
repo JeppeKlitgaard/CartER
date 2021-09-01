@@ -17,7 +17,7 @@ ExternalState = npt.NDArray[FLOAT_TYPE]
 
 StateChecks = dict[FailureDescriptors, bool]
 
-StepInfo = dict[AgentNameT, Any]
+StepInfo = dict[str, Any]
 StepReturn = tuple[
     dict[AgentNameT, ExternalState],  # Observations
     dict[AgentNameT, float],  # Rewards

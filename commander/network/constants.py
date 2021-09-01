@@ -1,8 +1,12 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 
 from commander.network.utils import Format
 
+DEFAULT_PORT: str = "/dev/ttyACM0"
+DEFAULT_BAUDRATE: int = 115200
 
+
+@unique
 class SetOperation(str, Enum):
     SUBTRACT = "-"
     EQUAL = "="
@@ -10,6 +14,7 @@ class SetOperation(str, Enum):
     NUL = "0"
 
 
+@unique
 class CartID(IntEnum):
     """
     Must pack to an uint8_t.
@@ -20,6 +25,7 @@ class CartID(IntEnum):
     TWO = 2
 
 
+@unique
 class ExperimentInfoSpecifier(IntEnum):
     """
     Must pack to an uint8_t.
@@ -29,6 +35,7 @@ class ExperimentInfoSpecifier(IntEnum):
     POSITION_DRIFT = 1
     FAILURE_MODE = 2
     TRACK_LENGTH_STEPS = 3
+    AVAILABLE_MEMORY = 4
 
 
 SPECIFIER_TO_FORMAT: dict[ExperimentInfoSpecifier, Format] = {
@@ -36,6 +43,7 @@ SPECIFIER_TO_FORMAT: dict[ExperimentInfoSpecifier, Format] = {
     ExperimentInfoSpecifier.POSITION_DRIFT: Format.INT_32,
     ExperimentInfoSpecifier.FAILURE_MODE: Format.INT_8,
     ExperimentInfoSpecifier.TRACK_LENGTH_STEPS: Format.INT_32,
+    ExperimentInfoSpecifier.AVAILABLE_MEMORY: Format.INT_32,
 }
 
 

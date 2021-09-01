@@ -5,7 +5,7 @@ datatypes.
 Note: All types are little-endian when transferred.
 """
 import struct
-from enum import Enum
+from enum import Enum, unique
 from typing import TYPE_CHECKING, Literal, Union, cast, overload
 
 from serial import Serial
@@ -18,6 +18,7 @@ ENDIANNESS = "<"  # Little endian
 CRLF: bytes = "\r\n".encode("ascii")
 
 
+@unique
 class Format(str, Enum):
     NUL = "_"
 
@@ -154,7 +155,7 @@ def pack(fmt: Union[Format, str], obj: PackableT) -> bytes:
         assert isinstance(obj, str)
         size_bytes = pack(Format.UINT_32, len(obj))
 
-        return size_bytes + pack(str(len(obj)) + "s", obj)
+        return size_bytes + pack(str(len(obj)) + "s", obj.encode("ascii"))
 
     if fmt is Format.ASCII_CHAR:
         assert isinstance(obj, str)
@@ -194,3 +195,18 @@ def skip_crlf(serial: Serial) -> None:
 
     if crlf != CRLF:
         raise ValueError(f"CRLF misaligned. Was actually: {bytes_to_hexstr(crlf)}")
+
+
+def buf_str_to_spaced_ascii(buf_str: str) -> str:
+    ascii_str = "".join([f" {char} " for char in buf_str])
+
+    return ascii_str
+
+
+def bytes_to_hex_ascii_str(bytes_: bytes) -> tuple[str, str]:
+    buf_str = bytes_.decode("ascii", errors="ignore")
+
+    hex_str = bytes_to_hexstr(bytes_, prefix=False)
+    ascii_str = buf_str_to_spaced_ascii(buf_str)
+
+    return (hex_str, ascii_str)

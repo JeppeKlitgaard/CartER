@@ -6,7 +6,8 @@
 #include <AccelStepper.h>
 #pragma GCC diagnostic pop
 
-enum class RunSafetyCheck {
+enum class RunSafetyCheck
+{
     SAFE = 0,
     LOW_LIMIT_FAIL = 1,
     HIGH_LIMIT_FAIL = 2,
@@ -21,7 +22,6 @@ protected:
     int _stepsPerRotation = 200;
     float _distancePerRotation = 1;
     float _anglePerRotation = 360;
-
 
     int32_t _farLimit = 0;
     int32_t _limitSafetyMargin = 0;

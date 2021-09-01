@@ -12,6 +12,7 @@ from commander.ml.agent.agent import CartpoleAgent
 from commander.ml.agent.goal import AgentGoalMixinBase
 from commander.ml.agent.state_specification import AgentStateSpecificationBase
 from commander.ml.agent.type_aliases import GoalParams
+from commander.network.constants import DEFAULT_BAUDRATE, DEFAULT_PORT
 
 
 class Configuration(TypedDict, total=False):
@@ -94,8 +95,8 @@ class ExperimentAgentConfiguration(AgentConfiguration, total=False):
 
 DefaultExperimentConfiguration: ExperimentConfiguration = {
     "agent": {
-        "port": "/dev/ttyACM0",
-        "baudrate": 74880,
+        "port": DEFAULT_PORT,
+        "baudrate": DEFAULT_BAUDRATE,
     }
 }
 

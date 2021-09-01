@@ -12,6 +12,14 @@ from commander.network.protocol import (
 )
 from commander.utils import get_project_root
 
+EXCLUDE_PACKETS: tuple[Type[Packet], ...] = (
+    DebugPacket,
+    InfoPacket,
+    ErrorPacket,
+    SetVelocityPacket,
+    ObservationPacket,
+)
+
 
 class PacketFilter(logging.Filter):
     def __init__(self, excludes: tuple[Type[Packet], ...]) -> None:
@@ -56,14 +64,7 @@ def setup_logging(console: bool = True, file: bool = True) -> None:
     logging.getLogger("numba").setLevel(logging.WARNING)
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-    packet_excludes: tuple[Type[Packet], ...] = (
-        DebugPacket,
-        InfoPacket,
-        ErrorPacket,
-        SetVelocityPacket,
-        ObservationPacket,
-    )
-    pkt_filter = PacketFilter(packet_excludes)
+    pkt_filter = PacketFilter(EXCLUDE_PACKETS)
 
     for handler in logging.root.handlers:
         handler.addFilter(pkt_filter)

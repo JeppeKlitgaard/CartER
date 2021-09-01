@@ -1,7 +1,8 @@
-from enum import IntEnum
+from enum import IntEnum, unique
 from typing import TypedDict, Union
 
 
+@unique
 class SimulatedInternalStateIdx(IntEnum):
     X = 0
     DX = 1
@@ -9,6 +10,7 @@ class SimulatedInternalStateIdx(IntEnum):
     DTHETA = 3
 
 
+@unique
 class ExperimentalInternalStateIdx(IntEnum):
     X = 0
     THETA = 1
@@ -19,6 +21,7 @@ InternalStateIdx = Union[SimulatedInternalStateIdx, ExperimentalInternalStateIdx
 ExternalTotalKnowledgeStateIdx = SimulatedInternalStateIdx
 
 
+@unique
 class ExternalPositionalKnowlegeStateIdx(IntEnum):
     X = 0
     THETA = 1

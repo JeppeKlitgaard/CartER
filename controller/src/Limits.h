@@ -86,7 +86,6 @@ const uint32_t JIGGLE_SPEED_DISTANCE = Speed::SUPER_FAST;
 extern float_t track_length_distance;
 extern int32_t track_length_steps;
 
-
 // Limit finding
 void toggle_limit_finding_mode();
 void loop_limit_finding();

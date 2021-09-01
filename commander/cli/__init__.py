@@ -2,8 +2,7 @@ from pathlib import Path
 
 import click
 
-from commander.cli.experiment import experiment
-from commander.cli.simulate import simulate
+from commander.cli.simexp_base import SimulationExperimentCommand, simexp_command
 from commander.cli.tensorboard import tensorboard
 from commander.log import setup_logging
 
@@ -22,15 +21,9 @@ def cli(ctx: click.Context, output_dir: Path) -> None:
     ctx.obj["output_dir"] = output_dir
 
 
-@click.command()
-def ping() -> None:
-    click.echo("Hello world.")
-
-
-cli.add_command(ping)
-cli.add_command(simulate)
 cli.add_command(tensorboard)
-cli.add_command(experiment)
+cli.add_command(simexp_command(SimulationExperimentCommand.SIMULATE))
+cli.add_command(simexp_command(SimulationExperimentCommand.EXPERIMENT))
 
 
 def run() -> None:

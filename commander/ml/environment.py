@@ -13,6 +13,7 @@ from pettingzoo.utils.env import ParallelEnv
 import deepmerge
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
+from commander.experiment import ExperimentState
 from commander.ml.agent import CartpoleAgent
 from commander.ml.agent.agent import (
     CartpoleAgentT,
@@ -22,7 +23,14 @@ from commander.ml.agent.agent import (
 from commander.ml.constants import Action
 from commander.ml.display import rendering
 from commander.network import NetworkManager
-from commander.network.constants import CartID, ExperimentInfoSpecifier, FailureMode, SetOperation
+from commander.network.constants import (
+    DEFAULT_BAUDRATE,
+    DEFAULT_PORT,
+    CartID,
+    ExperimentInfoSpecifier,
+    FailureMode,
+    SetOperation,
+)
 from commander.network.protocol import (
     CartSpecificPacket,
     CheckLimitPacket,
@@ -49,6 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 class EnvironmentState(TypedDict):
+    experiment_state: Optional[ExperimentState]
     angle_drifts: dict[AgentNameT, float]
     position_drifts: dict[AgentNameT, int]
     failure_cart_id: CartID
@@ -57,6 +66,7 @@ class EnvironmentState(TypedDict):
     failure_mode: FailureMode
     track_length: Optional[int]
     last_observation_times: dict[AgentNameT, int]
+    available_memory: Optional[int]
 
 
 class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
@@ -108,6 +118,9 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
 
         Not called after each reset.
         """
+        for agent in self.get_agents():
+            agent.set_environment(self)
+
         self.episode: int = 0
         self.total_world_time: float = 0.0
 
@@ -145,7 +158,8 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
         """
         self.observation_freq_ticker.tick()
 
-        return self._step(actions=actions)
+        result = self._step(actions=actions)
+        return result
 
     def _step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         """
@@ -371,8 +385,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def __init__(
         self,
         agents: Sequence[ExperimentalCartpoleAgent],
-        port: str = "/dev/ttyACM0",
-        baudrate: int = 74880,
+        port: str = DEFAULT_PORT,
+        baudrate: int = DEFAULT_BAUDRATE,
         observation_buffer_size: int = 100,
     ) -> None:
         self.port = port
@@ -452,6 +466,9 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
                         {"track_length": cast(int, self.environment_state["track_length"])}
                     )
 
+            elif exp_info_pkt.specifier == ExperimentInfoSpecifier.AVAILABLE_MEMORY:
+                self.environment_state["available_memory"] = cast(int, exp_info_pkt.value)
+
             else:
                 raise ValueError(
                     "Environment does not know how to deal with specifier: "
@@ -462,13 +479,14 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             # Just ignore since we currently use ExperimentInfoPackets to determine done state
             self.network_manager.get_packets(SoftLimitReachedPacket, digest=False)
 
-        if self.network_manager.packet_buffer:
+        if len(self.network_manager.packet_buffer) >= 3:
             logger.error(
                 "Had packets in buffer after processing: %s", self.network_manager.packet_buffer
             )
 
     def _reset_environment_state(self) -> None:
         self.environment_state: EnvironmentState = {
+            "experiment_state": None,
             "angle_drifts": {},
             "position_drifts": {},
             "failure_cart_id": CartID.NUL,
@@ -477,6 +495,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             "failure_mode": FailureMode.NUL,
             "track_length": None,
             "last_observation_times": {},
+            "available_memory": None,
         }
 
         for agent in self.get_agents():
@@ -484,9 +503,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
     def setup(self) -> None:
         logger.info("Running experimental environment setup")
-        super().setup()
 
         self._reset_environment_state()
+        self.environment_state["experiment_state"] = ExperimentState.STARTING
+
+        super().setup()
 
         self.cart_id_to_agent: dict[CartID, ExperimentalCartpoleAgent] = {}
 
@@ -528,11 +549,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=0)
         self.network_manager.send_packet(velo_pkt)
 
-        # Set max velocity
-        logger.info("Setting max velocity")
-        max_velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
-        self.network_manager.send_packet(max_velo_pkt)
-
         debug_info_pkt = RequestDebugInfoPacket()
         self.network_manager.send_packet(debug_info_pkt)
 
@@ -548,6 +564,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def reset(self) -> Mapping[str, ExternalState]:
         logger.info("Resetting experimental environment")
 
+        self.environment_state["experiment_state"] = ExperimentState.RESETTING
+
         self._reset_environment_state()
 
         self.agents = self.possible_agents[:]
@@ -555,6 +573,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             agent._pre_reset()
 
         self.network_manager.assert_ping_pong()
+
+        # Set max velocity
+        logger.info("Setting max velocity")
+        max_velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=10_000)
+        self.network_manager.send_packet(max_velo_pkt)
 
         # Set velocity
         logger.info("Setting velocity")
@@ -599,7 +622,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         self.world_time_start = time()
 
-        return super().reset()
+        reset_result = super().reset()
+
+        self.environment_state["experiment_state"] = ExperimentState.RUNNING
+
+        return reset_result
 
     def network_tick(self) -> None:
         self.network_manager.digest()
@@ -617,6 +644,10 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         logger.debug("Experiment settled")
 
     def end_experiment(self) -> dict[str, Any]:
+        self.environment_state["experiment_state"] = ExperimentState.ENDING
+
+        self.total_world_time += self.world_time
+
         infos: dict[str, Any] = {}
         for agent in self.get_agents():
             infos[agent.name] = {}
@@ -671,6 +702,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             infos[agent_name]["position_drift"] = position_drift
 
         infos["failure_cart_id"] = self.environment_state["failure_cart_id"]
+
+        self.environment_state["experiment_state"] = ExperimentState.ENDED
 
         return infos
 
@@ -727,6 +760,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             info["theta"] = observation_dict["theta"]
             info["agent_name"] = agent.name
             info["environment_episode"] = self.episode
+            info["available_memory"] = self.environment_state["available_memory"]
 
             checks = agent.check_state(observation)
             done = any(checks.values())
@@ -737,14 +771,13 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             info["world_time"] = world_time
             info["total_world_time"] = self.total_world_time
             info["observation_frequency"] = self.observation_freq_ticker.measure()
+            info["serial_in_waiting"] = self.network_manager.serial.in_waiting
 
             if done:
                 failure_modes = [k.value for k, v in checks.items() if v]
                 logger.info(f"Failure modes: {failure_modes}")
 
                 info["failure_modes"] = failure_modes
-
-                self.total_world_time += world_time
 
             observations[agent_name] = observation
             rewards[agent_name] = reward

@@ -254,6 +254,10 @@ RawPacket ExperimentInfoPacket::to_raw_packet() const
     case ExperimentInfoSpecifier::TRACK_LENGTH_STEPS:
         raw_packet.add(std::get<int32_t>(this->_value));
         break;
+
+    case ExperimentInfoSpecifier::AVAILABLE_MEMORY:
+        raw_packet.add(std::get<int32_t>(this->_value));
+        break;
     }
 
     return raw_packet;

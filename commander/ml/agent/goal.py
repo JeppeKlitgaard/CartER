@@ -70,7 +70,8 @@ class AgentRewardPotentialGoalMixin(AgentGoalMixinBase):
     def reward(self, state: ExternalState) -> float:
         x = state[self.external_state_idx.X]
 
-        return cast(float, np.sin(x / self.track_length * np.pi))
+        rew = cast(float, np.sin(x / self.track_length * np.pi))
+        return rew
 
     def _check_state(self, state: ExternalState) -> StateChecks:
         x = state[self.external_state_idx.X]

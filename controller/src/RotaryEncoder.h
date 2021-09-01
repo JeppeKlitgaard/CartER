@@ -10,7 +10,7 @@ const unsigned int NO_SELECT_ADDR = 7;
 const int ROT_ENCODER_1_SUPPLY_PIN = 26;
 const int ROT_ENCODER_2_SUPPLY_PIN = 27;
 
-const uint32_t ROT_ENCODERS_POWER_CYCLE_HALFTIME = 50;  // ms
+const uint32_t ROT_ENCODERS_POWER_CYCLE_HALFTIME = 50; // ms
 
 // Rotary Encoder - AS5600 v1.0
 extern CustomAMS_5600 rot_encoder1;

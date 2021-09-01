@@ -6,10 +6,13 @@ from typing import Literal, Optional, Sequence, Type, Union, cast, overload
 
 from serial import Serial
 
+from commander.log import EXCLUDE_PACKETS
+from commander.network.constants import DEFAULT_BAUDRATE, DEFAULT_PORT
 from commander.network.exceptions import PacketReadError
 from commander.network.protocol import (
     INBOUND_PACKET_ID_MAP,
     InboundPacket,
+    InfoPacket,
     NullPacket,
     OutboundPacket,
     Packet,
@@ -18,22 +21,21 @@ from commander.network.protocol import (
     RequestPacketRealignmentPacket,
 )
 from commander.network.types import PacketSelector, PacketT
-from commander.network.utils import bytes_to_hexes
+from commander.network.utils import bytes_to_hex_ascii_str, bytes_to_hexes
 from commander.utils import noop
 
 logger = getLogger(__name__)
-
-PORT: str = "/dev/ttyACM0"
-BAUDRATE: int = 74880
 
 DigestCallback = Callable[[], None]
 
 
 class NetworkManager:
-    INITIAL_OUTPUT_STOP_MARKER: bytes = "END OF INITIALISATION\n".encode("ascii")
-    PACKET_REALIGNMENT_SEQUENCE: bytes = "=*= Please realign packets here =*=\n".encode("ascii")
+    INITIAL_OUTPUT_STOP_MARKER: bytes = InfoPacket("END OF INITIALISATION\n").to_bytes()
+    PACKET_REALIGNMENT_SEQUENCE: bytes = InfoPacket(
+        "=*= Please realign packets here =*=\n"
+    ).to_bytes()
 
-    def __init__(self, port: str = "/dev/ttyACM0", baudrate: int = 74880):
+    def __init__(self, port: str = DEFAULT_PORT, baudrate: int = DEFAULT_BAUDRATE):
         self.serial = Serial()
         self.serial.port = port
         self.serial.baudrate = baudrate
@@ -71,11 +73,17 @@ class NetworkManager:
 
         return read_bytes.decode("ascii", errors="ignore")
 
-    def realign_packets(self) -> None:
+    def realign_packets(self, print_: bool = True) -> None:
         request_realignment_pkt = RequestPacketRealignmentPacket()
         self.send_packet(request_realignment_pkt)
 
-        self.serial.read_until(self.PACKET_REALIGNMENT_SEQUENCE)
+        flushed_bytes = self.serial.read_until(self.PACKET_REALIGNMENT_SEQUENCE)
+
+        if print_:
+            hex_str, ascii_str = bytes_to_hex_ascii_str(flushed_bytes)
+
+            logger.warn("Rest of data (HEX)  : " + hex_str)
+            logger.warn("Rest of data (ASCII): " + ascii_str)
 
     @staticmethod
     def __cpp_decl(var_name: str, seq: bytes) -> str:
@@ -92,12 +100,12 @@ class NetworkManager:
         return decl
 
     @classmethod
-    def _cpp_initial_output_decl(self) -> str:
-        return self.__cpp_decl("INITIAL_OUTPUT_STOP_MARKER", self.INITIAL_OUTPUT_STOP_MARKER)
+    def _cpp_initial_output_decl(cls) -> str:
+        return cls.__cpp_decl("INITIAL_OUTPUT_STOP_MARKER", cls.INITIAL_OUTPUT_STOP_MARKER)
 
     @classmethod
-    def _cpp_realignment_sequence_decl(self) -> str:
-        return self.__cpp_decl("PACKET_REALIGNMENT_SEQUENCE", self.PACKET_REALIGNMENT_SEQUENCE)
+    def _cpp_realignment_sequence_decl(cls) -> str:
+        return cls.__cpp_decl("PACKET_REALIGNMENT_SEQUENCE", cls.PACKET_REALIGNMENT_SEQUENCE)
 
     def reset_buffers(self, wait: float = 0.025) -> None:
         # sleep 25ms and then flush buffers
@@ -141,9 +149,10 @@ class NetworkManager:
 
         try:
             packet = packet_cls.read(self.serial)
-            logger.debug("Read packet: %s", packet, extra={"packet": packet})
+            if not type(packet) in EXCLUDE_PACKETS:
+                logger.debug("Read packet: %s", packet, extra={"packet": packet})
 
-        except PacketReadError as read_exc:
+        except (PacketReadError, ValueError) as read_exc:
             logger.warn("Failed to read packet. Got exception: %s", read_exc)
 
             if auto_realign:

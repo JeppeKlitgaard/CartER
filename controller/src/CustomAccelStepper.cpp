@@ -188,8 +188,6 @@ RunSafetyCheck CustomAccelStepper::runSafeSpeed()
     }
 }
 
-
-
 /**
  * Return the current distance from the origin.
  * @return
