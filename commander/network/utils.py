@@ -195,3 +195,16 @@ def skip_crlf(serial: Serial) -> None:
 
     if crlf != CRLF:
         raise ValueError(f"CRLF misaligned. Was actually: {bytes_to_hexstr(crlf)}")
+
+def buf_str_to_spaced_ascii(buf_str: str) -> str:
+    ascii_str = "".join([f" {char} " for char in buf_str])
+
+    return ascii_str
+
+def bytes_to_hex_ascii_str(bytes_: bytes) -> tuple[str, 2]:
+    buf_str = bytes_.decode("ascii", errors="ignore")
+
+    hex_str = bytes_to_hexstr(bytes_, prefix=False)
+    ascii_str = buf_str_to_spaced_ascii(buf_str)
+
+    return (hex_str, ascii_str)

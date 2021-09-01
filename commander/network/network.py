@@ -18,13 +18,10 @@ from commander.network.protocol import (
     RequestPacketRealignmentPacket,
 )
 from commander.network.types import PacketSelector, PacketT
-from commander.network.utils import bytes_to_hexes
+from commander.network.utils import bytes_to_hex_ascii_str, bytes_to_hexes
 from commander.utils import noop
 
 logger = getLogger(__name__)
-
-PORT: str = "/dev/ttyACM0"
-BAUDRATE: int = 74880
 
 DigestCallback = Callable[[], None]
 
@@ -71,11 +68,17 @@ class NetworkManager:
 
         return read_bytes.decode("ascii", errors="ignore")
 
-    def realign_packets(self) -> None:
+    def realign_packets(self, print_: bool = True) -> None:
         request_realignment_pkt = RequestPacketRealignmentPacket()
         self.send_packet(request_realignment_pkt)
 
-        self.serial.read_until(self.PACKET_REALIGNMENT_SEQUENCE)
+        flushed_bytes = self.serial.read_until(self.PACKET_REALIGNMENT_SEQUENCE)
+
+        if print_:
+            hex_str, ascii_str = bytes_to_hex_ascii_str(flushed_bytes)
+
+            logger.warn("Rest of data (HEX)  : " + hex_str)
+            logger.warn("Rest of data (ASCII): " + ascii_str)
 
     @staticmethod
     def __cpp_decl(var_name: str, seq: bytes) -> str:
