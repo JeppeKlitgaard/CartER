@@ -2,14 +2,16 @@
 Contains constants for the ML setup.
 """
 
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 
 
+@unique
 class Action(IntEnum):
     FORWARDS = 0
     BACKWARDS = 1
 
 
+@unique
 class FailureDescriptors(str, Enum):
     MAX_STEPS_REACHED = "steps/max"
 

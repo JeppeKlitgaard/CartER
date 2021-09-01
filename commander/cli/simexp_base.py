@@ -1,5 +1,5 @@
 import logging
-from enum import Enum
+from enum import Enum, unique
 from typing import Any, Callable, Type
 
 import click
@@ -17,6 +17,7 @@ SAVE_NAME_BASE: str = "cartpoleml_simulation_"
 logger = logging.getLogger(__name__)
 
 
+@unique
 class Algorithm(str, Enum):
     # Note: Not all of these actually work with our action space and multiple agents
     # Known working: A2C, PPO
@@ -43,6 +44,7 @@ ALGORITHM_POLICY_PARAMS_MAP: dict[Algorithm, dict[str, Any]] = {
 }
 
 
+@unique
 class ConfigurationGoal(str, Enum):
     BALANCE = "BALANCE"
     SWINGUP = "SWINGUP"
@@ -56,6 +58,7 @@ CONFIGURATION_GOAL_MAP: dict[str, Type[AgentGoalMixinBase]] = {
 }
 
 
+@unique
 class ConfigurationStateSpec(str, Enum):
     TOTAL_KNOWLEDGE = "TOTAL_KNOWLEDGE"
     POSITIONAL_KNOWLEDGE = "POSITIONAL_KNOWLEDGE"

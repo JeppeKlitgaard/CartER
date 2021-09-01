@@ -144,7 +144,7 @@ class NetworkManager:
             if not type(packet) in EXCLUDE_PACKETS:
                 logger.debug("Read packet: %s", packet, extra={"packet": packet})
 
-        except PacketReadError as read_exc:
+        except (PacketReadError, ValueError) as read_exc:
             logger.warn("Failed to read packet. Got exception: %s", read_exc)
 
             if auto_realign:

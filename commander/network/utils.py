@@ -5,7 +5,7 @@ datatypes.
 Note: All types are little-endian when transferred.
 """
 import struct
-from enum import Enum
+from enum import Enum, unique
 from typing import TYPE_CHECKING, Literal, Union, cast, overload
 
 from serial import Serial
@@ -18,6 +18,7 @@ ENDIANNESS = "<"  # Little endian
 CRLF: bytes = "\r\n".encode("ascii")
 
 
+@unique
 class Format(str, Enum):
     NUL = "_"
 

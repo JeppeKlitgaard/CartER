@@ -1,8 +1,9 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, unique
 
 from commander.network.utils import Format
 
 
+@unique
 class SetOperation(str, Enum):
     SUBTRACT = "-"
     EQUAL = "="
@@ -10,6 +11,7 @@ class SetOperation(str, Enum):
     NUL = "0"
 
 
+@unique
 class CartID(IntEnum):
     """
     Must pack to an uint8_t.
@@ -20,6 +22,7 @@ class CartID(IntEnum):
     TWO = 2
 
 
+@unique
 class ExperimentInfoSpecifier(IntEnum):
     """
     Must pack to an uint8_t.
