@@ -1,0 +1,705 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr User 12115 15131
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L vendored:AMS5600 S?
+U 1 1 613EA3B8
+P 350 2075
+F 0 "S?" H 702 1926 50  0000 L CNN
+F 1 "AMS5600" H 702 1835 50  0000 L CNN
+F 2 "" H 200 2100 50  0001 C CNN
+F 3 "" H 200 2100 50  0001 C CNN
+	1    350  2075
+	0    -1   -1   0   
+$EndComp
+$Comp
+L vendored:AMS5600 S?
+U 1 1 613EB184
+P 350 1125
+F 0 "S?" H 702 976 50  0000 L CNN
+F 1 "AMS5600" H 702 885 50  0000 L CNN
+F 2 "" H 200 1150 50  0001 C CNN
+F 3 "" H 200 1150 50  0001 C CNN
+	1    350  1125
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 613F0A17
+P 850 2200
+F 0 "#PWR?" H 850 1950 50  0001 C CNN
+F 1 "GND" V 855 2072 50  0000 R CNN
+F 2 "" H 850 2200 50  0001 C CNN
+F 3 "" H 850 2200 50  0001 C CNN
+	1    850  2200
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 613F11DC
+P 875 1250
+F 0 "#PWR?" H 875 1000 50  0001 C CNN
+F 1 "GND" V 880 1122 50  0000 R CNN
+F 2 "" H 875 1250 50  0001 C CNN
+F 3 "" H 875 1250 50  0001 C CNN
+	1    875  1250
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	700  2200 850  2200
+Wire Wire Line
+	700  1250 875  1250
+$Comp
+L Interface_Expansion:TCA9548APWR U?
+U 1 1 613F6830
+P 2125 1500
+F 0 "U?" H 2775 375 50  0000 C CNN
+F 1 "TCA9548APWR" H 2575 500 50  0000 C CNN
+F 2 "Package_SO:TSSOP-24_4.4x7.8mm_P0.65mm" H 2125 500 50  0001 C CNN
+F 3 "http://www.ti.com/lit/ds/symlink/tca9548a.pdf" H 2175 1750 50  0001 C CNN
+	1    2125 1500
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 613FCDBF
+P 2125 400
+F 0 "#PWR?" H 2125 150 50  0001 C CNN
+F 1 "GND" H 2130 227 50  0000 C CNN
+F 2 "" H 2125 400 50  0001 C CNN
+F 3 "" H 2125 400 50  0001 C CNN
+	1    2125 400 
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	2125 400  2125 500 
+Wire Wire Line
+	700  1950 1500 1950
+Wire Wire Line
+	1500 1950 1500 2100
+Wire Wire Line
+	1500 2100 1725 2100
+Wire Wire Line
+	700  1825 1400 1825
+Wire Wire Line
+	1400 1825 1400 2200
+Wire Wire Line
+	1400 2200 1725 2200
+Wire Wire Line
+	700  1000 1650 1000
+Wire Wire Line
+	1650 1000 1650 1900
+Wire Wire Line
+	1650 1900 1725 1900
+Wire Wire Line
+	700  875  1575 875 
+Wire Wire Line
+	1575 875  1575 2000
+Wire Wire Line
+	1575 2000 1725 2000
+Text GLabel 2650 2100 2    50   Input ~ 0
+PIN20
+Text GLabel 2650 2200 2    50   Input ~ 0
+PIN21
+Wire Wire Line
+	2650 2100 2525 2100
+Wire Wire Line
+	2525 2200 2650 2200
+Text GLabel 2650 1700 2    50   Input ~ 0
+PIN28
+Wire Wire Line
+	2125 2400 2125 2525
+Wire Wire Line
+	2525 1700 2650 1700
+$Comp
+L power:+3V3 #PWR?
+U 1 1 61401614
+P 2125 2525
+F 0 "#PWR?" H 2125 2375 50  0001 C CNN
+F 1 "+3V3" H 2140 2698 50  0000 C CNN
+F 2 "" H 2125 2525 50  0001 C CNN
+F 3 "" H 2125 2525 50  0001 C CNN
+	1    2125 2525
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 61401DDC
+P 850 2075
+F 0 "#PWR?" H 850 1925 50  0001 C CNN
+F 1 "+3V3" V 865 2203 50  0000 L CNN
+F 2 "" H 850 2075 50  0001 C CNN
+F 3 "" H 850 2075 50  0001 C CNN
+	1    850  2075
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 61402793
+P 875 1125
+F 0 "#PWR?" H 875 975 50  0001 C CNN
+F 1 "+3V3" V 890 1253 50  0000 L CNN
+F 2 "" H 875 1125 50  0001 C CNN
+F 3 "" H 875 1125 50  0001 C CNN
+	1    875  1125
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	700  1125 875  1125
+Wire Wire Line
+	700  2075 850  2075
+$Comp
+L Device:CP C?
+U 1 1 6140386B
+P 5250 5100
+F 0 "C?" V 4995 5100 50  0000 C CNN
+F 1 "47uF" V 5086 5100 50  0000 C CNN
+F 2 "" H 5288 4950 50  0001 C CNN
+F 3 "~" H 5250 5100 50  0001 C CNN
+	1    5250 5100
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 614043F9
+P 5550 5100
+F 0 "#PWR?" H 5550 4950 50  0001 C CNN
+F 1 "+3V3" V 5565 5228 50  0000 L CNN
+F 2 "" H 5550 5100 50  0001 C CNN
+F 3 "" H 5550 5100 50  0001 C CNN
+	1    5550 5100
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 614049E2
+P 4950 5100
+F 0 "#PWR?" H 4950 4850 50  0001 C CNN
+F 1 "GND" V 4955 4972 50  0000 R CNN
+F 2 "" H 4950 5100 50  0001 C CNN
+F 3 "" H 4950 5100 50  0001 C CNN
+	1    4950 5100
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5400 5100 5550 5100
+Wire Wire Line
+	4950 5100 5100 5100
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 6140FE7E
+P 4125 975
+F 0 "SW?" H 4125 650 50  0000 C CNN
+F 1 "SW_LIMIT_L" H 4125 741 50  0000 C CNN
+F 2 "" H 4125 975 50  0001 C CNN
+F 3 "~" H 4125 975 50  0001 C CNN
+	1    4125 975 
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 61411C71
+P 4475 975
+F 0 "#PWR?" H 4475 725 50  0001 C CNN
+F 1 "GND" V 4480 847 50  0000 R CNN
+F 2 "" H 4475 975 50  0001 C CNN
+F 3 "" H 4475 975 50  0001 C CNN
+	1    4475 975 
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4325 975  4475 975 
+Text GLabel 3775 875  0    50   Input ~ 0
+PIN22
+Wire Wire Line
+	3775 875  3925 875 
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 61413EB3
+P 4125 1550
+F 0 "SW?" H 4125 1225 50  0000 C CNN
+F 1 "SW_LIMIT_R" H 4125 1316 50  0000 C CNN
+F 2 "" H 4125 1550 50  0001 C CNN
+F 3 "~" H 4125 1550 50  0001 C CNN
+	1    4125 1550
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 61413EB9
+P 4475 1550
+F 0 "#PWR?" H 4475 1300 50  0001 C CNN
+F 1 "GND" V 4480 1422 50  0000 R CNN
+F 2 "" H 4475 1550 50  0001 C CNN
+F 3 "" H 4475 1550 50  0001 C CNN
+	1    4475 1550
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4325 1550 4475 1550
+Text GLabel 3775 1450 0    50   Input ~ 0
+PIN23
+Wire Wire Line
+	3775 1450 3925 1450
+$Comp
+L power:+3V3 #PWR?
+U 1 1 614150AF
+P 1850 3825
+F 0 "#PWR?" H 1850 3675 50  0001 C CNN
+F 1 "+3V3" V 1865 3953 50  0000 L CNN
+F 2 "" H 1850 3825 50  0001 C CNN
+F 3 "" H 1850 3825 50  0001 C CNN
+	1    1850 3825
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1850 3825 1750 3825
+Text GLabel 1175 5425 0    50   Input ~ 0
+TMC_DRV2_EN
+$Comp
+L Device:R R?
+U 1 1 6141FB7E
+P 1500 5425
+F 0 "R?" V 1293 5425 50  0000 C CNN
+F 1 "1K" V 1384 5425 50  0000 C CNN
+F 2 "" V 1430 5425 50  0001 C CNN
+F 3 "~" H 1500 5425 50  0001 C CNN
+	1    1500 5425
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1350 5425 1175 5425
+Text GLabel 1175 5775 0    50   Input ~ 0
+TMC_DRV2_STEP
+Text GLabel 1175 5600 0    50   Input ~ 0
+TMC_DRV2_DIR
+Text GLabel 1175 5950 0    50   Input ~ 0
+TMC_DRV2_CS
+Text GLabel 1400 5600 2    50   Input ~ 0
+PIN4
+Text GLabel 1400 5775 2    50   Input ~ 0
+PIN5
+Text GLabel 1400 5950 2    50   Input ~ 0
+PIN6
+Wire Wire Line
+	1400 5775 1175 5775
+Wire Wire Line
+	1175 5600 1400 5600
+Wire Wire Line
+	1400 5950 1175 5950
+Text GLabel 1875 4000 2    50   Input ~ 0
+PIN24
+Wire Wire Line
+	1750 3825 1750 4000
+Wire Wire Line
+	1750 4000 1875 4000
+Text GLabel 1875 5600 2    50   Input ~ 0
+PIN25
+Wire Wire Line
+	1750 5425 1750 5600
+Wire Wire Line
+	1750 5425 1650 5425
+Wire Wire Line
+	1400 4350 1175 4350
+Wire Wire Line
+	1175 4000 1400 4000
+Wire Wire Line
+	1400 4175 1175 4175
+Text GLabel 1400 4350 2    50   Input ~ 0
+PIN9
+Text GLabel 1400 4175 2    50   Input ~ 0
+PIN8
+Text GLabel 1400 4000 2    50   Input ~ 0
+PIN7
+Text GLabel 1175 4350 0    50   Input ~ 0
+TMC_DRV1_CS
+Text GLabel 1175 4000 0    50   Input ~ 0
+TMC_DRV1_DIR
+Text GLabel 1175 4175 0    50   Input ~ 0
+TMC_DRV1_STEP
+Wire Wire Line
+	1350 3825 1175 3825
+$Comp
+L Device:R R?
+U 1 1 61414A29
+P 1500 3825
+F 0 "R?" V 1293 3825 50  0000 C CNN
+F 1 "1K" V 1384 3825 50  0000 C CNN
+F 2 "" V 1430 3825 50  0001 C CNN
+F 3 "~" H 1500 3825 50  0001 C CNN
+	1    1500 3825
+	0    1    1    0   
+$EndComp
+Text GLabel 1175 3825 0    50   Input ~ 0
+TMC_DRV1_EN
+Wire Wire Line
+	1750 3825 1650 3825
+Connection ~ 1750 3825
+$Comp
+L power:+3V3 #PWR?
+U 1 1 6141FB84
+P 1850 5425
+F 0 "#PWR?" H 1850 5275 50  0001 C CNN
+F 1 "+3V3" V 1865 5553 50  0000 L CNN
+F 2 "" H 1850 5425 50  0001 C CNN
+F 3 "" H 1850 5425 50  0001 C CNN
+	1    1850 5425
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1750 5600 1875 5600
+Wire Wire Line
+	1850 5425 1750 5425
+Connection ~ 1750 5425
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 6142F4FF
+P 7200 1100
+F 0 "SW?" H 7200 775 50  0000 C CNN
+F 1 "B_LEFT" H 7200 866 50  0000 C CNN
+F 2 "" H 7200 1100 50  0001 C CNN
+F 3 "~" H 7200 1100 50  0001 C CNN
+	1    7200 1100
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 6142F505
+P 7550 1100
+F 0 "#PWR?" H 7550 850 50  0001 C CNN
+F 1 "GND" V 7555 972 50  0000 R CNN
+F 2 "" H 7550 1100 50  0001 C CNN
+F 3 "" H 7550 1100 50  0001 C CNN
+	1    7550 1100
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7400 1100 7550 1100
+Text GLabel 6850 1000 0    50   Input ~ 0
+PIN14
+Wire Wire Line
+	6850 1000 7000 1000
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 6142F50E
+P 7200 1675
+F 0 "SW?" H 7200 1350 50  0000 C CNN
+F 1 "B_RIGHT" H 7200 1441 50  0000 C CNN
+F 2 "" H 7200 1675 50  0001 C CNN
+F 3 "~" H 7200 1675 50  0001 C CNN
+	1    7200 1675
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 6142F514
+P 7550 1675
+F 0 "#PWR?" H 7550 1425 50  0001 C CNN
+F 1 "GND" V 7555 1547 50  0000 R CNN
+F 2 "" H 7550 1675 50  0001 C CNN
+F 3 "" H 7550 1675 50  0001 C CNN
+	1    7550 1675
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7400 1675 7550 1675
+Text GLabel 6850 1575 0    50   Input ~ 0
+PIN15
+Wire Wire Line
+	6850 1575 7000 1575
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 6143284A
+P 7200 2300
+F 0 "SW?" H 7200 1975 50  0000 C CNN
+F 1 "B_SPEED" H 7200 2066 50  0000 C CNN
+F 2 "" H 7200 2300 50  0001 C CNN
+F 3 "~" H 7200 2300 50  0001 C CNN
+	1    7200 2300
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 61432850
+P 7550 2300
+F 0 "#PWR?" H 7550 2050 50  0001 C CNN
+F 1 "GND" V 7555 2172 50  0000 R CNN
+F 2 "" H 7550 2300 50  0001 C CNN
+F 3 "" H 7550 2300 50  0001 C CNN
+	1    7550 2300
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7400 2300 7550 2300
+Text GLabel 6850 2200 0    50   Input ~ 0
+PIN16
+Wire Wire Line
+	6850 2200 7000 2200
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 61432859
+P 7200 2875
+F 0 "SW?" H 7200 2550 50  0000 C CNN
+F 1 "B_STATUS" H 7200 2641 50  0000 C CNN
+F 2 "" H 7200 2875 50  0001 C CNN
+F 3 "~" H 7200 2875 50  0001 C CNN
+	1    7200 2875
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 6143285F
+P 7550 2875
+F 0 "#PWR?" H 7550 2625 50  0001 C CNN
+F 1 "GND" V 7555 2747 50  0000 R CNN
+F 2 "" H 7550 2875 50  0001 C CNN
+F 3 "" H 7550 2875 50  0001 C CNN
+	1    7550 2875
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7400 2875 7550 2875
+Text GLabel 6850 2775 0    50   Input ~ 0
+PIN17
+Wire Wire Line
+	6850 2775 7000 2775
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 61433F6F
+P 7200 3550
+F 0 "SW?" H 7200 3225 50  0000 C CNN
+F 1 "B_MODE" H 7200 3316 50  0000 C CNN
+F 2 "" H 7200 3550 50  0001 C CNN
+F 3 "~" H 7200 3550 50  0001 C CNN
+	1    7200 3550
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 61433F75
+P 7550 3550
+F 0 "#PWR?" H 7550 3300 50  0001 C CNN
+F 1 "GND" V 7555 3422 50  0000 R CNN
+F 2 "" H 7550 3550 50  0001 C CNN
+F 3 "" H 7550 3550 50  0001 C CNN
+	1    7550 3550
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	7400 3550 7550 3550
+Text GLabel 6850 3450 0    50   Input ~ 0
+PIN18
+Wire Wire Line
+	6850 3450 7000 3450
+Text GLabel 4750 4150 0    50   Input ~ 0
+RST
+$Comp
+L Switch:SW_Push_SPDT SW?
+U 1 1 61436A79
+P 5475 4250
+F 0 "SW?" H 5475 3925 50  0000 C CNN
+F 1 "SW_EX_RST" H 5475 4016 50  0000 C CNN
+F 2 "" H 5475 4250 50  0001 C CNN
+F 3 "~" H 5475 4250 50  0001 C CNN
+	1    5475 4250
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 614379C5
+P 5800 4250
+F 0 "#PWR?" H 5800 4000 50  0001 C CNN
+F 1 "GND" V 5805 4122 50  0000 R CNN
+F 2 "" H 5800 4250 50  0001 C CNN
+F 3 "" H 5800 4250 50  0001 C CNN
+	1    5800 4250
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	5800 4250 5675 4250
+$Comp
+L Device:R R?
+U 1 1 614396B0
+P 5000 4350
+F 0 "R?" H 5070 4396 50  0000 L CNN
+F 1 "R" H 5070 4305 50  0000 L CNN
+F 2 "" V 4930 4350 50  0001 C CNN
+F 3 "~" H 5000 4350 50  0001 C CNN
+	1    5000 4350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR?
+U 1 1 6143A0BA
+P 4750 4550
+F 0 "#PWR?" H 4750 4400 50  0001 C CNN
+F 1 "+3V3" V 4765 4678 50  0000 L CNN
+F 2 "" H 4750 4550 50  0001 C CNN
+F 3 "" H 4750 4550 50  0001 C CNN
+	1    4750 4550
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4750 4150 5000 4150
+Wire Wire Line
+	5000 4200 5000 4150
+Connection ~ 5000 4150
+Wire Wire Line
+	5000 4150 5275 4150
+Wire Wire Line
+	5000 4500 5000 4550
+Wire Wire Line
+	5000 4550 4750 4550
+Text Notes 800  225  0    50   ~ 10
+ROTARY ENCODERS
+Text Notes 575  3375 0    50   ~ 10
+Veyron 1x2A Stepper Driver Shields
+Text Notes 4875 3450 0    50   ~ 10
+MISCELLANEOUS\n\n
+Text Notes 3825 300  0    50   ~ 10
+LIMIT SWITCHES\n
+Text Notes 6975 300  0    50   ~ 10
+BUTTONS\n
+Text GLabel 9225 1000 0    50   Input ~ 0
+VIN
+$Comp
+L Simulation_SPICE:VDC V?
+U 1 1 61464E70
+P 9450 1200
+F 0 "V?" H 9580 1291 50  0000 L CNN
+F 1 "9.00V" H 9580 1200 50  0000 L CNN
+F 2 "" H 9450 1200 50  0001 C CNN
+F 3 "~" H 9450 1200 50  0001 C CNN
+F 4 "Y" H 9450 1200 50  0001 L CNN "Spice_Netlist_Enabled"
+F 5 "V" H 9450 1200 50  0001 L CNN "Spice_Primitive"
+F 6 "dc(1)" H 9580 1109 50  0000 L CNN "Spice_Model"
+	1    9450 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 6146613C
+P 9225 1400
+F 0 "#PWR?" H 9225 1150 50  0001 C CNN
+F 1 "GND" V 9230 1272 50  0000 R CNN
+F 2 "" H 9225 1400 50  0001 C CNN
+F 3 "" H 9225 1400 50  0001 C CNN
+	1    9225 1400
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9450 1000 9225 1000
+Wire Wire Line
+	9225 1400 9450 1400
+Text GLabel 9225 1650 0    50   Input ~ 0
+VMOTOR
+$Comp
+L Simulation_SPICE:VDC V?
+U 1 1 6146BBDB
+P 9450 1850
+F 0 "V?" H 9580 1941 50  0000 L CNN
+F 1 "28.00V" H 9580 1850 50  0000 L CNN
+F 2 "" H 9450 1850 50  0001 C CNN
+F 3 "~" H 9450 1850 50  0001 C CNN
+F 4 "Y" H 9450 1850 50  0001 L CNN "Spice_Netlist_Enabled"
+F 5 "V" H 9450 1850 50  0001 L CNN "Spice_Primitive"
+F 6 "dc(1)" H 9580 1759 50  0000 L CNN "Spice_Model"
+	1    9450 1850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 6146BBE1
+P 9225 2050
+F 0 "#PWR?" H 9225 1800 50  0001 C CNN
+F 1 "GND" V 9230 1922 50  0000 R CNN
+F 2 "" H 9225 2050 50  0001 C CNN
+F 3 "" H 9225 2050 50  0001 C CNN
+	1    9225 2050
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9225 2050 9450 2050
+Wire Wire Line
+	9450 1650 9225 1650
+Text Notes 8950 300  0    50   ~ 10
+VOLTAGE SOURCES
+Text GLabel 1175 4525 0    50   Input ~ 0
+TMC_DRV1_VDD
+Text GLabel 1400 4525 2    50   Input ~ 0
+VMOTOR
+Wire Wire Line
+	1400 4525 1175 4525
+Text GLabel 1175 6125 0    50   Input ~ 0
+TMC_DRV2_VDD
+Text GLabel 1400 6125 2    50   Input ~ 0
+VMOTOR
+Wire Wire Line
+	1400 6125 1175 6125
+$Comp
+L Motor:Stepper_Motor_bipolar M?
+U 1 1 6147ABDA
+P 3025 4450
+F 0 "M?" H 3213 4574 50  0000 L CNN
+F 1 "RS Pro 5350467" H 3213 4483 50  0000 L CNN
+F 2 "" H 3035 4440 50  0001 C CNN
+F 3 "http://www.infineon.com/dgdl/Application-Note-TLE8110EE_driving_UniPolarStepperMotor_V1.1.pdf?fileId=db3a30431be39b97011be5d0aa0a00b0" H 3035 4440 50  0001 C CNN
+	1    3025 4450
+	1    0    0    -1  
+$EndComp
+Text GLabel 2925 4050 1    50   Input ~ 0
+TMC_DRV1_A1
+Text GLabel 3125 4050 1    50   Input ~ 0
+TMC_DRV1_A2
+Text GLabel 2600 4350 0    50   Input ~ 0
+TMC_DRV1_B1
+Text GLabel 2600 4550 0    50   Input ~ 0
+TMC_DRV1_B2
+Wire Wire Line
+	3125 4150 3125 4050
+Wire Wire Line
+	2925 4050 2925 4150
+Wire Wire Line
+	2600 4350 2725 4350
+Wire Wire Line
+	2600 4550 2725 4550
+$Comp
+L Motor:Stepper_Motor_bipolar M?
+U 1 1 61488EE9
+P 3025 6050
+F 0 "M?" H 3213 6174 50  0000 L CNN
+F 1 "RS Pro 5350467" H 3213 6083 50  0000 L CNN
+F 2 "" H 3035 6040 50  0001 C CNN
+F 3 "http://www.infineon.com/dgdl/Application-Note-TLE8110EE_driving_UniPolarStepperMotor_V1.1.pdf?fileId=db3a30431be39b97011be5d0aa0a00b0" H 3035 6040 50  0001 C CNN
+	1    3025 6050
+	1    0    0    -1  
+$EndComp
+Text GLabel 2925 5650 1    50   Input ~ 0
+TMC_DRV2_A1
+Text GLabel 3125 5650 1    50   Input ~ 0
+TMC_DRV2_A2
+Text GLabel 2600 5950 0    50   Input ~ 0
+TMC_DRV2_B1
+Text GLabel 2600 6150 0    50   Input ~ 0
+TMC_DRV2_B2
+Wire Wire Line
+	3125 5750 3125 5650
+Wire Wire Line
+	2925 5650 2925 5750
+Wire Wire Line
+	2600 5950 2725 5950
+Wire Wire Line
+	2600 6150 2725 6150
+$EndSCHEMATC
