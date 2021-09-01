@@ -2,10 +2,11 @@ import logging
 from typing import Any
 
 import numpy as np
-import yappi
+
 import click
 import matplotlib.pyplot as plt
 import stable_baselines3
+import yappi
 from matplotlib import animation
 from matplotlib.animation import FFMpegWriter
 from serial.tools import list_ports
