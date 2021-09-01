@@ -27,8 +27,10 @@ DigestCallback = Callable[[], None]
 
 
 class NetworkManager:
-    INITIAL_OUTPUT_STOP_MARKER: bytes = "END OF INITIALISATION\n".encode("ascii")
-    PACKET_REALIGNMENT_SEQUENCE: bytes = "=*= Please realign packets here =*=\n".encode("ascii")
+    INITIAL_OUTPUT_STOP_MARKER: bytes = InfoPacket("END OF INITIALISATION\n").to_bytes()
+    PACKET_REALIGNMENT_SEQUENCE: bytes = InfoPacket(
+        "=*= Please realign packets here =*=\n"
+    ).to_bytes()
 
     def __init__(self, port: str = DEFAULT_PORT, baudrate: int = DEFAULT_BAUDRATE):
         self.serial = Serial()
@@ -95,12 +97,12 @@ class NetworkManager:
         return decl
 
     @classmethod
-    def _cpp_initial_output_decl(self) -> str:
-        return self.__cpp_decl("INITIAL_OUTPUT_STOP_MARKER", self.INITIAL_OUTPUT_STOP_MARKER)
+    def _cpp_initial_output_decl(cls) -> str:
+        return cls.__cpp_decl("INITIAL_OUTPUT_STOP_MARKER", cls.INITIAL_OUTPUT_STOP_MARKER)
 
     @classmethod
-    def _cpp_realignment_sequence_decl(self) -> str:
-        return self.__cpp_decl("PACKET_REALIGNMENT_SEQUENCE", self.PACKET_REALIGNMENT_SEQUENCE)
+    def _cpp_realignment_sequence_decl(cls) -> str:
+        return cls.__cpp_decl("PACKET_REALIGNMENT_SEQUENCE", cls.PACKET_REALIGNMENT_SEQUENCE)
 
     def reset_buffers(self, wait: float = 0.025) -> None:
         # sleep 25ms and then flush buffers
