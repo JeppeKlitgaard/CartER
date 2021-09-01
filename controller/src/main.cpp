@@ -23,7 +23,7 @@ void setup()
     initialise();
 
     // Serial
-    S.begin(BAUD_RATE);
+    S.begin(BAUDRATE);
 
 // If using Serial over USB
 // This is faster, but also more annoying for development
