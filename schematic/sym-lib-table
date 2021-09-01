@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name cartpoleml-eagle-import)(type Legacy)(uri ${KIPRJMOD}/cartpoleml-eagle-import.lib)(options "")(descr ""))
+  (lib (name vendored)(type Legacy)(uri ${KIPRJMOD}/vendored.lib)(options "")(descr ""))
+)
