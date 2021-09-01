@@ -118,6 +118,9 @@ class CartpoleEnv(ParallelEnv, Generic[CartpoleAgentT]):  # type: ignore [misc]
 
         Not called after each reset.
         """
+        for agent in self.get_agents():
+            agent.set_environment(self)
+
         self.episode: int = 0
         self.total_world_time: float = 0.0
 
@@ -642,6 +645,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def end_experiment(self) -> dict[str, Any]:
         self.environment_state["experiment_state"] = ExperimentState.ENDING
 
+        self.total_world_time += self.world_time
+
         infos: dict[str, Any] = {}
         for agent in self.get_agents():
             infos[agent.name] = {}
@@ -765,14 +770,13 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             info["world_time"] = world_time
             info["total_world_time"] = self.total_world_time
             info["observation_frequency"] = self.observation_freq_ticker.measure()
+            info["serial_in_waiting"] = self.network_manager.serial.in_waiting
 
             if done:
                 failure_modes = [k.value for k, v in checks.items() if v]
                 logger.info(f"Failure modes: {failure_modes}")
 
                 info["failure_modes"] = failure_modes
-
-                self.total_world_time += world_time
 
             observations[agent_name] = observation
             rewards[agent_name] = reward

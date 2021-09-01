@@ -57,6 +57,10 @@ class GeneralCartpoleMLCallback(BaseCallback):
             if info.get("available_memory") is not None:
                 self.logger.record("cartpoleml/available_memory", info["available_memory"])
 
+            # Available memory
+            if info.get("serial_in_waiting") is not None:
+                self.logger.record("cartpoleml/serial_rx_queue", info["serial_in_waiting"])
+
             # Episode
             if info.get("environment_episode") is not None:
                 self.logger.record("time/env_episode", info["environment_episode"])
@@ -72,6 +76,18 @@ class GeneralCartpoleMLCallback(BaseCallback):
             # Observation frequency
             if info.get("observation_frequency") is not None:
                 self.logger.record("time/observation_frequency", info["observation_frequency"])
+
+            # Observation interval
+            if info.get("observation_interval") is not None:
+                self.logger.record("time/observation_interval", info["observation_interval"])
+
+            # Action frequency
+            if info.get("action_frequency") is not None:
+                self.logger.record("time/action_frequency", info["action_frequency"])
+
+            # Action interval
+            if info.get("action_interval") is not None:
+                self.logger.record("time/action_interval", info["action_interval"])
 
             # Failure Modes
             if "failure_modes" in info.keys():

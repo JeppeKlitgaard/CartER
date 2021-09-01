@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import Mapping
 from math import radians
-from typing import Any, Deque, Optional, Type, TypeVar, cast
+from time import sleep, time
+from typing import TYPE_CHECKING, Any, Deque, Optional, Type, TypeVar, cast
 
 import numpy as np
 
@@ -15,6 +16,7 @@ from gym.utils import seeding
 from scipy.integrate import solve_ivp
 
 from commander.constants import FLOAT_TYPE
+from commander.experiment import ExperimentState
 from commander.integration import DerivativesWrapper, IntegratorOptions
 from commander.ml.agent.constants import ExternalStateIdx, ExternalStateMap, InternalStateIdx
 from commander.ml.agent.type_aliases import GoalParams
@@ -24,8 +26,12 @@ from commander.network import NetworkManager
 from commander.network.constants import CartID, SetOperation
 from commander.network.protocol import CartSpecificPacket, ObservationPacket, SetVelocityPacket
 from commander.type_aliases import ExternalState, InternalState, StateChecks, StepInfo
+from commander.utils import FrequencyTicker
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from commander.ml.environment import CartpoleEnv, ExperimentalCartpoleEnv
 
 
 class CartpoleAgent(ABC):
@@ -46,7 +52,7 @@ class CartpoleAgent(ABC):
     observation_space: spaces.Space
 
     def __init__(
-        self,
+        self: CartpoleAgentT,
         name: str = "Cartpole_1",
         pole_length: float = 1.0,
         max_steps: int = 2500,
@@ -55,6 +61,8 @@ class CartpoleAgent(ABC):
         self.name = name
         self.pole_length = pole_length
         self.max_steps = max_steps
+
+        self.env: Optional[CartpoleEnv[CartpoleAgentT]] = None
 
         self.info: Mapping[str, Any] = {}
 
@@ -83,6 +91,9 @@ class CartpoleAgent(ABC):
     def seed(self, seed: Optional[int] = None) -> list[Any]:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
+
+    def set_environment(self: CartpoleAgentT, env: CartpoleEnv[CartpoleAgentT]) -> None:
+        self.env = env
 
     @abstractmethod
     def reward(self, state: ExternalState) -> float:
@@ -443,6 +454,9 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         baudrate: int = 74880,
         settled_x_threshold: float = 5.0,
         settled_theta_threshold: float = radians(0.25),
+        observation_maximum_interval: int = 10 * 1000,  # us
+        action_minimum_interval: float = 0.003,  # s
+        action_maximum_interval: float = 0.010,  # s
         max_steps: int = 2500,
         goal_params: Optional[GoalParams] = None,
     ):
@@ -455,10 +469,14 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         self.settled_x_threshold = settled_x_threshold
         self.settled_theta_threshold = settled_theta_threshold
 
+        self.action_minimum_interval = action_minimum_interval
+        self.action_maximum_interval = action_maximum_interval
+        self.observation_maximum_interval = observation_maximum_interval
+
         super().__init__(name=name, max_steps=max_steps, goal_params=goal_params)
 
     def setup(self) -> None:
-        pass
+        self.action_freq_ticker = FrequencyTicker()
 
     def initialise(self) -> None:
         self._pre_reset()
@@ -477,12 +495,20 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         observations.
         """
         self.observation_buffer: Deque[ExternalState] = deque(maxlen=self.observation_buffer_size)
+        self.last_observation_interval: float = 0
         self.last_observation_time: int = 0
+        self.last_action_time: float = 0.0
+        self.action_freq_ticker.clear()
         self._state: Optional[InternalState] = None
         self.angle_offset: float = 0
 
     def _reset(self) -> ExternalState:
-        return self.observe()
+        state = self.observe()
+
+        self.last_observation_time = 0
+        self.last_action_time = 0.0
+
+        return state
 
     def set_angle_offset(self) -> None:
         state = self.observe_as_dict()
@@ -491,7 +517,22 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
     def absorb_packet(self, packet: CartSpecificPacket) -> None:
         if isinstance(packet, ObservationPacket):
             if packet.timestamp_micros > self.last_observation_time:
+                self.env: ExperimentalCartpoleEnv = self.env
+                if (
+                    (observation_interval := packet.timestamp_micros - self.last_observation_time)
+                    > self.observation_maximum_interval
+                    and self.last_observation_time != 0
+                    and self.env.environment_state["experiment_state"] != ExperimentState.ENDING
+                    and self.env.environment_state["experiment_state"] != ExperimentState.RESETTING
+                ):
+                    logger.warn(
+                        "Observation interval too long: %s > %s",
+                        observation_interval,
+                        self.observation_maximum_interval,
+                    )
+
                 self.last_observation_time = packet.timestamp_micros
+                self.last_observation_interval = observation_interval / 1e6  # μs -> s
 
                 x = packet.position_steps
                 theta = radians(packet.angle) - self.angle_offset
@@ -533,6 +574,23 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         return angle_drift
 
     def _step(self, action: Action) -> StepInfo:
+        action_interval: Optional[float] = None
+
+        if self.last_action_time != 0.0:
+            if (action_interval := time() - self.last_action_time) < self.action_minimum_interval:
+                logger.info("Action frequency too fast, blocking until min interval passed")
+                sleep(self.action_minimum_interval - action_interval)
+
+            elif action_interval > self.action_maximum_interval:
+                logger.warn(
+                    "Action frequency too slow: %s > %s",
+                    action_interval,
+                    self.action_maximum_interval,
+                )
+
+        self.last_action_time = time()
+        self.action_freq_ticker.tick()
+
         value = 50
 
         value *= 1 if action == Action.FORWARDS else -1
@@ -542,7 +600,11 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         # self.network_manager.send_packet(pos_pkt)
         self.network_manager.send_packet(velo_pkt)
 
-        info: StepInfo = {}
+        info: StepInfo = {
+            "action_interval": action_interval,
+            "action_frequency": self.action_freq_ticker.measure(),
+            "observation_interval": self.last_observation_interval,
+        }
 
         return info
 
