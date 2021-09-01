@@ -62,7 +62,8 @@ const String FailureModeStrings[] = {
     "other/other",
 };
 
-enum class ExperimentMode {
+enum class ExperimentMode
+{
     RUNNING,
     FAILED,
     DONE,
