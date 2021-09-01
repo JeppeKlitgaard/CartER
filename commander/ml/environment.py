@@ -479,7 +479,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             # Just ignore since we currently use ExperimentInfoPackets to determine done state
             self.network_manager.get_packets(SoftLimitReachedPacket, digest=False)
 
-        if self.network_manager.packet_buffer:
+        if len(self.network_manager.packet_buffer) >= 3:
             logger.error(
                 "Had packets in buffer after processing: %s", self.network_manager.packet_buffer
             )
@@ -549,11 +549,6 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         velo_pkt = SetVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=0)
         self.network_manager.send_packet(velo_pkt)
 
-        # Set max velocity
-        logger.info("Setting max velocity")
-        max_velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=2000)
-        self.network_manager.send_packet(max_velo_pkt)
-
         debug_info_pkt = RequestDebugInfoPacket()
         self.network_manager.send_packet(debug_info_pkt)
 
@@ -578,6 +573,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             agent._pre_reset()
 
         self.network_manager.assert_ping_pong()
+
+        # Set max velocity
+        logger.info("Setting max velocity")
+        max_velo_pkt = SetMaxVelocityPacket(SetOperation.EQUAL, cart_id=CartID.ONE, value=10_000)
+        self.network_manager.send_packet(max_velo_pkt)
 
         # Set velocity
         logger.info("Setting velocity")

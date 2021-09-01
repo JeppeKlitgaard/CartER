@@ -578,7 +578,7 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
 
         if self.last_action_time != 0.0:
             if (action_interval := time() - self.last_action_time) < self.action_minimum_interval:
-                logger.info("Action frequency too fast, blocking until min interval passed")
+                logger.debug("Action frequency too fast, blocking until min interval passed")
                 sleep(self.action_minimum_interval - action_interval)
 
             elif action_interval > self.action_maximum_interval:
