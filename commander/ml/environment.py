@@ -13,6 +13,7 @@ from pettingzoo.utils.env import ParallelEnv
 import deepmerge
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
+from commander.experiment import ExperimentState
 from commander.ml.agent import CartpoleAgent
 from commander.ml.agent.agent import (
     CartpoleAgentT,
@@ -56,6 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 class EnvironmentState(TypedDict):
+    experiment_state: Optional[ExperimentState]
     angle_drifts: dict[AgentNameT, float]
     position_drifts: dict[AgentNameT, int]
     failure_cart_id: CartID
@@ -480,6 +482,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
     def _reset_environment_state(self) -> None:
         self.environment_state: EnvironmentState = {
+            "experiment_state": None,
             "angle_drifts": {},
             "position_drifts": {},
             "failure_cart_id": CartID.NUL,
@@ -496,9 +499,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
     def setup(self) -> None:
         logger.info("Running experimental environment setup")
-        super().setup()
 
         self._reset_environment_state()
+        self.environment_state["experiment_state"] = ExperimentState.STARTING
+
+        super().setup()
 
         self.cart_id_to_agent: dict[CartID, ExperimentalCartpoleAgent] = {}
 
@@ -560,6 +565,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def reset(self) -> Mapping[str, ExternalState]:
         logger.info("Resetting experimental environment")
 
+        self.environment_state["experiment_state"] = ExperimentState.RESETTING
+
         self._reset_environment_state()
 
         self.agents = self.possible_agents[:]
@@ -611,7 +618,11 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         self.world_time_start = time()
 
-        return super().reset()
+        reset_result = super().reset()
+
+        self.environment_state["experiment_state"] = ExperimentState.RUNNING
+
+        return reset_result
 
     def network_tick(self) -> None:
         self.network_manager.digest()
@@ -629,6 +640,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         logger.debug("Experiment settled")
 
     def end_experiment(self) -> dict[str, Any]:
+        self.environment_state["experiment_state"] = ExperimentState.ENDING
+
         infos: dict[str, Any] = {}
         for agent in self.get_agents():
             infos[agent.name] = {}
@@ -683,6 +696,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             infos[agent_name]["position_drift"] = position_drift
 
         infos["failure_cart_id"] = self.environment_state["failure_cart_id"]
+
+        self.environment_state["experiment_state"] = ExperimentState.ENDED
 
         return infos
 

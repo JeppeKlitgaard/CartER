@@ -3,9 +3,18 @@ Contains types and logic related to the experimental observations.
 """
 
 from abc import ABC
-from enum import IntEnum, unique
+from enum import Enum, IntEnum, auto, unique
 from struct import unpack
 from typing import cast
+
+
+@unique
+class ExperimentState(Enum):
+    STARTING = auto()
+    RESETTING = auto()
+    RUNNING = auto()
+    ENDING = auto()
+    ENDED = auto()
 
 
 @unique
