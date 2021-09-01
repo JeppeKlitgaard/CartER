@@ -30,7 +30,7 @@ class NetworkManager:
     INITIAL_OUTPUT_STOP_MARKER: bytes = "END OF INITIALISATION\n".encode("ascii")
     PACKET_REALIGNMENT_SEQUENCE: bytes = "=*= Please realign packets here =*=\n".encode("ascii")
 
-    def __init__(self, port: str = "/dev/ttyACM0", baudrate: int = 74880):
+    def __init__(self, port: str = DEFAULT_PORT, baudrate: int = DEFAULT_BAUDRATE):
         self.serial = Serial()
         self.serial.port = port
         self.serial.baudrate = baudrate

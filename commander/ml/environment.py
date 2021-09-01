@@ -22,7 +22,14 @@ from commander.ml.agent.agent import (
 from commander.ml.constants import Action
 from commander.ml.display import rendering
 from commander.network import NetworkManager
-from commander.network.constants import CartID, ExperimentInfoSpecifier, FailureMode, SetOperation
+from commander.network.constants import (
+    DEFAULT_BAUDRATE,
+    DEFAULT_PORT,
+    CartID,
+    ExperimentInfoSpecifier,
+    FailureMode,
+    SetOperation,
+)
 from commander.network.protocol import (
     CartSpecificPacket,
     CheckLimitPacket,
@@ -372,8 +379,8 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
     def __init__(
         self,
         agents: Sequence[ExperimentalCartpoleAgent],
-        port: str = "/dev/ttyACM0",
-        baudrate: int = 74880,
+        port: str = DEFAULT_PORT,
+        baudrate: int = DEFAULT_BAUDRATE,
         observation_buffer_size: int = 100,
     ) -> None:
         self.port = port

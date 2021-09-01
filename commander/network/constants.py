@@ -2,6 +2,9 @@ from enum import Enum, IntEnum, unique
 
 from commander.network.utils import Format
 
+DEFAULT_PORT: str = "/dev/ttyACM0"
+DEFAULT_BAUDRATE: int = 115200
+
 
 @unique
 class SetOperation(str, Enum):
