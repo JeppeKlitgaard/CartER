@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 import numpy as np
-
+import yappi
 import click
 import matplotlib.pyplot as plt
 import stable_baselines3
@@ -47,7 +47,12 @@ def experiment(
     state_spec: str,
     algorithm: str,
     num_frame_stacking: int,
+    profile: bool,
 ) -> None:
+
+    if profile:
+        yappi.start()
+        yappi.set_clock_type("CPU")
 
     if port == "AUTODETECT":
         port = list_ports.comports()[0].device
@@ -143,6 +148,11 @@ def experiment(
         except KeyboardInterrupt as exc:
             logger.info("Stopping learning and saving model")
             model.save(model_path)
+
+            if profile:
+                yappi.stop()
+                stats = yappi.get_func_stats()
+                stats.save("profiling.prof", "pstat")
 
             logger.info("Reraising exception for debugging purposes")
 
