@@ -83,7 +83,7 @@ void loop()
 
     else if (b_status.pressed())
     {
-        print_debug_information();
+        send_debug_information();
     }
     else
     {
