@@ -313,7 +313,12 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
             callbacks.append(eval_callback)
 
         algorithm_obj = getattr(stable_baselines3, algorithm)
-        env = make_sb3_env(env_class, **env_params)
+        try:
+            env = make_sb3_env(env_class, **env_params)
+        except KeyboardInterrupt as exc:
+            logger.info("Reraising exception for debugging purposes")
+            raise Exception from exc
+
         logger.info(
             f"Observation spaces: env={env.observation_space.shape}, "
             f"agent={get_sb3_env_root_env(env)._agents[0].observation_space.shape}"
