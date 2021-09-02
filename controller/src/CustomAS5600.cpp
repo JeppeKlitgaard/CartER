@@ -63,7 +63,7 @@ void CustomAMS_5600::start(uint8_t addr)
     }
 
     packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Magnitude: " + std::to_string(getMagnitude()));
-    packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Strength Strength (1=too weak, 2=good, 3=too strong): " + std::to_string(getMagnitude()));
+    packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Strength (1=too weak, 2=good, 3=too strong): " + std::to_string(getMagnetStrength()));
     packet_sender.send_debug("Rotary Encoder " + std::to_string(_addr) + "| Detected: " + std::to_string(detectMagnet()));
 
     _unselect();
