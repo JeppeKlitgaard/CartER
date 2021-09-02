@@ -522,7 +522,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         logger.info("Opening serial connection to controller")
         self.network_manager.open()
         logger.info("Reading inital output")
-        initial_output = self.network_manager.read_initial_output(print_=False)
+        initial_output = self.network_manager.read_initial_output(print_=True)
         logger.debug("Initial output: %s", initial_output)
 
         # assert not self.network_manager.in_queue
