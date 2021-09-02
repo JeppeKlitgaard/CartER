@@ -103,46 +103,6 @@ CONFIGURATION_STATE_SPEC_MAP = {
 }
 
 
-def simexp_common_decorator(func: Callable[..., None]) -> Command:
-    func = click.option("--train/--no-train", default=True)(func)
-    func = click.option("--load/--no-load", default=True)(func)
-    func = click.option("--render/--no-render", default=True)(func)
-    func = click.option("--render-with-best/--no-render-with-best", default=True)(func)
-    func = click.option("--tensorboard/--no-tensorboard", default=True)(func)
-    func = click.option("--record/--no-record", default=True)(func)
-    func = click.option("-t", "--total-timesteps", type=int, default=100000)(func)
-    func = click.option(
-        "-c",
-        "--carts",
-        type=int,
-        default=1,
-    )(func)
-    func = click.option(
-        "-g",
-        "--goal",
-        type=click.Choice([_.value for _ in ConfigurationGoal], case_sensitive=False),
-        default=ConfigurationGoal.BOUNCE,
-    )(func)
-    func = click.option(
-        "-s",
-        "--state-spec",
-        type=click.Choice([_.value for _ in ConfigurationStateSpec], case_sensitive=False),
-        default=ConfigurationStateSpec.POSITIONAL_KNOWLEDGE,
-    )(func)
-    func = click.option(
-        "-a",
-        "--algorithm",
-        type=click.Choice([_.value for _ in Algorithm], case_sensitive=False),
-        default=Algorithm.PPO,
-    )(func)
-    func = click.option("-n", "--num-frame-stacking", type=int, default=-1)(func)
-
-    func = click.pass_context(func)
-    func = click.command()(func)
-
-    return func
-
-
 def simexp_command(command: SimulationExperimentCommand) -> Command:
     @click.command(name=command.value)
     @click.pass_context
