@@ -59,12 +59,7 @@ class Algorithm(str, Enum):
     # Note: Not all of these actually work with our action space and multiple agents
     # Known working: A2C, PPO
     A2C = "A2C"
-    DDPG = "DDPG"
-    DQN = "DQN"
-    HER = "HER"
     PPO = "PPO"
-    SAC = "SAC"
-    TD3 = "TD3"
 
 
 ALGORITHM_POLICY_PARAMS_MAP: dict[Algorithm, dict[str, Any]] = {
@@ -77,7 +72,8 @@ ALGORITHM_POLICY_PARAMS_MAP: dict[Algorithm, dict[str, Any]] = {
         "ent_coef": 0.001,
         "learning_rate": lambda x: 0.001 * x,
         "clip_range": lambda x: 0.2 * x,
-    }
+    },
+    Algorithm.A2C: {}
 }
 
 
