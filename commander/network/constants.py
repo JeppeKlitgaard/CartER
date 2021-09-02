@@ -43,7 +43,7 @@ SPECIFIER_TO_FORMAT: dict[ExperimentInfoSpecifier, Format] = {
     ExperimentInfoSpecifier.POSITION_DRIFT: Format.INT_32,
     ExperimentInfoSpecifier.FAILURE_MODE: Format.INT_8,
     ExperimentInfoSpecifier.TRACK_LENGTH_STEPS: Format.INT_32,
-    ExperimentInfoSpecifier.AVAILABLE_MEMORY: Format.INT_32,
+    ExperimentInfoSpecifier.AVAILABLE_MEMORY: Format.UINT_32,
 }
 
 

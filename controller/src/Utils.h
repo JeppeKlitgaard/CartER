@@ -3,9 +3,15 @@
 
 #include <CustomArduino.h>
 
+extern char _end;
+extern "C" char *sbrk(int i);
+
 byte ctob(const char *c);
 
-int free_memory();
+
+uint32_t free_memory();
+
+void send_memory_info(bool all = false);
 
 int index_of(const char *array, size_t size, char c);
 

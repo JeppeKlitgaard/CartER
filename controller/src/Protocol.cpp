@@ -219,10 +219,10 @@ void ExperimentDonePacket::read(Stream &sbuf)
 }
 
 // ExperimentInfo
-ExperimentInfoPacket::ExperimentInfoPacket() : _specifier{ExperimentInfoSpecifier::NUL}, _cart_id{0}, _value{0} {}
+ExperimentInfoPacket::ExperimentInfoPacket() : _specifier{ExperimentInfoSpecifier::NUL}, _cart_id{0}, _value{} {}
 byte ExperimentInfoPacket::get_id() const { return ExperimentInfoPacket::id; }
 
-void ExperimentInfoPacket::construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<FailureMode, int32_t> value)
+void ExperimentInfoPacket::construct(ExperimentInfoSpecifier specifier, uint8_t cart_id, std::variant<FailureMode, int32_t, uint32_t> value)
 {
     _specifier = specifier;
     _cart_id = cart_id;
@@ -256,7 +256,7 @@ RawPacket ExperimentInfoPacket::to_raw_packet() const
         break;
 
     case ExperimentInfoSpecifier::AVAILABLE_MEMORY:
-        raw_packet.add(std::get<int32_t>(this->_value));
+        raw_packet.add(std::get<uint32_t>(this->_value));
         break;
     }
 
