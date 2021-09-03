@@ -8,7 +8,6 @@ extern "C" char *sbrk(int i);
 
 byte ctob(const char *c);
 
-
 uint32_t free_memory();
 
 void send_memory_info(bool all = false);
