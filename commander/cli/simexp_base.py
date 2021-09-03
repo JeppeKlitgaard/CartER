@@ -1,6 +1,6 @@
 import logging
 from enum import Enum, unique
-from typing import Any, Callable, Type, Union
+from typing import Any, Type, Union
 
 import numpy as np
 
@@ -73,7 +73,7 @@ ALGORITHM_POLICY_PARAMS_MAP: dict[Algorithm, dict[str, Any]] = {
         "learning_rate": lambda x: 0.001 * x,
         "clip_range": lambda x: 0.2 * x,
     },
-    Algorithm.A2C: {}
+    Algorithm.A2C: {},
 }
 
 
