@@ -318,7 +318,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
 
         if render:
             sim_env_params = env_params.copy()
-            del sim_env_params["port"]
+            sim_env_params.pop("port", None)
 
             env = make_sb3_env(SimulatedCartpoleEnv, **sim_env_params)
             env.reset()
