@@ -31,7 +31,7 @@ void setup()
     while (!S)
         ;
 #endif
-    packet_sender.send_info("=== Cartpole Controller ===");
+    packet_sender.send_info("=== CartER ===");
 
     send_debug_information();
 

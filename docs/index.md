@@ -1,6 +1,6 @@
 # Introduction
 
-CartER is an open-source learning platform that enables the user to quickly
+CartER [_Cartpole Environment for Reinforcement learning_] is an open-source learning platform that enables the user to quickly
 start experimenting with simulated and physical multi-agent reinforcement learning
 projects quickly.
 
