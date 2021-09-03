@@ -15,8 +15,17 @@ nav:
   - Building:
     - 'building/index.md'
     - 'building/bom.md'
+
+  - Usage:
+    - 'usage/index.md'
+
   - Articles:
+    - 'articles/index.md'
     - 'articles/introducing_cartpoleml.md'
+
+  - Videos:
+    - 'videos/index.md'
+    - 'videos/movements_using_ppo.md'
 
 theme:
   name: material
@@ -45,6 +54,7 @@ repo_url: https://github.com/JeppeKlitgaard/CartpoleML
 plugins:
   - search:
       lang: en
+  - mkdocs-video
 
 markdown_extensions:
   - pymdownx.arithmatex:
