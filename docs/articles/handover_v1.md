@@ -3,6 +3,23 @@
 This document describes the handover of the project after my (Jeppe Klitgaard)
 10 week internship.
 
+!!! important "Last minute change"
+    Before I went home on 2021-09-03 (last day) I got an epiphany that some of the weird
+    error behaviour I have been experiencing in the last few days originates from
+    noise from the stepper motor wires.
+
+    I have cut some of the cable management zip ties and rearranged the wires to
+    reduce this effect, as well as disconnected the screw mounting block for the rotary encoders.
+
+    If it does turn out that this has fixed the issue, the cables for the steppers will need to be rerouted
+    to reduce noise transmission after which point the cable management and the rotary encoders
+    should be able to be reinstated without issue.
+
+    It is possible that the noise has damaged some pins or parts of the Arduino Due,
+    in which case the Due would need to be replaced. This seems unlikely, however.
+
+    - Jeppe
+
 ## What works
 
 - Commander: Simulated Environment (Implemented as a `PettingZoo`-style `ParallelEnv`)
