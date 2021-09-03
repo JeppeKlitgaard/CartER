@@ -94,7 +94,7 @@ void loop()
             break;
 
         case DEBUG_ROTARY_ENCODERS:
-            packet_sender.send_debug(std::to_string(rot_encoder1.readAngleDeg()));
+            packet_sender.send_debug(std::to_string(rot_encoder1->readAngleDeg()));
             break;
 
         case LIMIT_FINDING:

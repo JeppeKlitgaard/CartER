@@ -13,7 +13,7 @@ CustomAMS_5600::CustomAMS_5600() {}
  * @param rawAngle
  * @return
  */
-float CustomAMS_5600::_rawAngleToDeg(unsigned int rawAngle)
+float RealCustomAMS_5600::_rawAngleToDeg(unsigned int rawAngle)
 {
     // 12 bit => 360/2^12 => 0.087 of a degree
     float angleDeg = rawAngle * _BIT_DEG_RESOLUTION;
@@ -24,7 +24,7 @@ float CustomAMS_5600::_rawAngleToDeg(unsigned int rawAngle)
 /**
  * Selects the rotary encoder using the I2C interface
  */
-void CustomAMS_5600::_select()
+void RealCustomAMS_5600::_select()
 {
     I2C_select(_addr);
 }
@@ -32,7 +32,7 @@ void CustomAMS_5600::_select()
 /**
  * Unselects the rotary encoder using the I2C interface
  */
-void CustomAMS_5600::_unselect()
+void RealCustomAMS_5600::_unselect()
 {
     I2C_select(_UNSELECT_ADDR);
 }
@@ -42,7 +42,7 @@ void CustomAMS_5600::_unselect()
  * May block indefinitely if I2C not connected
  * @param addr
  */
-void CustomAMS_5600::start(uint8_t addr)
+void RealCustomAMS_5600::start(uint8_t addr)
 {
     _addr = addr;
 
@@ -73,11 +73,24 @@ void CustomAMS_5600::start(uint8_t addr)
  * Returns the angle degree as a float
  * @return
  */
-float CustomAMS_5600::readAngleDeg()
+float RealCustomAMS_5600::readAngleDeg()
 {
     _select();
     float angleDeg = _rawAngleToDeg(getRawAngle());
     _unselect();
 
     return angleDeg;
+}
+
+void FakeCustomAMS_5600::start(uint8_t addr)
+{
+}
+
+/**
+ * Returns the angle degree as a float
+ * @return
+ */
+float FakeCustomAMS_5600::readAngleDeg()
+{
+    return PI;
 }

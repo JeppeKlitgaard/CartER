@@ -53,8 +53,8 @@ void send_observation(uint8_t cart_id)
     CustomAccelStepper &astepper = get_astepper_by_id(cart_id);
     int32_t position_step = astepper.currentPosition();
 
-    CustomAMS_5600 &rot_encoder = get_rot_encoder_by_id(cart_id);
-    float_t angle_deg = rot_encoder.readAngleDeg();
+    CustomAMS_5600 *rot_encoder = get_rot_encoder_by_id(cart_id);
+    float_t angle_deg = rot_encoder->readAngleDeg();
 
     std::unique_ptr<ObservationPacket> packet = std::make_unique<ObservationPacket>();
 

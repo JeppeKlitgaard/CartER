@@ -8,6 +8,15 @@
 
 class CustomAMS_5600 : public AMS_5600
 {
+public:
+    CustomAMS_5600();
+
+    virtual void start(uint8_t addr) = 0;
+    virtual float readAngleDeg() = 0;
+};
+
+class RealCustomAMS_5600 : public CustomAMS_5600
+{
 private:
     const uint8_t _UNSELECT_ADDR = 7;
     const float _BIT_DEG_RESOLUTION = 0.087;
@@ -20,10 +29,14 @@ protected:
     void _unselect();
 
 public:
-    CustomAMS_5600();
+    virtual void start(uint8_t addr) override;
+    virtual float readAngleDeg() override;
+};
 
-    void start(uint8_t addr);
-    float readAngleDeg();
+class FakeCustomAMS_5600 : public CustomAMS_5600
+{
+    virtual void start(uint8_t addr) override;
+    virtual float readAngleDeg() override;
 };
 
 #endif
