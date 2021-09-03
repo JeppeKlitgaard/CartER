@@ -82,6 +82,7 @@ module = [
     "deepmerge.*",
     "pyglet.*",
     "yappi.*",
+    "mkdocs.*",
 ]
 ignore_missing_imports = true
 
