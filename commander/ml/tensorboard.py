@@ -15,7 +15,7 @@ from stable_baselines3.common.logger import Logger, Video
 logger = logging.getLogger(__name__)
 
 
-class GeneralCartpoleMLCallback(BaseCallback):
+class GeneralCarterCallback(BaseCallback):
     """
     Adds a few general metrics to Tensorboard
     """
@@ -42,11 +42,11 @@ class GeneralCartpoleMLCallback(BaseCallback):
         for infos in self.locals["infos"]:
             # Angle drift
             if angle_drift := infos.get("angle_drift"):
-                self.logger.record("cartpoleml/angle_drift", angle_drift)
+                self.logger.record("carter/angle_drift", angle_drift)
 
             # Position drift
             if position_drift := infos.get("position_drift"):
-                self.logger.record("cartpoleml/position_drift", position_drift)
+                self.logger.record("carter/position_drift", position_drift)
 
         failure_modes = []
         for info in self.locals["infos"]:
@@ -55,11 +55,11 @@ class GeneralCartpoleMLCallback(BaseCallback):
 
             # Available memory
             if info.get("available_memory") is not None:
-                self.logger.record("cartpoleml/available_memory", info["available_memory"])
+                self.logger.record("carter/available_memory", info["available_memory"])
 
             # Available memory
             if info.get("serial_in_waiting") is not None:
-                self.logger.record("cartpoleml/serial_rx_queue", info["serial_in_waiting"])
+                self.logger.record("carter/serial_rx_queue", info["serial_in_waiting"])
 
             # Episode
             if info.get("environment_episode") is not None:
@@ -95,11 +95,11 @@ class GeneralCartpoleMLCallback(BaseCallback):
 
             # x
             if info.get("x") is not None:
-                self.logger.record(f"cartpoleml/x_{name}", info["x"])
+                self.logger.record(f"carter/x_{name}", info["x"])
 
             # theta
             if info.get("theta") is not None:
-                self.logger.record(f"cartpoleml/theta_{name}", info["theta"])
+                self.logger.record(f"carter/theta_{name}", info["theta"])
 
         failure_mode: str
         if not failure_modes:
@@ -114,14 +114,14 @@ class GeneralCartpoleMLCallback(BaseCallback):
 
         failure_category = failure_mode.split("/")[0]
 
-        self.logger.record(f"cartpoleml/failure_descriptor_text_{name}", failure_mode)
+        self.logger.record(f"carter/failure_descriptor_text_{name}", failure_mode)
         self.logger.record(
-            f"cartpoleml/failure_descriptor_num_{name}", self.FAILURE_MODE_TO_NUM[failure_mode]
+            f"carter/failure_descriptor_num_{name}", self.FAILURE_MODE_TO_NUM[failure_mode]
         )
 
-        self.logger.record(f"cartpoleml/failure_category_text_{name}", failure_category)
+        self.logger.record(f"carter/failure_category_text_{name}", failure_category)
         self.logger.record(
-            f"cartpoleml/failure_category_num_{name}",
+            f"carter/failure_category_num_{name}",
             self.FAILURE_CATEGORY_TO_NUM[failure_category],
         )
 

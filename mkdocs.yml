@@ -1,4 +1,4 @@
-site_name: CartpoleML
+site_name: CartER
 
 nav:
   - 'index.md'
@@ -21,7 +21,7 @@ nav:
 
   - Articles:
     - 'articles/index.md'
-    - 'articles/introducing_cartpoleml.md'
+    - 'articles/introducing_carter.md'
 
   - Videos:
     - 'videos/index.md'
@@ -49,7 +49,7 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
-repo_url: https://github.com/JeppeKlitgaard/CartpoleML
+repo_url: https://github.com/JeppeKlitgaard/CartER
 
 plugins:
   - search:

@@ -100,4 +100,4 @@ DefaultExperimentConfiguration: ExperimentConfiguration = {
     }
 }
 
-CartpoleMLExperimentConfiguration = DefaultExperimentConfiguration.copy()
+CarterExperimentConfiguration = DefaultExperimentConfiguration.copy()

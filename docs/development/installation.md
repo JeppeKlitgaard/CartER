@@ -13,15 +13,15 @@ It assumes:
 ## 1 - Clone project
 
 ```sh
-git clone https://github.com/JeppeKlitgaard/CartpoleML.git
+git clone https://github.com/JeppeKlitgaard/CartER.git
 ```
 
 ## 2 - Platform.io
 
-- Open the `CartpoleML` folder in `vscode`.
+- Open the `CartER` folder in `vscode`.
 - Install `platformio` if not already installed.
 - If on Linux make sure to follow [PlatformIO guide to udev setup](https://docs.platformio.org/en/latest/faq.html#platformio-udev-rules)
-- Add the `CartpoleML/controller/` folder to `vscode` (`Workspaces: Add Folder to Workspace...`)
+- Add the `CartER/controller/` folder to `vscode` (`Workspaces: Add Folder to Workspace...`)
 - Restart `vscode`
 - Run `pio run` in a Platform IO terminal (`PlatformIO: New Terminal`)
 
@@ -29,12 +29,12 @@ git clone https://github.com/JeppeKlitgaard/CartpoleML.git
 
 - [Install Poetry](https://python-poetry.org/docs/#installation)
 - Configure `poetry` to use local `venv` by running `poetry config virtualenvs.in-project true`
-- Run `poetry install` in `CartpoleML/` directory
+- Run `poetry install` in `CartER/` directory
 
 !!! Note "Virtual Environments"
     The rest of this guide assumes you are in a terminal with the project virtualenv activated.
 
-    You can activate the virtualenv by running `poetry shell` in the `CartpoleML/` directory.
+    You can activate the virtualenv by running `poetry shell` in the `CartER/` directory.
 
 
 ## 4 - Test
@@ -42,4 +42,4 @@ git clone https://github.com/JeppeKlitgaard/CartpoleML.git
 Now test that you can:
 - Build the `controller` source using: `PlatformIO: Build` in `vscode`.
 - Upload to the microcontroller using `PlatformIO: Upload` in `vscode`.
-- Perform an experiment using `cartpoleml experiment` in a virtualenv'd shell.
+- Perform an experiment using `carter experiment` in a virtualenv'd shell.

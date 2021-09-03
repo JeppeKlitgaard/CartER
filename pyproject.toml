@@ -1,6 +1,6 @@
 # Poetry
 [tool.poetry]
-name = "cartpoleml"
+name = "carter"
 version = "0.1.0"
 description = "Machine Learning of Inverted Pendula"
 authors = ["Jeppe Klitgaard <jk782@cam.ac.uk>"]
@@ -52,7 +52,7 @@ mkdocs-material = "^7.2.4"
 typing-extensions = "^3.10.0"
 
 [tool.poetry.scripts]
-cartpoleml = "commander.cli:run"
+carter = "commander.cli:run"
 
 # Mypy
 [tool.mypy]

@@ -1,32 +1,32 @@
 # Introduction
 
-CartpoleML is an open-source learning platform that enables the user to quickly
+CartER is an open-source learning platform that enables the user to quickly
 start experimenting with simulated and physical multi-agent reinforcement learning
 projects quickly.
 
-CartpoleML is still being actively developed and uses state-of-the-art
+CartER is still being actively developed and uses state-of-the-art
 reinforcement-learning libraries for greater reproducibility.
 
 ## Author
 
-The CartpoleML project is an undergraduate research project undertaken by Jeppe Klitgaard
+The CartER project is an undergraduate research project undertaken by Jeppe Klitgaard
 at the Biological and Soft Systems group at Cavendish Laboratory, University of Cambridge 
 under supervision of Professor Pietro Cicuta and Professor Pietro Lio.
 
 Queries can be made to [jk782@cam.ac.uk](mailto:jk782@cam.ac.uk) or through the GitHub
-repository located at [JeppeKlitgaard/CartpoleML](https://github.com/JeppeKlitgaard/CartpoleML)
+repository located at [JeppeKlitgaard/CartER](https://github.com/JeppeKlitgaard/CartER)
 
 ## Citation
 
-CartpoleML can be cited in publications using:
+CartER can be cited in publications using:
 
-    @misc{cartpoleml,
+    @misc{carter,
     author = {Jeppe Klitgaard, Pietro Cicuta, Pietro Lio},
-    title = {CartpoleML},
+    title = {CartER},
     year = {2021},
     publisher = {GitHub},
     journal = {GitHub repository},
-    howpublished = {\url{https://github.com/JeppeKlitgaard/CartpoleML}},
+    howpublished = {\url{https://github.com/JeppeKlitgaard/CartER}},
     }
 
 ## Documentation overview
@@ -53,7 +53,7 @@ The project consists of two main components:
 
 ## Underlying technologies
 
-CartpoleML uses the following underlying technologies.
+CartER uses the following underlying technologies.
 
 ### Commander
 

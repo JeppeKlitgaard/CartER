@@ -1,7 +1,7 @@
-CartpoleML
+CartER
 ==========
 
-CartpoleML is my summer project at the Biological and Soft Systems Sector of Cavendish Laboratory, University of Cambridge.
+CartER is my summer project at the Biological and Soft Systems Sector of Cavendish Laboratory, University of Cambridge.
 
 It involves a physical experiment with two pendula that are driven by stepper motors managed by an Arduino Due.
 
@@ -22,18 +22,18 @@ poetry install
 And then see simulations using:
 
 ```sh
-cartpoleml simulate
+carter simulate
 ```
 
 Note that simulate has a few configurable options. See the help page:
 
 ```sh
-cartpoleml --help
+carter --help
 ```
 
 ## Build system
 
-CartpoleML makes use of the PlatformIO toolchain for managing the embedded
+CartER makes use of the PlatformIO toolchain for managing the embedded
 controller code for the Arduino Due that powers the project.
 
 The libraries used are defined in `./controller/platformio.ini` along with the

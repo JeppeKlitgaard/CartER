@@ -29,7 +29,7 @@ from commander.ml.agent.state_specification import (
     make_state_spec,
 )
 from commander.ml.configurations import (
-    CartpoleMLExperimentConfiguration,
+    CarterExperimentConfiguration,
     DeepPILCOConfiguration,
     ExperimentAgentConfiguration,
     SimulatedAgentConfiguration,
@@ -40,10 +40,10 @@ from commander.ml.environment import (
     get_sb3_env_root_env,
     make_sb3_env,
 )
-from commander.ml.tensorboard import GeneralCartpoleMLCallback
+from commander.ml.tensorboard import GeneralCarterCallback
 from commander.ml.utils import restore_step, vectorise_observations
 
-SAVE_NAME_BASE: str = "cartpoleml_simulation_"
+SAVE_NAME_BASE: str = "carter_simulation_"
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +224,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
         elif command is SimulationExperimentCommand.EXPERIMENT:
             env_class = ExperimentalCartpoleEnv
 
-            agent_params = CartpoleMLExperimentConfiguration["agent"].copy()
+            agent_params = CarterExperimentConfiguration["agent"].copy()
 
             agent_params["goal_params"] = {
                 "failure_angle": (-np.inf, np.inf),
@@ -261,7 +261,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
 
         # Callbacks
         callbacks: list[BaseCallback] = []
-        callbacks.append(GeneralCartpoleMLCallback())
+        callbacks.append(GeneralCarterCallback())
 
         if command is SimulationExperimentCommand.SIMULATE:
             eval_env = make_sb3_env(SimulatedCartpoleEnv, **env_params)
@@ -355,7 +355,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
                 if record:
                     image = plt.imshow(env.render(mode="rgb_array"), animated=True)
                     plt.axis("off")
-                    plt.title("CartpoleML Simulation")
+                    plt.title("CartER Simulation")
 
                     images.append([image])
 
