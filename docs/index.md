@@ -29,6 +29,19 @@ CartpoleML can be cited in publications using:
     howpublished = {\url{https://github.com/JeppeKlitgaard/CartpoleML}},
     }
 
+## Documentation overview
+
+The documentation is incomplete and should not be taken as gospel.
+
+It is divided into a number of categories:
+
+- __Development__: Documentation surrounding the development of the project.  
+    Useful for advanced use or further development of the platform.
+- __Building__: Documentation on acquiring hardware, 3D-printing parts, and assemblying the project.
+- __Usage__: Guides on how to use the platform for machine learning.
+- __Articles__: A collection of articles related to the project.
+- __Videos__: A collection of videos of the project in action.
+
 ## Project overview
 
 The project consists of two main components:

@@ -1,15 +1,20 @@
 site_name: CartpoleML
 
 nav:
+  - 'index.md'
   - Development:
     - 'development/index.md'
     - 'development/installation.md'
     - 'development/cli.md'
-    - 'development/bom.md'
     - 'development/cad.md'
     - 'development/serial.md'
     - 'development/stepper.md'
     - 'development/protocol.md'
+    - 'development/further_work.md'
+
+  - Building:
+    - 'building/index.md'
+    - 'building/bom.md'
   - Articles:
     - 'articles/introducing_cartpoleml.md'
 
