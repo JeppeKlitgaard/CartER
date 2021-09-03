@@ -21,10 +21,13 @@ build/
 # ML
 *.avi
 *.zip
-output_data/
+output_data*/
 
 # Documentation
 site/
 
 # Logging
 logs/*.log
+
+# Profiling
+profiling.prof
