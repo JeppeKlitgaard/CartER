@@ -23,6 +23,7 @@ nav:
   - Articles:
     - 'articles/index.md'
     - 'articles/introducing_carter.md'
+    - 'articles/handover_v1.md'
 
   - Videos:
     - 'videos/index.md'
