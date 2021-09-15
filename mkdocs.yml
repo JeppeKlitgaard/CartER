@@ -6,6 +6,7 @@ nav:
   - Development:
     - 'development/index.md'
     - 'development/installation.md'
+    - 'development/diagram.md'
     - 'development/cli.md'
     - 'development/cad.md'
     - 'development/serial.md'
