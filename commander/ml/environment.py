@@ -707,6 +707,9 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
 
         return infos
 
+    def _has_failed(self) -> bool:
+        return self.environment_state["failure_mode"] is not FailureMode.NUL
+
     def _step(self, actions: dict[AgentNameT, Action]) -> StepReturn:
         # ! For now assume single cart. Change later
         # Very ugly temporary code - I'd like it to work today
@@ -724,7 +727,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
         self.network_tick()
 
         # Check if we have failed
-        if self.environment_state["failure_mode"] is not FailureMode.NUL:
+        if self._has_failed():
             assert self.environment_state["failure_agent_name"] is not None
 
             infos[self.environment_state["failure_agent_name"]] = {
@@ -732,7 +735,7 @@ class ExperimentalCartpoleEnv(CartpoleEnv[ExperimentalCartpoleAgent]):
             }
             dones[self.environment_state["failure_agent_name"]] = True
 
-        while True:
+        while True and not self._has_failed():
             all_observations_are_new = all(
                 [
                     self.environment_state["last_observation_times"][agent.name]
