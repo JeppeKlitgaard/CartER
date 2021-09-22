@@ -47,6 +47,7 @@ poethepoet = "^0.10.0"
 mkdocs = "^1.2.2"
 mkdocs-material = "^7.2.4"
 typing-extensions = "^3.10.0"
+py-spy = "^0.3.9"
 
 [tool.poetry.scripts]
 carter = "commander.cli:run"

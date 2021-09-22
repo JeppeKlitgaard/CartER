@@ -1280,6 +1280,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "py-spy"
+version = "0.3.9"
+description = "Sampling profiler for Python programs"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pyasn1"
 version = "0.4.8"
 description = "ASN.1 types and codecs"
@@ -1593,7 +1601,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "stable-baselines3"
-version = "1.1.0"
+version = "1.2.0"
 description = "Pytorch version of Stable Baselines, implementations of reinforcement learning algorithms."
 category = "main"
 optional = false
@@ -2811,6 +2819,16 @@ ptyprocess = [
 py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
     {file = "py-1.10.0.tar.gz", hash = "sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3"},
+]
+py-spy = [
+    {file = "py_spy-0.3.9-py2.py3-none-macosx_10_7_x86_64.whl", hash = "sha256:3c80c50a5b6b25a761c3688f9205330d20e4862152ef65a821349d5993ffe4a0"},
+    {file = "py_spy-0.3.9-py2.py3-none-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:c39178711e83e921aa15c61ebd37fbcd205cce8250c6844bfa3ce493ec09ff49"},
+    {file = "py_spy-0.3.9-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a43be414930cae73672d89d2c57c45fffa0d68a2c259047c50eab174f635528f"},
+    {file = "py_spy-0.3.9-py2.py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:1f76f97029f8839306d8a38e10319b8695d1ed4fa693396341b3ba9a9b4c8ff6"},
+    {file = "py_spy-0.3.9-py2.py3-none-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:3df9b490c40882ce9291037997496c281b3f0c6f50c5f0b9b0a159ba0f5ad43c"},
+    {file = "py_spy-0.3.9-py2.py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:8105e691eca41849e7940db49b340697a117f4b7a091fc248cf7d13be2bbc7d2"},
+    {file = "py_spy-0.3.9-py2.py3-none-win_amd64.whl", hash = "sha256:31e556317501dbf70ef14cb180f652905e7776228b79ba2c642f5deb5e826cf5"},
+    {file = "py_spy-0.3.9.tar.gz", hash = "sha256:127148a0de9264c9e036509c1596ca7402438bf7906c16a082e335af7a0d4261"},
 ]
 pyasn1 = [
     {file = "pyasn1-0.4.8-py2.4.egg", hash = "sha256:fec3e9d8e36808a28efb59b489e4528c10ad0f480e57dcc32b4de5c9d8c9fdf3"},

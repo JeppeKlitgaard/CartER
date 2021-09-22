@@ -70,7 +70,7 @@ ALGORITHM_POLICY_PARAMS_MAP: dict[Algorithm, dict[str, Any]] = {
         "gamma": 0.98,
         "n_epochs": 5,
         "ent_coef": 0.01,
-        "learning_rate": lambda x: 0.0001 * x,
+        "learning_rate": lambda x: 0.00002 * x,
         "clip_range": lambda x: 0.2 * x,
     },
     Algorithm.A2C: {},
