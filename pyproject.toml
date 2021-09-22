@@ -11,9 +11,6 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
 gym = {extras = ["atari"], version = "^0.18.3"}
-torch = "^1.9.0"
-torchvision = "^0.10.0"
-torchaudio = "^0.9.0"
 jupyterlab = "^3.0.16"
 matplotlib = "^3.4.2"
 Pillow = "^8.2.0"
@@ -138,6 +135,8 @@ flake8 = "flake8 ./commander"
 mypy = "mypy ./commander"
 black_check = "black --check ."
 isort_check = "isort --check-only ."
+
+force-cuda11 = "python -m pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio===0.9.1 -f https://download.pytorch.org/whl/torch_stable.html"
 
 black = "black ."
 isort = "isort ."
