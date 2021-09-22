@@ -20,8 +20,12 @@ docs.name = "docs"
 )
 def cli(ctx: click.Context, output_dir: Path) -> None:
     ctx.ensure_object(dict)
-
     ctx.obj["output_dir"] = output_dir
+
+    global_ctx = click.get_current_context()
+
+    assert global_ctx.invoked_subcommand
+    setup_logging(command=global_ctx.invoked_subcommand)
 
 
 cli.add_command(tensorboard)
@@ -31,7 +35,6 @@ cli.add_command(docs)
 
 
 def run() -> None:
-    setup_logging()
     cli(obj={})
 
 

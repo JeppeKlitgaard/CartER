@@ -36,9 +36,11 @@ class PacketFilter(logging.Filter):
         return True
 
 
-def setup_logging(console: bool = True, file: bool = True) -> None:
+def setup_logging(command: str = "", console: bool = True, file: bool = True) -> None:
     now = dt.datetime.now()
     now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+    command_str = "_" + command if command else ""
 
     if console:
         console_formatter = logging.Formatter("%(name)-30s: %(levelname)-8s %(message)s")
@@ -52,7 +54,7 @@ def setup_logging(console: bool = True, file: bool = True) -> None:
         project_root_path = get_project_root()
 
         file_formatter = logging.Formatter("%(asctime)s %(name)-30s %(levelname)-8s %(message)s")
-        file_path = project_root_path / "logs" / f"commander_{now_str}.log"
+        file_path = project_root_path / "logs" / f"commander_{now_str}{command_str}.log"
         file_handler = logging.FileHandler(file_path)
         file_handler.setFormatter(file_formatter)
         file_handler.setLevel(logging.DEBUG)
