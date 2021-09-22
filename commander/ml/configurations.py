@@ -89,6 +89,7 @@ class ExperimentConfiguration(Configuration):
 
 
 class ExperimentAgentConfiguration(AgentConfiguration, total=False):
+    max_steps: int
     port: str
     baudrate: int
 
@@ -97,6 +98,7 @@ DefaultExperimentConfiguration: ExperimentConfiguration = {
     "agent": {
         "port": DEFAULT_PORT,
         "baudrate": DEFAULT_BAUDRATE,
+        "max_steps": 5000,
     }
 }
 

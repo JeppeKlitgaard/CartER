@@ -1,7 +1,7 @@
 import logging
 import webbrowser as webbrowser_m
-from time import sleep
 from pathlib import Path
+from time import sleep
 
 import click
 from tensorboard import program
