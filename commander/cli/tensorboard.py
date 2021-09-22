@@ -1,6 +1,7 @@
 import logging
 import webbrowser as webbrowser_m
 from time import sleep
+from pathlib import Path
 
 import click
 from tensorboard import program
@@ -26,7 +27,7 @@ def tensorboard(ctx: click.Context, experiment: str, webbrowser: bool) -> None:
 
         logdir = output_dir / latest
     else:
-        logdir = output_dir / experiment
+        logdir = Path(experiment)
 
     logdir = logdir.resolve()
     logger.info(f"Logdir: {logdir}")
