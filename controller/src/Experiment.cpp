@@ -21,7 +21,7 @@ void observation_tick()
         return;
     }
 
-    if (abs(micros() - last_observation_us) >= OBSERVATION_INTERVAL_US)
+    if (static_cast<uint32_t>(micros() - last_observation_us) >= OBSERVATION_INTERVAL_US)
     {
         // Update last observation
         last_observation_us = micros();
@@ -34,7 +34,7 @@ void observation_tick()
         }
     }
 
-    if (abs(micros() - last_memory_us) >= MEMORY_INTERVAL_US)
+    if (static_cast<uint32_t>(micros()) - last_memory_us >= MEMORY_INTERVAL_US)
     {
         // Update last memory
         last_memory_us = micros();

@@ -516,7 +516,10 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
 
     def absorb_packet(self, packet: CartSpecificPacket) -> None:
         if isinstance(packet, ObservationPacket):
-            if packet.timestamp_micros > self.last_observation_time:
+            # Max value of uint32_t: 4_294_967_295
+            has_rolled_over = packet.timestamp_micros - self.last_observation_time > 1_000_000_000
+
+            if has_rolled_over or packet.timestamp_micros > self.last_observation_time:
                 self.env: ExperimentalCartpoleEnv = self.env
                 if (
                     (observation_interval := packet.timestamp_micros - self.last_observation_time)
