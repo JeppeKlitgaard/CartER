@@ -453,7 +453,7 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
         port: str = DEFAULT_PORT,
         baudrate: int = DEFAULT_BAUDRATE,
         settled_x_threshold: float = 5.0,
-        settled_theta_threshold: float = radians(0.25),
+        settled_theta_threshold: float = radians(1.0),
         observation_maximum_interval: int = 10 * 1000,  # us
         action_minimum_interval: float = 0.003,  # s
         action_maximum_interval: float = 0.010,  # s
@@ -517,10 +517,11 @@ class ExperimentalCartpoleAgent(CartpoleAgent):
     def absorb_packet(self, packet: CartSpecificPacket) -> None:
         if isinstance(packet, ObservationPacket):
             # Max value of uint32_t: 4_294_967_295
-            has_rolled_over = packet.timestamp_micros - self.last_observation_time > 1_000_000_000
+            has_rolled_over = self.last_observation_time - packet.timestamp_micros > 1_000_000_000
 
             if has_rolled_over or packet.timestamp_micros > self.last_observation_time:
-                self.env: ExperimentalCartpoleEnv = self.env
+                self.env: ExperimentalCartpoleEnv
+
                 if (
                     (observation_interval := packet.timestamp_micros - self.last_observation_time)
                     > self.observation_maximum_interval
