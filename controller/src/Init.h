@@ -13,7 +13,7 @@
 #ifdef SERIALUSB
 #define S SerialUSB
 #else
-#define S Serial
+#define S Serial3
 #endif
 
 void initialise();
@@ -31,8 +31,6 @@ extern bool experiment_done;
 
 // Networking
 const unsigned int BAUDRATE = 115200;
-// Can't get higher rates to work on Due (Programming Port)
-// Will switch to USB Native when final, but this is annoying for
-// developing.
+// Can't get higher rates to work on Due due to a bug in the firmware :(
 
 #endif

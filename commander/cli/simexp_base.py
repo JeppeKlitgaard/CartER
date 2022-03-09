@@ -107,6 +107,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
     @click.command(name=command.value)
     @click.pass_context
     @click.option("-p", "--port", type=str, default="AUTODETECT")
+    @click.option("--baudrate", type=int, default=115200)
     @click.option("--train/--no-train", default=True)
     @click.option("--load/--no-load", default=True)
     @click.option("--render/--no-render", default=True)
@@ -143,6 +144,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
     def inner(
         ctx: click.Context,
         port: str,
+        baudrate: int,
         train: bool,
         load: bool,
         render: bool,
@@ -255,6 +257,7 @@ def simexp_command(command: SimulationExperimentCommand) -> Command:
             ...
         elif command is SimulationExperimentCommand.EXPERIMENT:
             env_params["port"] = port
+            env_params["baudrate"] = baudrate
 
         # Algorithm-dependent hyperparameters
         policy_params = ALGORITHM_POLICY_PARAMS_MAP[Algorithm(algorithm)]
