@@ -1,6 +1,6 @@
 import datetime as dt
 import logging
-from typing import Type
+from typing import Sequence, Type
 
 from commander.network.protocol import (
     DebugPacket,
@@ -12,18 +12,16 @@ from commander.network.protocol import (
 )
 from commander.utils import get_project_root
 
-EXCLUDE_PACKETS: tuple[Type[Packet], ...] = (
+EXCLUDE_PACKETS: list[Type[Packet]] = [
     DebugPacket,
     InfoPacket,
     ErrorPacket,
-    SetVelocityPacket,
-    ObservationPacket,
-)
+]
 
 
 class PacketFilter(logging.Filter):
-    def __init__(self, excludes: tuple[Type[Packet], ...]) -> None:
-        self.excludes = excludes
+    def __init__(self, excludes: Sequence[Type[Packet]]) -> None:
+        self.excludes = tuple(excludes)
 
     def filter(self, record: logging.LogRecord) -> bool:
         # Ignore non-packet type records
@@ -36,7 +34,9 @@ class PacketFilter(logging.Filter):
         return True
 
 
-def setup_logging(command: str = "", console: bool = True, file: bool = True) -> None:
+def setup_logging(
+    command: str = "", console: bool = True, file: bool = True, debug: bool = False
+) -> None:
     now = dt.datetime.now()
     now_str = now.strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -66,7 +66,16 @@ def setup_logging(command: str = "", console: bool = True, file: bool = True) ->
     logging.getLogger("numba").setLevel(logging.WARNING)
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
-    pkt_filter = PacketFilter(EXCLUDE_PACKETS)
+    exclude_packets = EXCLUDE_PACKETS.copy()
+    if not debug:
+        exclude_packets.extend(
+            [
+                SetVelocityPacket,
+                ObservationPacket,
+            ]
+        )
+
+    pkt_filter = PacketFilter(exclude_packets)
 
     for handler in logging.root.handlers:
         handler.addFilter(pkt_filter)
