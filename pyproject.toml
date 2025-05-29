@@ -1,160 +1,164 @@
-# Poetry
-[tool.poetry]
-name = "carter"
+[project]
+name = "commander"
 version = "0.1.0"
 description = "Machine Learning of Inverted Pendula"
-authors = ["Jeppe Klitgaard <jk782@cam.ac.uk>"]
-packages = [
-    { include = "commander" }
+authors = [
+    { name = "Jeppe Klitgaard", email = "hi@jeppe.science" }
+    # TODO: Ananya, put yourself in here
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.9, <3.10"
-gym = {extras = ["atari"], version = "^0.18.3"}
-jupyterlab = "^3.0.16"
-matplotlib = "^3.4.2"
-Pillow = "^8.2.0"
-scipy = "^1.7.0"
-jupyterlab-mathjax3 = "^4.2.2"
-numba = "^0.53.1"
-tensorboard = "^2.5.0"
-seaborn = "^0.11.1"
-ffmpeg-python = "^0.2.0"
-torchtyping = "^0.1.4"
-pyserial = "^3.5"
-click = "^8.0.1"
-PettingZoo = {extras = ["butterfly"], version = "^1.11.0"}
-numpy = "^1.21.1"
-stable-baselines3 = {extras = ["extra"], version = "^1.1.0"}
-pandas = "^1.3.1"
-supersuit = {git = "https://github.com/PettingZoo-Team/SuperSuit.git"}
-tqdm = "^4.62.1"
-ipywidgets = "^7.6.3"
-deepmerge = "^0.3.0"
-mkdocs-video = "^1.1.0"
-yappi = "^1.3.2"
-snakeviz = "^2.1.0"
-
-[tool.poetry.dev-dependencies]
-jupytext = "^1.11.3"
-black = "^21.6b0"
-isort = "^5.9.1"
-mypy = "^0.910"
-
-flake8 = "^3.9.2"
-line-profiler = "^3.3.0"
-poethepoet = "^0.10.0"
-mkdocs = "^1.2.2"
-mkdocs-material = "^7.2.4"
-typing-extensions = "^3.10.0"
-py-spy = "^0.3.9"
-
-[tool.poetry.scripts]
-carter = "commander.cli:run"
-
-# Mypy
-[tool.mypy]
-python_version = "3.9"
-strict = true
-show_error_codes = true
-
-plugins = [
-    "numpy.typing.mypy_plugin"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.2.1",
+    "deepmerge>=2.0",
+    "ffmpeg-python>=0.2.0",
+    "pillow>=11.2.1",
+    "pyserial>=3.5",
+    # Notebook
+    "ipywidgets>=8.1.7",
+    "ipykernel>=6.29.5",
+    # Documentation
+    "mkdocs>=1.6.1",
+    "mkdocs-video>=1.5.0",
+    # Basic numerical and data science libraries
+    "matplotlib>=3.10.3",
+    "pandas>=2.2.3",
+    "numpy>=2.2.6",
+    "numba>=0.61.2",
+    "scipy>=1.15.3",
+    "seaborn>=0.13.2",
+    # ML
+    "tensorboard>=2.19.0",
+    "torchtyping>=0.1.5",
+    "gymnasium>=1.1.1",
+    "pettingzoo>=1.25.0",
+    "stable-baselines3>=2.6.0",
+    "supersuit>=3.10.0",
+    # Profiling
+    "tqdm>=4.67.1",
+    "snakeviz>=2.2.2",
+    "yappi>=1.6.10",
 ]
 
-disallow_untyped_calls = false
-
-
-[[tool.mypy.overrides]]
-module = [
-    "gym.*",
-    "numba.*",
-    "scipy.*",
-    "matplotlib.*",
-    "torchvision.*",
-    "tensorboard.*",
-    "seaborn.*",
-    "serial.*",
-    "supersuit.*",
-    "pettingzoo.*",
-    "deepmerge.*",
-    "pyglet.*",
-    "yappi.*",
-    "mkdocs.*",
-]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-    "torch.*",
-    "nptyping.*",
-    "stable_baselines3.*"
-]
-implicit_reexport = true
-
-# Black
-[tool.black]
-line-length = 100
-target-version = ["py39"]
-
-# Isort
-[tool.isort]
-profile = "black"
-skip_gitignore = true
-line_length = 100
-
-known_ml = [
-    "gym",
-    "torch",
-    "tensorflow",
-    "pettingzoo",
-    "supersuit",
-]
-
-known_datascience = [
-    "numpy",
-    "pandas",
-]
-
-known_first_party = [
-    "commander",
-]
-
-sections = [
-    "FUTURE",
-    "STDLIB",
-    "DATASCIENCE",
-    "ML",
-    "THIRDPARTY",
-    "FIRSTPARTY",
-    "LOCALFOLDER",
-]
-
-# Tasks
-[tool.poe.tasks]
-flake8 = "flake8 ./commander"
-mypy = "mypy ./commander"
-black_check = "black --check ."
-isort_check = "isort --check-only ."
-
-force-cuda11 = "python -m pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio===0.9.1 -f https://download.pytorch.org/whl/torch_stable.html"
-
-black = "black ."
-isort = "isort ."
-
-lint = [
-    "flake8",
-    "black_check",
-    "isort_check",
-    "mypy",
-]
-
-fix = [
-    "black",
-    "isort",
-]
-
-# Build
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# [tool.poetry.dev-dependencies]
+# jupytext = "^1.11.3"
+# black = "^21.6b0"
+# isort = "^5.9.1"
+# mypy = "^0.910"
+
+# flake8 = "^3.9.2"
+# line-profiler = "^3.3.0"
+# poethepoet = "^0.10.0"
+# mkdocs = "^1.2.2"
+# mkdocs-material = "^7.2.4"
+# typing-extensions = "^3.10.0"
+# py-spy = "^0.3.9"
+
+# [tool.poetry.scripts]
+# carter = "commander.cli:run"
+
+# # Mypy
+# [tool.mypy]
+# python_version = "3.9"
+# strict = true
+# show_error_codes = true
+
+# plugins = [
+#     "numpy.typing.mypy_plugin"
+# ]
+
+# disallow_untyped_calls = false
+
+
+# [[tool.mypy.overrides]]
+# module = [
+#     "gym.*",
+#     "numba.*",
+#     "scipy.*",
+#     "matplotlib.*",
+#     "torchvision.*",
+#     "tensorboard.*",
+#     "seaborn.*",
+#     "serial.*",
+#     "supersuit.*",
+#     "pettingzoo.*",
+#     "deepmerge.*",
+#     "pyglet.*",
+#     "yappi.*",
+#     "mkdocs.*",
+# ]
+# ignore_missing_imports = true
+
+# [[tool.mypy.overrides]]
+# module = [
+#     "torch.*",
+#     "nptyping.*",
+#     "stable_baselines3.*"
+# ]
+# implicit_reexport = true
+
+# # Black
+# [tool.black]
+# line-length = 100
+# target-version = ["py39"]
+
+# # Isort
+# [tool.isort]
+# profile = "black"
+# skip_gitignore = true
+# line_length = 100
+
+# known_ml = [
+#     "gym",
+#     "torch",
+#     "tensorflow",
+#     "pettingzoo",
+#     "supersuit",
+# ]
+
+# known_datascience = [
+#     "numpy",
+#     "pandas",
+# ]
+
+# known_first_party = [
+#     "commander",
+# ]
+
+# sections = [
+#     "FUTURE",
+#     "STDLIB",
+#     "DATASCIENCE",
+#     "ML",
+#     "THIRDPARTY",
+#     "FIRSTPARTY",
+#     "LOCALFOLDER",
+# ]
+
+# # Tasks
+# [tool.poe.tasks]
+# flake8 = "flake8 ./commander"
+# mypy = "mypy ./commander"
+# black_check = "black --check ."
+# isort_check = "isort --check-only ."
+
+# force-cuda11 = "python -m pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio===0.9.1 -f https://download.pytorch.org/whl/torch_stable.html"
+
+# black = "black ."
+# isort = "isort ."
+
+# lint = [
+#     "flake8",
+#     "black_check",
+#     "isort_check",
+#     "mypy",
+# ]
+
+# fix = [
+#     "black",
+#     "isort",
+# ]
