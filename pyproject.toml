@@ -40,6 +40,9 @@ dependencies = [
     "yappi>=1.6.10",
 ]
 
+[project.scripts]
+carter = "commander.cli:run"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -57,9 +60,6 @@ build-backend = "hatchling.build"
 # mkdocs-material = "^7.2.4"
 # typing-extensions = "^3.10.0"
 # py-spy = "^0.3.9"
-
-# [tool.poetry.scripts]
-# carter = "commander.cli:run"
 
 # # Mypy
 # [tool.mypy]
